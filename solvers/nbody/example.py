@@ -1,0 +1,3 @@
+
+import NBody
+help(NBody)

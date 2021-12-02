@@ -1,0 +1,3 @@
+[submodule "solvers/nbody/BatchedNBodyRPY"]
+	path = solvers/nbody/BatchedNBodyRPY
+	url = git@github.com:RaulPPelaez/BatchedNBodyRPY.git
