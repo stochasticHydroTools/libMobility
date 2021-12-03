@@ -17,3 +17,4 @@ base:
 	make -C BatchedNBodyRPY
 clean:
 	make -C BatchedNBodyRPY clean
+	rm $(LIBRARY_NAME)
