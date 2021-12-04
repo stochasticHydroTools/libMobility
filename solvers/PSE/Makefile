@@ -6,10 +6,13 @@ NVCC=nvcc
 MODULENAME=PSE
 LIBRARY_NAME:=$(MODULENAME)$(shell $(PYTHON)-config --extension-suffix)
 
-all: $(LIBRARY_NAME)
+all: $(LIBRARY_NAME) mobility.so
 
 $(LIBRARY_NAME): python_wrapper.o base
 	$(NVCC) -O3 -w -shared UAMMD_PSE_Python/uammd_wrapper.o  $< -o $@ -lcufft -lcublas -lmkl_rt -lpthread -ldl
+
+mobility.so: UAMMD_PSE_Python/uammd_wrapper.o base
+	$(NVCC) -O3 -w -shared $< -o $@  -lcufft -lcublas -lmkl_rt -lpthread -ldl
 
 python_wrapper.o: python_wrapper.cpp mobility.h
 	$(CXX) -O3 -c -fPIC -std=c++14 $(DOUBLEPRECISION) $(INCLUDE_FLAGS) $<  -o $@
