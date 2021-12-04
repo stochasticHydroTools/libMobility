@@ -65,6 +65,12 @@ Any uncompiled modules will simply be ignored by python/libMobility.py (although
 Importing libMobility.py will make available any module under "solvers" that has been compiled correctly (or, in the case of python-only modules, any module that provides a valid SolverName.py script).  
 
 An usage example is available in python/example.py.  
+Calling
+```python
+	help(SolverName)
+```
+will provide more in depth information about the solver.  
+
 ## C++ Usage
 
 In order to use a module called SolverName, the header solvers/SolverName/mobility.h must be included.  
