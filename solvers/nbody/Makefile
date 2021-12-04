@@ -1,6 +1,6 @@
 PYTHON=python3
 PYBIND_ROOT=BatchedNBodyRPY/source/pybind11/
-INCLUDE_FLAGS:= `$(PYTHON)-config --includes` -I $(PYBIND_ROOT)/include/
+INCLUDE_FLAGS:= `$(PYTHON)-config --includes` -I $(PYBIND_ROOT)/include/ -I ../../include
 CXX=g++
 NVCC=nvcc
 MODULENAME=NBody

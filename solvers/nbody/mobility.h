@@ -1,7 +1,7 @@
 
 #ifndef MOBILITY_NBODY_H
 #define MOBILITY_NBODY_H
-#include"../../../MobilityInterface/include/MobilityInterface.h"
+#include<MobilityInterface/MobilityInterface.h>
 #include"BatchedNBodyRPY/source/interface.h"
 #include<vector>
 #include<cmath>

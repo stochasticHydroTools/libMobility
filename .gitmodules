@@ -4,3 +4,6 @@
 [submodule "solvers/pse/UAMMD_PSE_Python"]
 	path = solvers/pse/UAMMD_PSE_Python
 	url = git@github.com:RaulPPelaez/UAMMD_PSE_Python.git
+[submodule "include/MobilityInterface"]
+	path = include/MobilityInterface
+	url = git@github.com:libMobility/MobilityInterface.git
