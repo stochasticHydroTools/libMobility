@@ -104,7 +104,7 @@ Furthermore, the Makefile must provide an "all" rule (which creates both librari
 In order to create the two libraries, the Makefile has the freedom to call, for instance, any build tools in the solvers repository (such as another Makefile).  
  * **example.py**: An example script using the python bindings of the module.  
  * **test.py**: A correctness test (as simple as possible) that ensures the module is working as intended.  
- 
+ * **README.md**: The documentation for the specific module (stating the geometry, required arguments,...).  
 If these conventions are followed, the Makefile in the root directory will compile the module along the rest and libMobility.py will import it without any modifications to each of them.  
 
 Regarding the different functions of the interface, some of them provide default behavior if not defined. In particular, the stochastich displacements will be computed using a Lanczos solver if the module does not override the corresponding function. Additionally, the hdyrodynamicDisplacements functions defaults to calling Mdot followed by stochasticDisplacements. Finally, the clean function defaults to doing nothing.  
