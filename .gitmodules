@@ -4,6 +4,9 @@
 [submodule "solvers/pse/UAMMD_PSE_Python"]
 	path = solvers/PSE/UAMMD_PSE_Python
 	url = git@github.com:RaulPPelaez/UAMMD_PSE_Python.git
-[submodule "include/MobilityInterface"]
-	path = include/MobilityInterface
-	url = git@github.com:libMobility/MobilityInterface.git
+[submodule "third_party/pybind11"]
+	path = third_party/pybind11
+	url = git@github.com:pybind/pybind11
+[submodule "solvers/NBody_wall/Mobility_NBody_wall"]
+	path = solvers/NBody_wall/Mobility_NBody_wall
+	url = git@github.com:libMobility/Mobility_NBody_wall.git

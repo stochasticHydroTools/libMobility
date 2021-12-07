@@ -11,7 +11,6 @@ static_assert(std::is_same<libmobility::real, uammd_pse::real>::value,
 	      "Trying to compile PSE with a different precision to MobilityInterface.h");
 
 class PSE: public libmobility::Mobility{
-  using Parameters = libmobility::Parameters;
   using real = libmobility::real;
   std::vector<real> positions;
   std::shared_ptr<uammd_pse::UAMMD_PSE_Glue> pse;
@@ -19,7 +18,8 @@ class PSE: public libmobility::Mobility{
   int currentNumberParticles = 0;
   real temperature;
 public:
-
+  using Parameters = libmobility::Parameters;
+  
   virtual void initialize(Parameters ipar) override{
     this->temperature = ipar.temperature;
     psepar.viscosity = ipar.viscosity;
