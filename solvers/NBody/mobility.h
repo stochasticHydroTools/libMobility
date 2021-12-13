@@ -12,7 +12,6 @@ static_assert(std::is_same<libmobility::real, nbody_rpy::real>::value,
 
 class NBody: public libmobility::Mobility{
   using real = libmobility::real;
-  Parameters par;
   std::vector<real> positions;
   real selfMobility;
   real hydrodynamicRadius;
@@ -38,6 +37,7 @@ public:
 				   selfMobility, hydrodynamicRadius,
 				   nbody_rpy::algorithm::advise);
   }
-
+private:
+  Parameters par;
 };
 #endif
