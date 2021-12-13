@@ -33,6 +33,7 @@ public:
 
   virtual void setPositions(const real* ipositions, int numberParticles) override{
     if(not pse or currentNumberParticles != numberParticles){
+      this->currentNumberParticles = numberParticles;
       pse = std::make_shared<uammd_pse::UAMMD_PSE_Glue>(psepar, numberParticles);
     }
     positions.resize(3*numberParticles);
