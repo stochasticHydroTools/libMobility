@@ -11,14 +11,13 @@ static_assert(std::is_same<libmobility::real, nbody_rpy::real>::value,
 	      "Trying to compile NBody with a different precision to MobilityInterface.h");
 
 class NBody: public libmobility::Mobility{
-  using Parameters = libmobility::Parameters;
   using real = libmobility::real;
   Parameters par;
   std::vector<real> positions;
   real selfMobility;
   real hydrodynamicRadius;
 public:
-
+  using Parameters = libmobility::Parameters;
   virtual void initialize(Parameters ipar) override{
     this->hydrodynamicRadius = ipar.hydrodynamicRadius;
     this->selfMobility = 1.0/(6*M_PI*ipar.viscosity*this->hydrodynamicRadius); 
