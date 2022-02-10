@@ -16,7 +16,6 @@ class NBody: public libmobility::Mobility{
   using Configuration = libmobility::Configuration;
   using Parameters = libmobility::Parameters;
   using real = libmobility::real;
-  Parameters par;
   std::vector<real> positions;
   real selfMobility;
   real hydrodynamicRadius;
