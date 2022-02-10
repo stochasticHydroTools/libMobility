@@ -97,7 +97,8 @@ int main(){
 
   //The solvers can be used to compute stochastic displacements, even if they do not provide a specific way to compute them (defaults to using the lanczos algorithm
   std::vector<scalar> noiseNBody(pos.size(), 0);
-  solver_nbody->stochasticDisplacements(noiseNBody.data());
+  scalar prefactor = 1.0;
+  solver_nbody->stochasticDisplacements(noiseNBody.data(), prefactor);
 
   //Remember to clean up when done
   solver_nbody->clean();
