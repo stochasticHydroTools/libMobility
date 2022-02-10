@@ -22,7 +22,7 @@ The directory **include** contains the C++ base class and utilities used to cons
 ## The libMobility interface
 Each solver is encased in a single class which is default constructible (no arguments required for its constructor).  
 Each solver provides the following set of functions (called the same in C++ and python and described here in a kind of language agnostic way):  
-  * **[Constructor](configuration)**: The solver constructors must be provided with a series of system-related parameters (see below).  
+  * **[Constructor] (configuration)**: The solver constructors must be provided with a series of system-related parameters (see below).  
   * **initialize(parameters)**: Initializes the module according to the parameters (see below).  
   * **setParameters[SolverName]([extra parameters])**: Some modules might need special parameters, in these instances this function must also be called.  
   * **setPositions(positions)**: Sets the positions to compute the mobility of.  
