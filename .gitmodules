@@ -10,3 +10,9 @@
 [submodule "solvers/NBody_wall/Mobility_NBody_wall"]
 	path = solvers/NBody_wall/Mobility_NBody_wall
 	url = git@github.com:libMobility/Mobility_NBody_wall.git
+[submodule "third_party/uammd"]
+	path = third_party/uammd
+	url = git@github.com:RaulPPelaez/uammd
+[submodule "third_party/LanczosAlgorithm"]
+	path = third_party/LanczosAlgorithm
+	url = git@github.com:Raulppelaez/LanczosAlgorithm

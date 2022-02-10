@@ -3,3 +3,8 @@
 *pycache*
 *.o
 cpp/example
+\#*
+.\#*
+temp
+*_init_*
+*.o

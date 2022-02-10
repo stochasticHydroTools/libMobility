@@ -9,6 +9,8 @@
 #define SINGLE_PRECISION
 #endif
 #include<stdexcept>
+#include<vector>
+#include"lanczos.h"
 namespace libmobility{
 #if defined SINGLE_PRECISION
   using  real  = float;
@@ -16,48 +18,88 @@ namespace libmobility{
   using  real  = double;
 #endif
 
-  struct Periodicity{
-    Periodicity(){}
-    Periodicity(bool x, bool y, bool z): x(x), y(y), z(z){}
-    bool x,y,z;
-  };
+  enum class periodicity_mode{triply_periodic, doubly_periodic, single_wall, open, unspecified};
 
-  struct BoxSize{
-    BoxSize(){}
-    BoxSize(real x, real y, real z): x(x), y(y), z(z){}
-    real x = -1;
-    real y = -1;
-    real z = -1;
-  };
+  enum class device{cpu, gpu, automatic};
 
+  //Parameters that are proper to every solver.  
   struct Parameters{
-    real hydrodynamicRadius;
-    real viscosity;
-    real temperature;
+    std::vector<real> hydrodynamicRadius;
+    real viscosity = 1;
+    real temperature = 0;
     real tolerance = 1e-4;
-    BoxSize boxSize;
-    Periodicity periodicity;
+    int numberParticles = -1;
   };
-  
+
+  //A list of parameters that cannot be changed by reinitializing a solver and/or are properties of the solver.
+  //For instance, an open boundary solver will only accept open periodicity.
+  //Another solver might be set up for either cpu or gpu at creation
+  struct Configuration{
+    int dimensions = 3;
+    int numberSpecies = 1;
+    periodicity_mode periodicity = periodicity_mode::unspecified;
+    device dev = device::automatic;
+  };
+
+  //This is the virtual base class that every solver must inherit from.
   class Mobility{
+  private:
+    int numberParticles;
+    bool initialized = false;
+    std::shared_ptr<LanczosStochasticDisplacements> lanczos;
+  protected:
+    Mobility(){};
   public:
+    //These constants are available to all solvers
     static constexpr auto version = LIBMOBILITYVERSION; //The interface version
 #if defined SINGLE_PRECISION
     static constexpr auto precision = "float";
 #else
     static constexpr auto precision = "double";
 #endif
+    //The constructor should accept a Configuration object and ensure the requested parameters are acceptable (an open boundary solver should complain if periodicity is selected).
+    //A runtime_exception should be thrown if the configuration is invalid.
+    //The constructor here is just an example, since this is a pure virtual class
+    /*
+    Mobility(Configuration conf){
+      if(conf.numberSpecies!=1)
+    	throw std::runtime_error("[Mobility] I can only deal with one species");
+      if(conf.device == device::gpu)
+    	throw std::runtime_error("[Mobility] This is a CPU-only solver");
+      if(conf.periodicity != periodicity::open)
+    	throw std::runtime_error("[Mobility] This is an open boundary solver");
+    }
+    */
+    //Outside of the common interface, solvers can define a function called setParameters[ModuleName]
+    //, with arbitrary input, that simply acknowledges a set of values proper to the specific solver.
+    //These new parameters should NOT take effect until initialize is called afterwards.
+    // void setParametersModuleName(MyParameters par){
+    //   //Store required parameters
+    // }
 
-    virtual void initialize(Parameters par) = 0;
-    
-    virtual void setPositions(const real* positions, int numberParticles) = 0;
+    //Initialize should leave the solver in a state ready for setPositions to be
+    // called. Furthermore, initialize can be called again if some parameter
+    // changes
+    virtual void initialize(Parameters par){
+      this->initialized = true;
+      this->numberParticles = par.numberParticles;
+      if(not lanczos){
+	lanczos = std::make_shared<LanczosStochasticDisplacements>(par.numberParticles, par.temperature, par.tolerance);
+      }
+
+    }
+
+    virtual void setPositions(const real* positions) = 0;
 
     virtual void Mdot(const real* forces, const real *torques, real* result) = 0;
 
-    virtual void stochasticDisplacements(real* result, real prefactor = 1){ //Use Lanczos here
-      throw std::runtime_error("Stochastic displacements are not implemented for this solver");      
+    //If the solver does not provide a stochastic displacement implementation, the Lanczos algorithm will be used automatically
+    virtual void stochasticDisplacements(real* result, real prefactor = 1){
+      if(not this->initialized)
+	throw std::runtime_error("[libMobility] You must initialize the base class in order to use the default stochastic displacement computation");
+      lanczos->stochasticDisplacements([this](const real*f, real*mv){Mdot(f, nullptr, mv);}, result, prefactor);
     }
-
+    
     virtual void hydrodynamicDisplacements(const real* forces, const real *torques, real* result, real prefactor = 1){
       Mdot(forces, torques, result);
       stochasticDisplacements(result, prefactor);
@@ -65,7 +107,5 @@ namespace libmobility{
 
     virtual void clean(){}
   };
-
-  
 }
 #endif

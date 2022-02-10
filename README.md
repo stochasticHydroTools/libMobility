@@ -22,8 +22,10 @@ The directory **include** contains the C++ base class and utilities used to cons
 ## The libMobility interface
 Each solver is encased in a single class which is default constructible (no arguments required for its constructor).  
 Each solver provides the following set of functions (called the same in C++ and python and described here in a kind of language agnostic way):  
+  * **[Constructor](configuration)**: The solver constructors must be provided with a series of system-related parameters (see below).  
   * **initialize(parameters)**: Initializes the module according to the parameters (see below).  
-  * **setPositions(positions, numberParticles)**: Sets the positions to compute the mobility of.  
+  * **setParameters[SolverName]([extra parameters])**: Some modules might need special parameters, in these instances this function must also be called.  
+  * **setPositions(positions)**: Sets the positions to compute the mobility of.  
   * **Mdot(forces = null, torques = null, result)**: Computes the deterministic hydrodynamic displacements, i.e applies the mobility operator. If either the onopolar (force) or dipolar (torque) contributions are not desired, the relevant argument can be ommited.  
   * **stochasticDisplacements(result, prefactor = 1)**: Computes the stochastic displacements and multiplies them by the provided prefactor.  
   * **hydrodynamicDisplacements(forces = null, torques = null, result, prefactor = 1)**: Equivalent to calling Mdot followed by stochastichDisplacements (some algorithms might benefit from doing so).  
@@ -38,14 +40,23 @@ Positions, forces, torques and the results provided by the functions are packed 
 
 ### Parameters
 The valid parameters accepted by the interface are:  
-  * **temperature**.  
+  * **temperature**. In units of energy (AKA k_BT).  
   * **hydrodynamicRadius**: The hydrodynamic radius of the particles.  
   * **viscosity**: The fluid viscosity.  
   * **tolerance = 1e-4**: If the solver is not exact this provides an error tolerance.  
-  * **boxSize**: The domain size in each direction (if the system is open in some or all of them).  
-  * **periodicity**: Whether the domain is periodic or not in each direction (if the module can make use of it).  
 
 An equal sign denotes default values.  
+
+### Configuration parameters
+At contruction, solvers must be provided with the following information:
+  * **device**. Can be either "cpu", "gpu" or "automatic".  
+  * **dimension**: The dimensionality of the problem.  
+  * **numberSpecies**: The number of different species/types of particles.  
+  * **periodicity**: The periodicity, can any of "triply_periodic", "doubly_periodic", "single_wall", "open", "unspecified".  
+  
+The solvers constructor will check the provided configuration and throw an error if something invalid is requested of it (for instance, the PSE solver will complain if open boundaries are chosen).
+
+
 
 ## How to use this repo
 Each solver is included as a git submodule (So that each solver has its own, separated, repository). Be sure to clone this repository recursively (using ```git clone --recurse```).  
@@ -109,3 +120,11 @@ If these conventions are followed, the Makefile in the root directory will compi
 
 Regarding the different functions of the interface, some of them provide default behavior if not defined. In particular, the stochastich displacements will be computed using a Lanczos solver if the module does not override the corresponding function. Additionally, the hdyrodynamicDisplacements functions defaults to calling Mdot followed by stochasticDisplacements. Finally, the clean function defaults to doing nothing.  
 An example of this is NBody, which only provides an initialization and Mdot functions.  
+
+**The initialize function of a new solver must call the ```libmobility::Mobility::initialize``` function at some point.**  
+
+**See solvers/SelfMobility for a basic example.**
+
+When a module needs additional parameters to those provided to initialize an additional function, called ```setParameters[SolverName]``` must be defined and exposed to python. See solvers/PSE/mobility.h and solver/PSE/python_wrapper.cpp for an example.
+
+

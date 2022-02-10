@@ -11,6 +11,10 @@ static_assert(std::is_same<libmobility::real, uammd_pse::real>::value,
 	      "Trying to compile PSE with a different precision to MobilityInterface.h");
 
 class PSE: public libmobility::Mobility{
+  using device = libmobility::device;
+  using periodicity_mode = libmobility::periodicity_mode;
+  using Configuration = libmobility::Configuration;
+  using Parameters = libmobility::Parameters;
   using real = libmobility::real;
   std::vector<real> positions;
   std::shared_ptr<uammd_pse::UAMMD_PSE_Glue> pse;
@@ -18,22 +22,36 @@ class PSE: public libmobility::Mobility{
   int currentNumberParticles = 0;
   real temperature;
 public:
-  using Parameters = libmobility::Parameters;
+
+  PSE(Configuration conf){
+    if(conf.numberSpecies!=1)
+      throw std::runtime_error("[Mobility] I can only deal with one species");
+    if(conf.dev == device::cpu)
+      throw std::runtime_error("[Mobility] This is a GPU-only solver");
+    if(conf.periodicity != periodicity_mode::triply_periodic)
+      throw std::runtime_error("[Mobility] This is a triply periodic solver");
+  }
   
-  virtual void initialize(Parameters ipar) override{
+  void initialize(Parameters ipar) override{
     this->temperature = ipar.temperature;
     psepar.viscosity = ipar.viscosity;
-    psepar.hydrodynamicRadius = ipar.hydrodynamicRadius;
-    psepar.Lx = ipar.boxSize.x;
-    psepar.Ly = ipar.boxSize.y;
-    psepar.Lz = ipar.boxSize.z;
+    psepar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
     psepar.tolerance = ipar.tolerance;
-    psepar.psi = 0.5/ipar.hydrodynamicRadius;
+    this->currentNumberParticles = ipar.numberParticles;
   }
 
-  virtual void setPositions(const real* ipositions, int numberParticles) override{
-    if(not pse or currentNumberParticles != numberParticles){
-      pse = std::make_shared<uammd_pse::UAMMD_PSE_Glue>(psepar, numberParticles);
+  void setParametersPSE(real psi, real Lx, real Ly, real Lz){
+    psepar.psi = psi;
+    psepar.Lx = Lx;
+    psepar.Ly = Ly;
+    psepar.Lz = Lz;    
+    pse = std::make_shared<uammd_pse::UAMMD_PSE_Glue>(psepar, this->currentNumberParticles);
+  }
+  
+  void setPositions(const real* ipositions) override{
+    int numberParticles = currentNumberParticles;
+    if(numberParticles == 0){
+      throw std::runtime_error("[PSE] You must call setParametersPSE() after initialize()");
     }
     positions.resize(3*numberParticles);
     std::copy(ipositions, ipositions + 3*numberParticles, positions.begin());    

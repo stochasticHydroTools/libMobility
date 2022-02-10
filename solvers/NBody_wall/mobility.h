@@ -5,6 +5,7 @@
 #define MOBILITY_NBODY_WALL_H
 #include<MobilityInterface/MobilityInterface.h>
 #include"Mobility_NBody_wall/interface.h"
+#include <stdexcept>
 #include<vector>
 #include<cmath>
 #include<type_traits>
@@ -14,32 +15,56 @@ static_assert(std::is_same<libmobility::real, mobility_cuda::real>::value,
 
 class NBody_wall: public libmobility::Mobility{
   using real = libmobility::real;
+  using device = libmobility::device;
+  using periodicity_mode = libmobility::periodicity_mode;
+  using Configuration = libmobility::Configuration;
+  using Parameters = libmobility::Parameters;
+
   std::vector<real> positions;
   real viscosity;
   real hydrodynamicRadius;
-  libmobility::BoxSize box;
+  int numberParticles;
+  bool initialized = false;
+  real lx, ly, lz;
 public:
-  using Parameters = libmobility::Parameters;
 
-  virtual void initialize(Parameters ipar) override{
-    this->hydrodynamicRadius = ipar.hydrodynamicRadius;
+  NBody_wall(Configuration conf){
+    if(conf.numberSpecies!=1)
+      throw std::runtime_error("[Mobility] I can only deal with one species");
+    if(conf.dev == device::cpu)
+      throw std::runtime_error("[Mobility] This is a GPU-only solver");
+    if(conf.periodicity != periodicity_mode::single_wall)
+      throw std::runtime_error("[Mobility] Only single mode is allowed");
+  }
+  
+  void initialize(Parameters ipar) override{
+    this->hydrodynamicRadius = ipar.hydrodynamicRadius[0];
     this->viscosity = ipar.viscosity;
-    this->box = ipar.boxSize;
+    this->numberParticles = ipar.numberParticles;
   }
 
-  virtual void setPositions(const real* ipositions, int numberParticles) override{
+  void setParametersNBody_wall(real lx, real ly, real lz){
+    this->initialized = true;
+    this->lx = lx;
+    this->ly = ly;
+    this->lz = lz;
+  }
+
+  void setPositions(const real* ipositions) override{
     positions.resize(3*numberParticles);
     std::copy(ipositions, ipositions + 3*numberParticles, positions.begin());
   }
 
-  virtual void Mdot(const real* forces, const real *torques, real* result) override{
+  void Mdot(const real* forces, const real *torques, real* result) override{
     if(torques) throw std::runtime_error("NBody_wall can only compute monopole displacements");
+    if(not initialized) throw std::runtime_error("[NBody_wall] You must call setParametersNBody_wall first.");
+    
     int numberParticles = positions.size()/3;
     mobility_cuda::single_wall_mobility_trans_times_force_cuda(positions.data(),
 							       forces,
 							       result,
 							       viscosity, hydrodynamicRadius,
-							       box.x, box.y, box.z,
+							       lx, ly, lz,
 							       numberParticles);
   }  
 
