@@ -4,6 +4,9 @@
 #include<random>
 #include<algorithm>
 template<class Foo>
+
+// Donev: This stuff with foos makes my head spin and if every student needs to do this it looks bad to me. I sort of understand what it does but does not seem like sane software design to me. Maybe it does to C++ people...
+
 struct MatrixDotAdaptor: public lanczos::MatrixDot{
   Foo foo;
   MatrixDotAdaptor(Foo foo):foo(foo){}
@@ -23,16 +26,16 @@ class LanczosStochasticDisplacements{
   std::vector<real> lanczosNoise;
   real lanczosTolerance = 1e-3; //Default tolerance
   int numberParticles;
-  std::mt19937 engine;
-  real temperature;
+  std::mt19937 engine; // Donev: Seems like this does not belong here?
+  real temperature; // Donev: Never used, you are still setting prefactor=1 so why is this here?
 public:
 
   LanczosStochasticDisplacements(int N, real T, real tol){
     this->numberParticles = N;
     this->temperature = T;
     this->lanczosTolerance = tol;
-    std::random_device rnd_device;
-    engine = std::mt19937{rnd_device()};
+    std::random_device rnd_device; // Issue with seeding. I suggest this should be provided by user not put in
+    engine = std::mt19937{rnd_device()}; // Can engine be provided by user instead of putting here?
   }
 
   template<class Foo>

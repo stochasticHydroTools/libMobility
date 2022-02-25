@@ -1,3 +1,6 @@
+// Donev: Is this now redundant with mobility_cuda since both provide the same thing? It seems strange to have both
+// In particular they are called NBody and NBody_wall. Surely they should be together, and just switch based on the periodicity? Why do we need two repos, two different solver classes, etc., when they are basically the same and only the kernel changes
+// In particular, if you make the kernel a template parameter you can make your fancy NBody work for any kernel including the one with a single wall
 
 #ifndef MOBILITY_NBODY_H
 #define MOBILITY_NBODY_H

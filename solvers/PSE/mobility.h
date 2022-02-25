@@ -1,3 +1,4 @@
+// Donev: This looks nice, clean, and readable to me ;-)
 
 #ifndef MOBILITY_PSE_H
 #define MOBILITY_PSE_H
@@ -24,7 +25,7 @@ class PSE: public libmobility::Mobility{
 public:
 
   PSE(Configuration conf){
-    if(conf.numberSpecies!=1)
+    if(conf.numberSpecies!=1) // Donev: Doesn't UAMMD support different species at all?
       throw std::runtime_error("[Mobility] I can only deal with one species");
     if(conf.dev == device::cpu)
       throw std::runtime_error("[Mobility] This is a GPU-only solver");

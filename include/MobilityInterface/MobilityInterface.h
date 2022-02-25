@@ -1,4 +1,4 @@
-/* Raul P. Pelaez 2021. The libMobility interface v1.0.
+=/* Raul P. Pelaez 2021. The libMobility interface v1.0.
    Every mobility implement must inherit from the Mobility virtual base class.
 
  */
@@ -27,7 +27,7 @@ namespace libmobility{
     std::vector<real> hydrodynamicRadius;
     real viscosity = 1;
     real temperature = 0;
-    real tolerance = 1e-4;
+    real tolerance = 1e-4; // Donev: Add comment to explain what this is. Could be tolerance for M*F calculation, or for Lanczos. Two separate and different things
     int numberParticles = -1;
   };
 
@@ -35,8 +35,8 @@ namespace libmobility{
   //For instance, an open boundary solver will only accept open periodicity.
   //Another solver might be set up for either cpu or gpu at creation
   struct Configuration{
-    int dimensions = 3;
-    int numberSpecies = 1;
+    int dimensions = 3; // Donev: Some stuff like periodicity_mode seem very specific to 3D. I don't think we can really nail down how to do this and handle different dimensions until we have an example (say the quasi2D stuff including Saffman mobility. Perhaps we should just limit to 3D. There is always a tradeoff between generality and simplicity of use.
+    int numberSpecies = 1; // Donev: Not clear to me what this means and why we need it, see comments in README. Maybe best to omit it until we have some example with more than one species and we can figure out how to use this. At this point it is too abstract.
     periodicity_mode periodicity = periodicity_mode::unspecified;
     device dev = device::automatic;
   };
@@ -81,6 +81,7 @@ namespace libmobility{
     // called. Furthermore, initialize can be called again if some parameter
     // changes
     virtual void initialize(Parameters par){
+      // Donev: If already initialized, shouldn't this call clean first (I know these are all virtual methods but just as an example)?
       this->initialized = true;
       this->numberParticles = par.numberParticles;
       if(not lanczos){

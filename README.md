@@ -1,5 +1,5 @@
 # libMobility
-This repository contains several solvers that can compute the hydrodynamic mobility (at the RPY level) of a group of particles (in different geometries) with forces and/or torques acting on them.  
+This repository contains several solvers that can compute the action of the hydrodynamic mobility (at the RPY level) of a group of particles (in different geometries) with forces and/or torques acting on them.  
 
 In particular, given a group of forces and torques, T=[forces; torques], the libMobility solvers can compute:
 
@@ -26,9 +26,9 @@ Each solver provides the following set of functions (called the same in C++ and 
   * **initialize(parameters)**: Initializes the module according to the parameters (see below).  
   * **setParameters[SolverName]([extra parameters])**: Some modules might need special parameters, in these instances this function must also be called.  
   * **setPositions(positions)**: Sets the positions to compute the mobility of.  
-  * **Mdot(forces = null, torques = null, result)**: Computes the deterministic hydrodynamic displacements, i.e applies the mobility operator. If either the onopolar (force) or dipolar (torque) contributions are not desired, the relevant argument can be ommited.  
+  * **Mdot(forces = null, torques = null, result)**: Computes the deterministic hydrodynamic displacements, i.e applies the mobility operator. If either the monopolar (force) or dipolar (torque) contributions are not desired, the relevant argument can be ommited.  
   * **stochasticDisplacements(result, prefactor = 1)**: Computes the stochastic displacements and multiplies them by the provided prefactor.  
-  * **hydrodynamicDisplacements(forces = null, torques = null, result, prefactor = 1)**: Equivalent to calling Mdot followed by stochastichDisplacements (some algorithms might benefit from doing so).  
+  * **hydrodynamicDisplacements(forces = null, torques = null, result, prefactor = 1)**: Equivalent to calling Mdot followed by stochastichDisplacements (some algorithms might benefit from doing these operations together, e.g., solvers based on fluctuating hydrodynamics).  
   * **clean()**: Cleans any memory allocated by the module. The initialization function must be called again in order to use the module again.  
 The many examples in this repository offer more insight about the interface and how to use them. See cpp/example.cpp or python/example.py. See solvers/NBody for an example of a module implementation. Even though the algorithm behind it is quite convoluted, the files in this directory are short and simple, since they are only a thin wrapper to the actual algorithm, located under BatchedNBodyRPY there.  
 An equal sign denotes defaults.  
@@ -41,18 +41,19 @@ Positions, forces, torques and the results provided by the functions are packed 
 ### Parameters
 The valid parameters accepted by the interface are:  
   * **temperature**. In units of energy (AKA k_BT).  
-  * **hydrodynamicRadius**: The hydrodynamic radius of the particles.  
+  * **hydrodynamicRadius**: The hydrodynamic radii of the particles. Donev: [CHECK and CLARIFY] This can be one radius per species, or one radius per particle ???
   * **viscosity**: The fluid viscosity.  
-  * **tolerance = 1e-4**: If the solver is not exact this provides an error tolerance.  
+  * **tolerance = 1e-4**: If the solver is not exact this provides an error tolerance. Donev: What about Lanczos tolerance?  
 
+Donev: What about numberParticles?
 An equal sign denotes default values.  
 
 ### Configuration parameters
 At contruction, solvers must be provided with the following information:
   * **device**. Can be either "cpu", "gpu" or "automatic".  
-  * **dimension**: The dimensionality of the problem.  
-  * **numberSpecies**: The number of different species/types of particles.  
-  * **periodicity**: The periodicity, can any of "triply_periodic", "doubly_periodic", "single_wall", "open", "unspecified".  
+  * **dimension**: The dimensionality of the Stokes flow problem (typically 3 but solvers may work in 2D also).  
+  * **numberSpecies**: The number of different species/types of particles. Donev: This is unclear and not so useful. There is no common interface for setting species of particles so why is it useful to have numberSpecies? Without any example of use of this it is hard to imagine how touse this. Maybe delete / discuss?
+  * **periodicity**: Donev: [Added some clarifications] The periodicity, can any of "triply_periodic", "doubly_periodic" (periodic in xy but not z), "single_wall" (unbounded in xy but wall at z=0), "open", "unspecified".  Donev: This clearly assumes 3D and also assumes that only things we know how to implement now make sense. For example, how about "singly_periodic" or "slit_channel"? The most flexible and best way to do this is not via an enumerator but rather a vector periodic of size [2,dimension], where 1 means periodic along that direction (both must be 1], -1 means wall, and 0 means open. Needs discussion...
   
 The solvers constructor will check the provided configuration and throw an error if something invalid is requested of it (for instance, the PSE solver will complain if open boundaries are chosen).
 
@@ -118,13 +119,12 @@ In order to create the two libraries, the Makefile has the freedom to call, for 
  * **README.md**: The documentation for the specific module (stating the geometry, required arguments,...).  
 If these conventions are followed, the Makefile in the root directory will compile the module along the rest and libMobility.py will import it without any modifications to each of them.  
 
-Regarding the different functions of the interface, some of them provide default behavior if not defined. In particular, the stochastich displacements will be computed using a Lanczos solver if the module does not override the corresponding function. Additionally, the hdyrodynamicDisplacements functions defaults to calling Mdot followed by stochasticDisplacements. Finally, the clean function defaults to doing nothing.  
+Regarding the different functions of the interface, some of them provide default behavior if not defined. In particular, the stochastich displacements will be computed using a Lanczos solver if the module does not override the corresponding function. Additionally, the hydrodynamicDisplacements functions defaults to calling Mdot followed by stochasticDisplacements. Finally, the clean function defaults to doing nothing.  
 An example of this is NBody, which only provides an initialization and Mdot functions.  
 
 **The initialize function of a new solver must call the ```libmobility::Mobility::initialize``` function at some point.**  
 
 **See solvers/SelfMobility for a basic example.**
 
-When a module needs additional parameters to those provided to initialize an additional function, called ```setParameters[SolverName]``` must be defined and exposed to python. See solvers/PSE/mobility.h and solver/PSE/python_wrapper.cpp for an example.
-
+When a module needs additional parameters to those provided to initialize an additional function, called ```setParameters[SolverName]``` must be defined and exposed to python. See solvers/PSE/mobility.h and solver/PSE/python_wrapper.cpp for an example. Donev: It is up to users of the library to call setParameters before calling initialize with the required arguments.
 

@@ -1,6 +1,8 @@
 /*Raul P. Pelaez 2022. SelfMobility example sovler. 
   
   This solver ignores hydrodynamic interactions and uses the default mechanism to compute stochastic displacements (the Lanczos algorithm).
+  Donev: You should change this to actually over-ride the default to show how it can be done, since here it is trivial to construct sqrt
+  One issue I want to understand better is that of seeding and RNGs. How many streams should there be, and who seeds them and when, etc.
 
  */
 #ifndef MOBILITY_SELFMOBILITY_H

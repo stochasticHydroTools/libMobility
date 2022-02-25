@@ -57,6 +57,10 @@ std::shared_ptr<MobilityBase> initializeSolver(Parameters par){
   }
 }
 
+// Donev: I don't really understand why you are doing templates above and why we need computeMFWithSolver
+// Isn't the whole point that oen can simply call solver->Mdot inside main. Why do we need yet another wrapper here
+// Let's discuss
+
 //This function works for any solver
 auto computeMFWithSolver(std::shared_ptr<MobilityBase> solver,
 			 std::vector<scalar> &pos,
