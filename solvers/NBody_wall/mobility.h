@@ -47,6 +47,7 @@ public:
     this->hydrodynamicRadius = ipar.hydrodynamicRadius[0];
     this->viscosity = ipar.viscosity;
     this->numberParticles = ipar.numberParticles;
+    Mobility::initialize(ipar);
   }
 
   // Donev: Why are lx, ly, lz parameters when they don't make sense. This solver needs no other parameters. 

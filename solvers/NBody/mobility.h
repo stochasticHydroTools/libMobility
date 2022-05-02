@@ -42,7 +42,8 @@ public:
   virtual void initialize(Parameters ipar) override{
     this->numberParticles = ipar.numberParticles;
     this->hydrodynamicRadius = ipar.hydrodynamicRadius[0];
-    this->selfMobility = 1.0/(6*M_PI*ipar.viscosity*this->hydrodynamicRadius); 
+    this->selfMobility = 1.0/(6*M_PI*ipar.viscosity*this->hydrodynamicRadius);
+    Mobility::initialize(ipar);
   }
 
   virtual void setPositions(const real* ipositions) override{

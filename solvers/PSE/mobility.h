@@ -39,6 +39,7 @@ public:
     psepar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
     psepar.tolerance = ipar.tolerance;
     this->currentNumberParticles = ipar.numberParticles;
+    Mobility::initialize(ipar);    
   }
 
   void setParametersPSE(real psi, real Lx, real Ly, real Lz){
