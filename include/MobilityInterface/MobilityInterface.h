@@ -1,4 +1,4 @@
-=/* Raul P. Pelaez 2021. The libMobility interface v1.0.
+/* Raul P. Pelaez 2021. The libMobility interface v1.0.
    Every mobility implement must inherit from the Mobility virtual base class.
 
  */
