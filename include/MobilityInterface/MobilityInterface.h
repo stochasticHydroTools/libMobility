@@ -1,6 +1,6 @@
-/* Raul P. Pelaez 2021. The libMobility interface v1.0.
+/* Raul P. Pelaez 2021-2022. The libMobility interface v1.0.
    Every mobility implement must inherit from the Mobility virtual base class.
-
+   See solvers/SelfMobility for a simple example
  */
 #ifndef MOBILITYINTERFACE_H
 #define MOBILITYINTERFACE_H
@@ -9,7 +9,8 @@
 #define SINGLE_PRECISION
 #endif
 #include<stdexcept>
-#include<vector>
+#include <vector>
+#include<random>
 #include"lanczos.h"
 namespace libmobility{
 #if defined SINGLE_PRECISION
@@ -27,16 +28,16 @@ namespace libmobility{
     std::vector<real> hydrodynamicRadius;
     real viscosity = 1;
     real temperature = 0;
-    real tolerance = 1e-4; // Donev: Add comment to explain what this is. Could be tolerance for M*F calculation, or for Lanczos. Two separate and different things
+    real tolerance = 1e-4; //Tolerance for Lanczos fluctuations
     int numberParticles = -1;
+    std::uint64_t seed = 0;
   };
 
   //A list of parameters that cannot be changed by reinitializing a solver and/or are properties of the solver.
   //For instance, an open boundary solver will only accept open periodicity.
   //Another solver might be set up for either cpu or gpu at creation
   struct Configuration{
-    int dimensions = 3; // Donev: Some stuff like periodicity_mode seem very specific to 3D. I don't think we can really nail down how to do this and handle different dimensions until we have an example (say the quasi2D stuff including Saffman mobility. Perhaps we should just limit to 3D. There is always a tradeoff between generality and simplicity of use.
-    int numberSpecies = 1; // Donev: Not clear to me what this means and why we need it, see comments in README. Maybe best to omit it until we have some example with more than one species and we can figure out how to use this. At this point it is too abstract.
+    int dimensions = 3; 
     periodicity_mode periodicity = periodicity_mode::unspecified;
     device dev = device::automatic;
   };
@@ -62,8 +63,6 @@ namespace libmobility{
     //The constructor here is just an example, since this is a pure virtual class
     /*
     Mobility(Configuration conf){
-      if(conf.numberSpecies!=1)
-    	throw std::runtime_error("[Mobility] I can only deal with one species");
       if(conf.device == device::gpu)
     	throw std::runtime_error("[Mobility] This is a CPU-only solver");
       if(conf.periodicity != periodicity::open)
@@ -78,35 +77,45 @@ namespace libmobility{
     // }
 
     //Initialize should leave the solver in a state ready for setPositions to be
-    // called. Furthermore, initialize can be called again if some parameter
-    // changes
+    // called. Furthermore, initialize can be called again if some parameter changes
     virtual void initialize(Parameters par){
-      // Donev: If already initialized, shouldn't this call clean first (I know these are all virtual methods but just as an example)?
+      //Clean if the solver was already initialized
+      if(initialized)
+	this->clean();
       this->initialized = true;
       this->numberParticles = par.numberParticles;
       if(not lanczos){
-	lanczos = std::make_shared<LanczosStochasticDisplacements>(par.numberParticles, par.temperature, par.tolerance);
+	if(par.seed==0){//If a seed is not provided, get one from random device
+	  par.seed = std::random_device()();
+	}
+	lanczos = std::make_shared<LanczosStochasticDisplacements>(par.numberParticles, par.tolerance, par.seed);
       }
-
     }
 
+    //Set the positions to construct the mobility operator from
     virtual void setPositions(const real* positions) = 0;
 
+    //Apply the mobility operator (M) to a series of forces (F) and/or torques (T), returns M*[F; T]
     virtual void Mdot(const real* forces, const real *torques, real* result) = 0;
 
+    //Compute the stochastic displacements as result=prefactor*sqrt(M)*dW. Where dW is a vector of Gaussian random numbers   
     //If the solver does not provide a stochastic displacement implementation, the Lanczos algorithm will be used automatically
     virtual void stochasticDisplacements(real* result, real prefactor = 1){
       if(not this->initialized)
 	throw std::runtime_error("[libMobility] You must initialize the base class in order to use the default stochastic displacement computation");
       lanczos->stochasticDisplacements([this](const real*f, real*mv){Mdot(f, nullptr, mv);}, result, prefactor);
     }
-    
+
+    //Equivalent to calling Mdot and then stochasticDisplacements, can be faster in some solvers
     virtual void hydrodynamicDisplacements(const real* forces, const real *torques, real* result, real prefactor = 1){
       Mdot(forces, torques, result);
       stochasticDisplacements(result, prefactor);
     }
 
-    virtual void clean(){}
+    //Clean any memory allocated by the solver
+    virtual void clean(){
+      lanczos.reset();
+    }
   };
 }
 #endif

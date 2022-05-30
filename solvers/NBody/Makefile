@@ -16,7 +16,7 @@ mobility.so: BatchedNBodyRPY/source/NbodyRPY.o base
 	$(NVCC) -O3 -w -shared $< -o $@ $(LAPACK_LIBS)
 
 python_wrapper.o: python_wrapper.cpp mobility.h
-	$(CXX) -O3 -c -fPIC -std=c++14 $(DOUBLEPRECISION) $(INCLUDE_FLAGS) $<  -o $@ 
+	$(CXX) -O3 -c -fPIC -std=c++14 $(DOUBLEPRECISION) $(INCLUDE_FLAGS) $<  -o $@
 
 base:
 	make -C BatchedNBodyRPY

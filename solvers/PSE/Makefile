@@ -6,7 +6,7 @@ NVCC=nvcc -ccbin=$(CXX)
 MODULENAME=PSE
 LIBRARY_NAME:=$(MODULENAME)$(shell $(PYTHON)-config --extension-suffix)
 
-all: $(LIBRARY_NAME) mobility.so
+all: base $(LIBRARY_NAME) mobility.so
 
 $(LIBRARY_NAME): python_wrapper.o base
 	$(NVCC) -O3 -w -shared UAMMD_PSE_Python/uammd_wrapper.o  $< -o $@ -lcufft -lcublas  $(LAPACK_LIBS)
@@ -20,4 +20,4 @@ base:
 	make -C UAMMD_PSE_Python
 clean:
 	make -C UAMMD_PSE_Python clean
-	rm -f $(LIBRARY_NAME)
+	rm -f $(LIBRARY_NAME) mobility.so

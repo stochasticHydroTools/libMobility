@@ -16,3 +16,7 @@
 [submodule "third_party/LanczosAlgorithm"]
 	path = third_party/LanczosAlgorithm
 	url = git@github.com:Raulppelaez/LanczosAlgorithm
+[submodule "solvers/DPStokes/DPStokes"]
+	path = solvers/DPStokes/DPStokes/uammd
+	url = https://github.com/raulppelaez/uammd
+	branch = dpstokes

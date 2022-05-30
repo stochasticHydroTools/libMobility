@@ -41,19 +41,18 @@ Positions, forces, torques and the results provided by the functions are packed 
 ### Parameters
 The valid parameters accepted by the interface are:  
   * **temperature**. In units of energy (AKA k_BT).  
-  * **hydrodynamicRadius**: The hydrodynamic radii of the particles. Donev: [CHECK and CLARIFY] This can be one radius per species, or one radius per particle ???
+  * **hydrodynamicRadius**: The hydrodynamic radii of the particles. Note that many solvers only allow for all particles having the same radius, in those cases this vector should be of size one.  
   * **viscosity**: The fluid viscosity.  
-  * **tolerance = 1e-4**: If the solver is not exact this provides an error tolerance. Donev: What about Lanczos tolerance?  
+  * **tolerance = 1e-4**: Tolerance for the Lanczos algorithm.  
+  * **numberParticles**: The number of particles  
 
-Donev: What about numberParticles?
 An equal sign denotes default values.  
 
 ### Configuration parameters
 At contruction, solvers must be provided with the following information:
   * **device**. Can be either "cpu", "gpu" or "automatic".  
   * **dimension**: The dimensionality of the Stokes flow problem (typically 3 but solvers may work in 2D also).  
-  * **numberSpecies**: The number of different species/types of particles. Donev: This is unclear and not so useful. There is no common interface for setting species of particles so why is it useful to have numberSpecies? Without any example of use of this it is hard to imagine how touse this. Maybe delete / discuss?
-  * **periodicity**: Donev: [Added some clarifications] The periodicity, can any of "triply_periodic", "doubly_periodic" (periodic in xy but not z), "single_wall" (unbounded in xy but wall at z=0), "open", "unspecified".  Donev: This clearly assumes 3D and also assumes that only things we know how to implement now make sense. For example, how about "singly_periodic" or "slit_channel"? The most flexible and best way to do this is not via an enumerator but rather a vector periodic of size [2,dimension], where 1 means periodic along that direction (both must be 1], -1 means wall, and 0 means open. Needs discussion...
+  * **periodicity**: The periodicity, can any of "triply_periodic", "doubly_periodic" (periodic in xy but not z), "single_wall" (unbounded in xy but wall at z=0), "open", "unspecified".  Donev: This clearly assumes 3D and also assumes that only things we know how to implement now make sense. For example, how about "singly_periodic" or "slit_channel"? The most flexible and best way to do this is not via an enumerator but rather a vector periodic of size [2,dimension], where 1 means periodic along that direction (both must be 1], -1 means wall, and 0 means open. Needs discussion... Raul: What about an enumerator for each direction? for example: periodicity = {periodic, open, wall};
   
 The solvers constructor will check the provided configuration and throw an error if something invalid is requested of it (for instance, the PSE solver will complain if open boundaries are chosen).
 
@@ -126,5 +125,5 @@ An example of this is NBody, which only provides an initialization and Mdot func
 
 **See solvers/SelfMobility for a basic example.**
 
-When a module needs additional parameters to those provided to initialize an additional function, called ```setParameters[SolverName]``` must be defined and exposed to python. See solvers/PSE/mobility.h and solver/PSE/python_wrapper.cpp for an example. Donev: It is up to users of the library to call setParameters before calling initialize with the required arguments.
+When a module needs additional parameters to those provided to initialize an additional function, called ```setParameters[SolverName]``` must be defined and exposed to python. See solvers/PSE/mobility.h and solver/PSE/python_wrapper.cpp for an example. It is up to users of the library to call setParameters before calling initialize with the required arguments.
 

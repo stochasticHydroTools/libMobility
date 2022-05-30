@@ -25,8 +25,6 @@ class SelfMobility: public libmobility::Mobility{
 public:
 
   SelfMobility(Configuration conf){
-    if(conf.numberSpecies!=1)
-      throw std::runtime_error("[Mobility] I can only deal with one species");
     if(conf.dev == device::gpu)
       throw std::runtime_error("[Mobility] This is a CPU-only solver");
     if(conf.periodicity != periodicity_mode::open)

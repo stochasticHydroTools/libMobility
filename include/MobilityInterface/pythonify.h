@@ -31,10 +31,9 @@ inline auto string2Device(std::string dev){
   else throw std::runtime_error("[libMobility] Invalid device");
 }
 
-inline auto createConfiguration(int dim, int nspecies, std::string per, std::string dev){
+inline auto createConfiguration(int dim, std::string per, std::string dev){
   libmobility::Configuration conf;
   conf.dimensions = dim;
-  conf.numberSpecies = nspecies;
   conf.periodicity = string2Periodicity(per);
   conf.dev = string2Device(dev);
   return conf;
@@ -46,9 +45,9 @@ inline auto createConfiguration(int dim, int nspecies, std::string per, std::str
   using Parameters = libmobility::Parameters;				\
   using Configuration = libmobility::Configuration;			\
   auto solver = py::class_<MODULENAME>(m, MOBILITYSTR(MODULENAME), documentation); \
-  solver.def(py::init([](int dim, int nspecies, std::string per, std::string dev){ \
-    return std::unique_ptr<MODULENAME>(new MODULENAME(createConfiguration(dim,nspecies,per,dev))); }),\
-    "Class constructor.", "dimension"_a, "numberSpecies"_a, "periodicity"_a, "device"_a). \
+  solver.def(py::init([](int dim, std::string per, std::string dev){ \
+    return std::unique_ptr<MODULENAME>(new MODULENAME(createConfiguration(dim,per,dev))); }),\
+    "Class constructor.", "dimension"_a, "periodicity"_a, "device"_a). \
   def("initialize", [](MODULENAME &myself, real T, real eta, real a, int N){ \
     Parameters par;							\
     par.temperature = T;						\

@@ -1,5 +1,4 @@
-// Donev: This looks nice, clean, and readable to me ;-)
-
+// Raul P. Pelaez 2021-2022. libmobility interface for UAMMD PSE module
 #ifndef MOBILITY_PSE_H
 #define MOBILITY_PSE_H
 #include<MobilityInterface/MobilityInterface.h>
@@ -25,8 +24,6 @@ class PSE: public libmobility::Mobility{
 public:
 
   PSE(Configuration conf){
-    if(conf.numberSpecies!=1) // Donev: Doesn't UAMMD support different species at all?
-      throw std::runtime_error("[Mobility] I can only deal with one species");
     if(conf.dev == device::cpu)
       throw std::runtime_error("[Mobility] This is a GPU-only solver");
     if(conf.periodicity != periodicity_mode::triply_periodic)
@@ -39,7 +36,7 @@ public:
     psepar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
     psepar.tolerance = ipar.tolerance;
     this->currentNumberParticles = ipar.numberParticles;
-    Mobility::initialize(ipar);    
+    Mobility::initialize(ipar);
   }
 
   void setParametersPSE(real psi, real Lx, real Ly, real Lz){

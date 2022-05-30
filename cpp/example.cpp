@@ -2,66 +2,44 @@
  All available solvers are used in a similar way, providing, in each case, the required parameters.
  For instance, a triply periodic algorithm will need at least a box size.
  */
+#include "MobilityInterface/MobilityInterface.h"
 #include"NBody/mobility.h"
 #include"PSE/mobility.h"
-
 #include <type_traits>
 #include<vector>
 #include<random>
 #include<algorithm>
 #include<iostream>
 using namespace std;
-using scalar = libmobility::real;
 
+using scalar = libmobility::real;
 using MobilityBase = libmobility::Mobility;
+using Configuration = libmobility::Configuration;
 using libmobility::Parameters;
 
 
-//Configures, initializes and returns a NBody solver
-std::shared_ptr<NBody> initializeNBody(Parameters par){
-  libmobility::Configuration conf{.dimensions = 3,
-    .numberSpecies = 1,
-    .periodicity = libmobility::periodicity_mode::open,
-    .dev = libmobility::device::automatic};
-    auto solver = std::make_shared<NBody>(conf);
-    solver->initialize(par);
-    return solver;
-}
-
-//Configures, initializes and returns a PSE solver
-std::shared_ptr<PSE> initializePSE(Parameters par){
-  libmobility::Configuration conf{.dimensions = 3,
-    .numberSpecies = 1,
-    .periodicity = libmobility::periodicity_mode::triply_periodic,
-    .dev = libmobility::device::automatic};
-    auto solver = std::make_shared<PSE>(conf);
-    solver->initialize(par);
-    return solver;
-}
-
 //Configures, initializes any solver (between PSE and NBody)
-//The same function can create any solver, this function also calls the solver-dependent setParameters function when necessary
+//The same function can be extended to create any solver.
+//We need it to desambiguate by calling the solver-dependent setParameters function when necessary. For instance, see PSE below
 template<class Solver>
-std::shared_ptr<MobilityBase> initializeSolver(Parameters par){
+auto initializeSolver(Parameters par){
+  std::shared_ptr<MobilityBase> solver;
   if(std::is_same_v<Solver,NBody>){
-    auto solver = initializeNBody(par);    
-    return solver;
+    solver = std::make_shared<NBody>(Configuration{.periodicity = libmobility::periodicity_mode::open});
   }
   if(std::is_same_v<Solver,PSE>){
+    auto pse = std::make_shared<PSE>(Configuration{.periodicity = libmobility::periodicity_mode::triply_periodic});
     scalar lx,ly,lz;
     lx=ly=lz=128;
     scalar split = 1.0;
-    auto solver = initializePSE(par);
-    solver->setParametersPSE(split, lx,ly,lz);
-    return solver;
-  }
+    pse->setParametersPSE(split, lx,ly,lz);
+    solver = pse;
+  }  
+  solver->initialize(par);
+  return solver;  
 }
 
-// Donev: I don't really understand why you are doing templates above and why we need computeMFWithSolver
-// Isn't the whole point that oen can simply call solver->Mdot inside main. Why do we need yet another wrapper here
-// Let's discuss
-
-//This function works for any solver
+//An example of a function that works for any solver
 auto computeMFWithSolver(std::shared_ptr<MobilityBase> solver,
 			 std::vector<scalar> &pos,
 			 std::vector<scalar> &forces){

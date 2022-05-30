@@ -28,15 +28,13 @@ class NBody_wall: public libmobility::Mobility{
   real hydrodynamicRadius;
   int numberParticles;
   bool initialized = false;
-  real lx, ly, lz; // Donev: This seems like nonsense to me for this geometry. Why are these here? there is no lx, ly or lz for a half space
+  real lx, ly, lz;
   // Donev: I think you inherited these from single_wall_mobility_trans_times_force_cuda
   // That implements fake periodicity. If you do that, then the parameters should be the number of images you do in x/y/z directions. We need to discuss that and I need to look at the code. Remember I really wanted to have scalar kernel functions without loops over particles/images...
   
 public:
 
   NBody_wall(Configuration conf){
-    if(conf.numberSpecies!=1)
-      throw std::runtime_error("[Mobility] I can only deal with one species");
     if(conf.dev == device::cpu)
       throw std::runtime_error("[Mobility] This is a GPU-only solver");
     if(conf.periodicity != periodicity_mode::single_wall)
