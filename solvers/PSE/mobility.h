@@ -29,7 +29,7 @@ public:
     if(conf.periodicity != periodicity_mode::triply_periodic)
       throw std::runtime_error("[Mobility] This is a triply periodic solver");
   }
-  
+
   void initialize(Parameters ipar) override{
     this->temperature = ipar.temperature;
     psepar.viscosity = ipar.viscosity;
@@ -39,21 +39,22 @@ public:
     Mobility::initialize(ipar);
   }
 
-  void setParametersPSE(real psi, real Lx, real Ly, real Lz){
+  void setParametersPSE(real psi, real Lx, real Ly, real Lz, real shearStrain){
     psepar.psi = psi;
     psepar.Lx = Lx;
     psepar.Ly = Ly;
-    psepar.Lz = Lz;    
+    psepar.Lz = Lz;
+    psepar.shearStrain = shearStrain;
     pse = std::make_shared<uammd_pse::UAMMD_PSE_Glue>(psepar, this->currentNumberParticles);
   }
-  
+
   void setPositions(const real* ipositions) override{
     int numberParticles = currentNumberParticles;
     if(numberParticles == 0){
       throw std::runtime_error("[PSE] You must call setParametersPSE() after initialize()");
     }
     positions.resize(3*numberParticles);
-    std::copy(ipositions, ipositions + 3*numberParticles, positions.begin());    
+    std::copy(ipositions, ipositions + 3*numberParticles, positions.begin());
   }
 
   virtual void Mdot(const real* forces, const real *torques, real* result) override{
