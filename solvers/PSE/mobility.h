@@ -37,6 +37,7 @@ public:
     psepar.tolerance = ipar.tolerance;
     this->currentNumberParticles = ipar.numberParticles;
     Mobility::initialize(ipar);
+    pse = std::make_shared<uammd_pse::UAMMD_PSE_Glue>(psepar, this->currentNumberParticles);
   }
 
   void setParametersPSE(real psi, real Lx, real Ly, real Lz, real shearStrain){
@@ -45,7 +46,6 @@ public:
     psepar.Ly = Ly;
     psepar.Lz = Lz;
     psepar.shearStrain = shearStrain;
-    pse = std::make_shared<uammd_pse::UAMMD_PSE_Glue>(psepar, this->currentNumberParticles);
   }
 
   void setPositions(const real* ipositions) override{
