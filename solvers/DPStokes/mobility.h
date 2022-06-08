@@ -20,6 +20,7 @@ class DPStokes: public libmobility::Mobility{
   Parameters par;
   int numberParticles;
   std::shared_ptr<DPStokesUAMMD> dpstokes;
+  DPStokesParameters dppar;
 public:
 
   DPStokes(Configuration conf){
@@ -30,7 +31,8 @@ public:
   }
 
   // I am confused by this function. Isn't it supposed to be called setParameters?
-  void setParametersDPStokes(DPStokesParameters dppar){
+  void setParametersDPStokes(DPStokesParameters i_dppar){
+    dppar = i_dppar;
     // DPStokesParameters dppar;
     // int nx = -1;
     // int ny = -1;
@@ -53,11 +55,11 @@ public:
     // //Can be either none, bottom, slit or periodic
     // dppar.mode;
     dpstokes = std::make_shared<uammd_dpstokes::DPStokesGlue>();
-    dpstokes->initialize(dppar, this->numberParticles);
   }
 
   void initialize(Parameters ipar) override{
     this->numberParticles = ipar.numberParticles;
+    dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);
   }
 
