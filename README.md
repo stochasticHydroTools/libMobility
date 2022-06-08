@@ -1,16 +1,16 @@
 # libMobility
-This repository contains several solvers that can compute the action of the hydrodynamic mobility (at the RPY level) of a group of particles (in different geometries) with forces and/or torques acting on them.  
+This repository contains several solvers that can compute the action of the hydrodynamic mobility (at the RPY/FCM level) of a group of particles (in different geometries) with forces and/or torques acting on them.  
 
 In particular, given a group of forces and torques, T=[forces; torques], the libMobility solvers can compute:
 
 	[dX, dA] = M·T + prefactor*sqrt(2*temperature*M)·dW  
 
 Where dX and dA are the linear and angular displacements respectively, prefactor is an user provided prefactor and dW is a collection of i.i.d Weinner processes.  
-Each solver in libMobility allows to compute either the deterministic term, the stochastic term or both at the same time.  
+Each solver in libMobility allows to compute either the deterministic term, the stochastic term, or both at the same time.  
 
 For each solver, a python and a C++ interface are provided. All solvers have the same interface, although some input parameters might change (an open boundaries solver does not accept a box size as a parameter).  
 
-Some of the solvers have different functionalities than the others. For instance, some modules might be able to accept torques while others dont. The documentation for a particular solver must be visited to know more.  
+Some of the solvers have different functionalities than the others. For instance, some modules accept torques while others don't. The documentation for a particular solver must be visited to know more.  
 
 ## How this repository is organized
 
@@ -26,15 +26,34 @@ Each solver provides the following set of functions (called the same in C++ and 
   * **initialize(parameters)**: Initializes the module according to the parameters (see below).  
   * **setParameters[SolverName]([extra parameters])**: Some modules might need special parameters, in these instances this function must also be called.  
   * **setPositions(positions)**: Sets the positions to compute the mobility of.  
-  * **Mdot(forces = null, torques = null, result)**: Computes the deterministic hydrodynamic displacements, i.e applies the mobility operator. If either the monopolar (force) or dipolar (torque) contributions are not desired, the relevant argument can be ommited.  
+  // Donev: What exactly is result? Both linear and angular velocities appended together? You say above
+  // [X,A] = ... but I don't see X and A in this C++ interface -- why?
+  // In which order are these appended when there is both forces and torques 
+  // This doesn't look right to me. There are cases where you may want to apply torques
+  // but not care about the angular velocities, especially stochastic ones
+  // An example of this is the rollers -- since they are spheres we don't keep track of their orientations
+  // but we need the torque on them since this generates translational velocities
+  // This can save some time (say it requires extra FFTs or spreading/interpolating with derivatives)
+  // Seems to me result should be split into velocities and angVelocities? 
+  // Perhaps you are assuming this interface only works with linear velocities
+  // This can be a reasonable choice, but then we should remove torques entirely
+  // Mathematically, it makes most sense to put linear and angular into the same vector
+  // For example, that way lanczos can generate both linear and angular stochastic velocities 
+  * **Mdot(forces = null, torques = null, result)**: Computes the deterministic hydrodynamic displacements, i.e applies the mobility operator. If either the monopolar (force) or dipolar (torque) contributions are not desired, the relevant argument can be ommited. 
+  // Donev: The change of name from velocities to displacements seems inappropriate.
+  // In its implementation, you just call velocities, and this does not accept a dt
+  // I suggest renaming to stochasticVelocities or sqrtMdotW
+  // It is definitely not displacements if we include rotation since computing that requires a finite time step size and rotations by omega*dt using quaternion formulas
   * **stochasticDisplacements(result, prefactor = 1)**: Computes the stochastic displacements and multiplies them by the provided prefactor.  
+  // Donev: Same question as above. Is result just random linear velocities, or linear and angular?
+  // Rename to just Velocities
   * **hydrodynamicDisplacements(forces = null, torques = null, result, prefactor = 1)**: Equivalent to calling Mdot followed by stochastichDisplacements (some algorithms might benefit from doing these operations together, e.g., solvers based on fluctuating hydrodynamics).  
   * **clean()**: Cleans any memory allocated by the module. The initialization function must be called again in order to use the module again.  
 The many examples in this repository offer more insight about the interface and how to use them. See cpp/example.cpp or python/example.py. See solvers/NBody for an example of a module implementation. Even though the algorithm behind it is quite convoluted, the files in this directory are short and simple, since they are only a thin wrapper to the actual algorithm, located under BatchedNBodyRPY there.  
 An equal sign denotes defaults.  
 
 ### Data format
-Positions, forces, torques and the results provided by the functions are packed in a 3*numberParticles contiguos array containing [x_1, y_1, z_1, x_2,...z_N] .  
+Positions, forces, torques and the results provided by the functions are packed in a 3*numberParticles contiguos array containing [x_1, y_1, z_1, x_2,...z_N] . // Donev: This is unclear for "result" since there can be 6 components  
 
 
 
@@ -52,7 +71,7 @@ An equal sign denotes default values.
 At contruction, solvers must be provided with the following information:
   * **device**. Can be either "cpu", "gpu" or "automatic".  
   * **dimension**: The dimensionality of the Stokes flow problem (typically 3 but solvers may work in 2D also).  
-  * **periodicity**: The periodicity, can any of "triply_periodic", "doubly_periodic" (periodic in xy but not z), "single_wall" (unbounded in xy but wall at z=0), "open", "unspecified".  Donev: This clearly assumes 3D and also assumes that only things we know how to implement now make sense. For example, how about "singly_periodic" or "slit_channel"? The most flexible and best way to do this is not via an enumerator but rather a vector periodic of size [2,dimension], where 1 means periodic along that direction (both must be 1], -1 means wall, and 0 means open. Needs discussion... Raul: What about an enumerator for each direction? for example: periodicity = {periodic, open, wall};
+  * **periodicity**: The periodicity, can any of "triply_periodic", "doubly_periodic" (periodic in xy but not z), "single_wall" (unbounded in xy but wall at z=0), "open", "unspecified".  Donev: The most flexible and best way to do this is not via an enumerator but rather a vector periodic of size [2,dimension], where 1 means periodic along that direction (both must be 1], -1 means wall, and 0 means open. Raul: What about an enumerator for each direction? for example: periodicity = {periodic, open, wall}; Donev: Yes, that is what I really meant. The constructors need to check that what is specified is supported (e.g., RPY requires all to be open).
   
 The solvers constructor will check the provided configuration and throw an error if something invalid is requested of it (for instance, the PSE solver will complain if open boundaries are chosen).
 
@@ -60,7 +79,7 @@ The solvers constructor will check the provided configuration and throw an error
 
 ## How to use this repo
 Each solver is included as a git submodule (So that each solver has its own, separated, repository). Be sure to clone this repository recursively (using ```git clone --recurse```).  
-After compilation (see below) a python
+After compilation (see below) a python [Donev: UNFINISHED sentence?]
 
 ## Compilation
 Running ```make``` on the root of the repository will compile all modules under the solvers directory as long as they adhere to the conventions described in "Adding a new solver".  

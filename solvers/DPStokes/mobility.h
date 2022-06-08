@@ -1,5 +1,5 @@
 /*Raul P. Pelaez 2022. libMobility interface for UAMMD's DPStokes module
-
+Donev: Consider making this the interface to both the CPU and GPU versions of DPStokes
  */
 #ifndef MOBILITY_SELFMOBILITY_H
 #define MOBILITY_SELFMOBILITY_H
@@ -23,12 +23,15 @@ class DPStokes: public libmobility::Mobility{
 public:
 
   DPStokes(Configuration conf){
+    // Donev: Very confused -- isn't it the opposite and this is a GPU-only solver?
     if(conf.dev == device::gpu)
       throw std::runtime_error("[Mobility] This is a CPU-only solver");
+    // Donev: Also confused by this -- doesn't UAMMD implement walls also?  
     if(conf.periodicity != periodicity_mode::open)
       throw std::runtime_error("[Mobility] This is an open boundary solver");
   }
 
+  // I am confused by this function. Isn't it supposed to be called setParameters?
   void setParametersDPStokes(DPStokesParameters dppar){
     // DPStokesParameters dppar;
     // int nx = -1;
@@ -65,6 +68,7 @@ public:
   }
 
   void Mdot(const real* forces, const real *torques, real* result) override{
+    // Donev: I don't get why result is passed twice here
     dpstokes->Mdot(forces, torques, result, result);
   }
 

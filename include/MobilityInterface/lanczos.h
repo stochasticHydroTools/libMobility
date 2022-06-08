@@ -10,6 +10,8 @@
 #include <algorithm>
 
 // This class uses the LanczosAlgorithm library to compute fluctuations.
+// Donev: Suggest renaming to Velocities instead of Displacements
+// for consistency with libMobility (see my comments on naming)
 class LanczosStochasticDisplacements{
   using real = lanczos::real;
   lanczos::Solver lanczos;

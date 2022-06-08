@@ -1,8 +1,9 @@
 /* Raul P. Pelaez 2021. libMobility C++ interface for NBody_wall.
+   // Donev: Where is this mobility_cuda repo? Only one is exposed here...
    Many solvers are available in the mobility_cuda repo. Only some of them are exposed via this interface.
  */
-// Donev: Well, only ONE is exposed here ;-)
-// Donev: One thing that I cannot figure out on my own is this. If one wants to use GPU mode, is everything going to be kept on the GPU. For example, is the Lanczos going to be done on the GPU, and the Mdot product, etc., and nothing will be copied to and from the CPU? If this is not accomplished, the utility of the GPU implementation is greatly diminished. We already have a python Lanczos implementation. The point here is to accelerate all that on the GPU without going through interpeter but also without copying memory back and forth with every call to Mdot etc. Let's discuss 
+// Donev: One thing that I cannot figure out on my own is this. If one wants to use GPU mode, is everything going to be kept on the GPU. For example, is the Lanczos going to be done on the GPU, and the Mdot product, etc., and nothing will be copied to and from the CPU? If this is not accomplished, the utility of the GPU implementation is greatly diminished. We already have a python Lanczos implementation. The point here is to accelerate all that on the GPU without going through interpeter but also without copying memory back and forth with every call to Mdot etc.
+// For example, consider calling setPositions followed by stochasticDisplacements. How many times will there be some exchange of arrays between GPU and CPU memory? Can the code somehow be written to minimize this, for example, stochasticDisplacement could create result arrays on the GPU and only copy the final result to the CPU array when mode is GPU. It seems to me the current result arrays are CPU arrays
  
 #ifndef MOBILITY_NBODY_WALL_H
 #define MOBILITY_NBODY_WALL_H

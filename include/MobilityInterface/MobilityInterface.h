@@ -19,6 +19,7 @@ namespace libmobility{
   using  real  = double;
 #endif
 
+  // Donev: Fix this
   enum class periodicity_mode{triply_periodic, doubly_periodic, single_wall, open, unspecified};
 
   enum class device{cpu, gpu, automatic};
@@ -27,7 +28,7 @@ namespace libmobility{
   struct Parameters{
     std::vector<real> hydrodynamicRadius;
     real viscosity = 1;
-    real temperature = 0;
+    real temperature = 0; //Donev: If set to zero, the calculation of stochastic displacements is skipped
     real tolerance = 1e-4; //Tolerance for Lanczos fluctuations
     int numberParticles = -1;
     std::uint64_t seed = 0;
@@ -65,6 +66,7 @@ namespace libmobility{
     Mobility(Configuration conf){
       if(conf.device == device::gpu)
     	throw std::runtime_error("[Mobility] This is a CPU-only solver");
+      // Donev: Fix this once periodicity is changed	
       if(conf.periodicity != periodicity::open)
     	throw std::runtime_error("[Mobility] This is an open boundary solver");
     }
@@ -84,6 +86,11 @@ namespace libmobility{
 	this->clean();
       this->initialized = true;
       this->numberParticles = par.numberParticles;
+      // Donev: Why always build a Lanczos structure if it is not used
+      // You say in top README  "The initialize function of a new solver must call the ```libmobility::Mobility::initialize``` function at some point"
+      // So even for PSE, which does not need Lanczos, the object lanczos will be created, which seems wrong
+      // How about doing this below in stochasticDisplacements instead, so it is only done when
+      // that virtual function is not overridden?
       if(not lanczos){
 	if(par.seed==0){//If a seed is not provided, get one from random device
 	  par.seed = std::random_device()();
@@ -95,6 +102,9 @@ namespace libmobility{
     //Set the positions to construct the mobility operator from
     virtual void setPositions(const real* positions) = 0;
 
+    // Donev SERIOUS comment: See comments in top README
+    // result should be split into velocities and angVelocities
+    // Same applies to all other functions below
     //Apply the mobility operator (M) to a series of forces (F) and/or torques (T), returns M*[F; T]
     virtual void Mdot(const real* forces, const real *torques, real* result) = 0;
 
@@ -103,10 +113,13 @@ namespace libmobility{
     virtual void stochasticDisplacements(real* result, real prefactor = 1){
       if(not this->initialized)
 	throw std::runtime_error("[libMobility] You must initialize the base class in order to use the default stochastic displacement computation");
+	  // Donev: This assumes only stochastic linear velocities are wanted, which is not quite right
+	  // It make completes sense to also have stochastic rotational velocities
       lanczos->stochasticDisplacements([this](const real*f, real*mv){Mdot(f, nullptr, mv);}, result, prefactor);
     }
 
     //Equivalent to calling Mdot and then stochasticDisplacements, can be faster in some solvers
+    // Donev: If this is a GPU solver like NbodyRPY.cu, how many times will there be some exchange of arrays between GPU and CPU memory? Can the code somehow be written to minimize this, for example, stochasticDisplacement could create result arrays on the GPU and only copy the final result to the CPU array when mode is GPU. It seems to me the current result arrays are CPU arrays    
     virtual void hydrodynamicDisplacements(const real* forces, const real *torques, real* result, real prefactor = 1){
       Mdot(forces, torques, result);
       stochasticDisplacements(result, prefactor);

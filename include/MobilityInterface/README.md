@@ -1,4 +1,7 @@
 ## Mobility interface for use in libMobility
+Donev: This seems to simply duplicate stuff from the top-level README, nothing new
+It only invites troubles to maintain consistency. I suggest deleting or drastically shortening
+
 The files in this repository are not very useful on their on, rather being a part of the libMobility repo.  
 
 A C++ pure virtual base class called ```libmobility::Mobility``` is provided in MobilityInterface.h.  
