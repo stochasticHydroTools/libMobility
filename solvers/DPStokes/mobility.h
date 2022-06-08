@@ -23,12 +23,10 @@ class DPStokes: public libmobility::Mobility{
 public:
 
   DPStokes(Configuration conf){
-    // Donev: Very confused -- isn't it the opposite and this is a GPU-only solver?
-    if(conf.dev == device::gpu)
-      throw std::runtime_error("[Mobility] This is a CPU-only solver");
-    // Donev: Also confused by this -- doesn't UAMMD implement walls also?  
-    if(conf.periodicity != periodicity_mode::open)
-      throw std::runtime_error("[Mobility] This is an open boundary solver");
+    if(conf.dev != device::gpu)
+      throw std::runtime_error("[DPStokes] This is a GPU-only solver");
+    if(conf.periodicity != periodicity_mode::doubly_periodic)
+      throw std::runtime_error("[DPStokes] This is a doubly periodic solver");
   }
 
   // I am confused by this function. Isn't it supposed to be called setParameters?
