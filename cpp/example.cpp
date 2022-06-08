@@ -32,11 +32,12 @@ auto initializeSolver(Parameters par){
     scalar lx,ly,lz;
     lx=ly=lz=128;
     scalar split = 1.0;
-    pse->setParametersPSE(split, lx,ly,lz);
+    scalar shearStrain = 0.0;
+    pse->setParametersPSE(split, lx,ly,lz, shearStrain);
     solver = pse;
-  }  
+  }
   solver->initialize(par);
-  return solver;  
+  return solver;
 }
 
 //An example of a function that works for any solver
@@ -60,7 +61,7 @@ int main(){
   std::generate(pos.begin(), pos.end(),[&](){return dist(mersenne_engine);});
   std::generate(forces.begin(), forces.end(),[&](){return dist(mersenne_engine);});
 
-  
+
   //Set up parameters generic to any solver
   Parameters par;
   par.hydrodynamicRadius = {1};
@@ -85,7 +86,7 @@ int main(){
   //Remember to clean up when done
   solver_nbody->clean();
   solver_pse->clean();
-  
+
   std::cout<<"NBody\tPSE\n";
   for(int i = 0;  i<resultNBody.size(); i++){
     std::cout<<resultNBody[i]<<"\t"<<resultPSE[i]<<std::endl;
