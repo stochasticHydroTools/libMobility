@@ -32,7 +32,7 @@ public:
 
   // I am confused by this function. Isn't it supposed to be called setParameters?
   void setParametersDPStokes(DPStokesParameters i_dppar){
-    dppar = i_dppar;
+    this->dppar = i_dppar;
     // DPStokesParameters dppar;
     // int nx = -1;
     // int ny = -1;
@@ -59,6 +59,7 @@ public:
 
   void initialize(Parameters ipar) override{
     this->numberParticles = ipar.numberParticles;
+    this->dppar.viscosity = ipar.viscosity;
     dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);
   }
