@@ -50,7 +50,7 @@ An equal sign denotes default values.
 
 ### Configuration parameters
 At contruction, solvers must be provided with the following information:
-  * **periodicity**: The periodicity, can any of "triply_periodic", "doubly_periodic" (periodic in xy but not z), "single_wall" (unbounded in xy but wall at z=0), "open", "unspecified".  
+  * **periodicityX**, **periodicityY**, **periodicityZ**: The periodicity, can any of "periodic", "open", "single_wall", "two_walls", "unspecified".  
   
 The solvers constructor will check the provided configuration and throw an error if something invalid is requested of it (for instance, the PSE solver will complain if open boundaries are chosen).
 
