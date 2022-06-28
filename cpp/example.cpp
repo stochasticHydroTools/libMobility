@@ -17,23 +17,26 @@ using MobilityBase = libmobility::Mobility;
 using Configuration = libmobility::Configuration;
 using libmobility::Parameters;
 
-
 //Configures, initializes any solver (between PSE and NBody)
 //The same function can be extended to create any solver.
 //We need it to desambiguate by calling the solver-dependent setParameters function when necessary. For instance, see PSE below
 template<class Solver>
 auto initializeSolver(Parameters par){
   std::shared_ptr<MobilityBase> solver;
-  if(std::is_same_v<Solver,NBody>){
-    solver = std::make_shared<NBody>(Configuration{.periodicity = libmobility::periodicity_mode::open});
+  if(std::is_same<Solver,NBody>::value){
+    solver = std::make_shared<NBody>(Configuration{.periodicityX = libmobility::periodicity_mode::open,
+						   .periodicityY = libmobility::periodicity_mode::open,
+						   .periodicityZ = libmobility::periodicity_mode::open});
   }
-  if(std::is_same_v<Solver,PSE>){
-    auto pse = std::make_shared<PSE>(Configuration{.periodicity = libmobility::periodicity_mode::triply_periodic});
+  if(std::is_same<Solver,PSE>::value){
+    auto pse = std::make_shared<PSE>(Configuration{.periodicityX = libmobility::periodicity_mode::periodic,
+						   .periodicityY = libmobility::periodicity_mode::periodic,
+						   .periodicityZ = libmobility::periodicity_mode::periodic});
     scalar lx,ly,lz;
     lx=ly=lz=128;
     scalar split = 1.0;
     scalar shearStrain = 0.0;
-    pse->setParametersPSE(split, lx,ly,lz, shearStrain);
+    pse->setParametersPSE({split, lx,ly,lz, shearStrain});
     solver = pse;
   }
   solver->initialize(par);
@@ -45,7 +48,7 @@ auto computeMFWithSolver(std::shared_ptr<MobilityBase> solver,
 			 std::vector<scalar> &pos,
 			 std::vector<scalar> &forces){
   std::vector<scalar> result(pos.size(), 0);
-  solver->Mdot(forces.data(), nullptr, result.data());
+  solver->Mdot(forces.data(), result.data());
   return result;
 }
 
@@ -60,7 +63,6 @@ int main(){
   uniform_real_distribution<scalar> dist {-10, 10};
   std::generate(pos.begin(), pos.end(),[&](){return dist(mersenne_engine);});
   std::generate(forces.begin(), forces.end(),[&](){return dist(mersenne_engine);});
-
 
   //Set up parameters generic to any solver
   Parameters par;
@@ -81,7 +83,7 @@ int main(){
   //The solvers can be used to compute stochastic displacements, even if they do not provide a specific way to compute them (defaults to using the lanczos algorithm
   std::vector<scalar> noiseNBody(pos.size(), 0);
   scalar prefactor = 1.0;
-  solver_nbody->stochasticDisplacements(noiseNBody.data(), prefactor);
+  solver_nbody->sqrtMdotW(noiseNBody.data(), prefactor);
 
   //Remember to clean up when done
   solver_nbody->clean();

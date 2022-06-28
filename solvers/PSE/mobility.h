@@ -11,41 +11,52 @@ static_assert(std::is_same<libmobility::real, uammd_pse::real>::value,
 	      "Trying to compile PSE with a different precision to MobilityInterface.h");
 
 class PSE: public libmobility::Mobility{
-  using device = libmobility::device;
   using periodicity_mode = libmobility::periodicity_mode;
   using Configuration = libmobility::Configuration;
   using Parameters = libmobility::Parameters;
   using real = libmobility::real;
   std::vector<real> positions;
   std::shared_ptr<uammd_pse::UAMMD_PSE_Glue> pse;
-  uammd_pse::PyParameters psepar;
+  uammd_pse::PyParameters psepar, currentpsepar;
   int currentNumberParticles = 0;
   real temperature;
+
 public:
 
   PSE(Configuration conf){
-    if(conf.dev == device::cpu)
-      throw std::runtime_error("[Mobility] This is a GPU-only solver");
-    if(conf.periodicity != periodicity_mode::triply_periodic)
+    if(conf.periodicityX != periodicity_mode::periodic or
+       conf.periodicityY != periodicity_mode::periodic or
+       conf.periodicityZ != periodicity_mode::periodic)
       throw std::runtime_error("[Mobility] This is a triply periodic solver");
   }
 
+  //If the initialize function is called two times only changing the shear strain the module is not reinitialized entirely
   void initialize(Parameters ipar) override{
-    this->temperature = ipar.temperature;
-    psepar.viscosity = ipar.viscosity;
-    psepar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
-    psepar.tolerance = ipar.tolerance;
-    this->currentNumberParticles = ipar.numberParticles;
-    Mobility::initialize(ipar);
-    pse = std::make_shared<uammd_pse::UAMMD_PSE_Glue>(psepar, this->currentNumberParticles);
+    if(pse and onlyShearStrainChanged(ipar)){
+      pse->setShearStrain(psepar.shearStrain);
+    }
+    else{
+      this->temperature = ipar.temperature;
+      psepar.viscosity = ipar.viscosity;
+      psepar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
+      psepar.tolerance = ipar.tolerance;
+      this->currentNumberParticles = ipar.numberParticles;
+      Mobility::initialize(ipar);
+      pse = std::make_shared<uammd_pse::UAMMD_PSE_Glue>(psepar, this->currentNumberParticles);
+    }
+    currentpsepar = psepar;
   }
 
-  void setParametersPSE(real psi, real Lx, real Ly, real Lz, real shearStrain){
-    psepar.psi = psi;
-    psepar.Lx = Lx;
-    psepar.Ly = Ly;
-    psepar.Lz = Lz;
-    psepar.shearStrain = shearStrain;
+  struct PSEParameters{
+    real psi, Lx, Ly, Lz, shearStrain;
+  };
+
+  void setParametersPSE(PSEParameters i_par){
+    psepar.psi = i_par.psi;
+    psepar.Lx = i_par.Lx;
+    psepar.Ly = i_par.Ly;
+    psepar.Lz = i_par.Lz;
+    psepar.shearStrain = i_par.shearStrain;
   }
 
   void setPositions(const real* ipositions) override{
@@ -57,20 +68,36 @@ public:
     std::copy(ipositions, ipositions + 3*numberParticles, positions.begin());
   }
 
-  virtual void Mdot(const real* forces, const real *torques, real* result) override{
-    if(torques) throw std::runtime_error("PSE can only compute monopole displacements");
+  virtual void Mdot(const real* forces, real* result) override{
     pse->computeHydrodynamicDisplacements(positions.data(), forces, result, 0, 0);
   }
 
-  virtual void stochasticDisplacements(real* result, real prefactor = 1) override{
+  virtual void sqrtMdotW(real* result, real prefactor = 1) override{
     pse->computeHydrodynamicDisplacements(positions.data(), nullptr, result,
 					  temperature, prefactor);
   }
 
-  virtual void hydrodynamicDisplacements(const real* forces, const real *torques,
-					 real* result, real prefactor = 1) override{
+  virtual void hydrodynamicVelocities(const real* forces,
+				      real* result, real prefactor = 1) override{
     pse->computeHydrodynamicDisplacements(positions.data(), forces, result,
 					  temperature, prefactor);
+  }
+
+private:
+
+  bool onlyShearStrainChanged(Parameters i_par){
+    if(currentpsepar.psi != psepar.psi or
+       currentpsepar.Lx != psepar.Lx or
+       currentpsepar.Ly != psepar.Ly or
+       currentpsepar.Lz != psepar.Lz)
+      return false;
+    if(this->temperature != i_par.temperature or
+       psepar.viscosity != i_par.viscosity or
+       psepar.hydrodynamicRadius != i_par.hydrodynamicRadius[0] or
+       psepar.tolerance != i_par.tolerance or
+       this->currentNumberParticles != i_par.numberParticles)
+      return false;
+    return true;
   }
 
 };

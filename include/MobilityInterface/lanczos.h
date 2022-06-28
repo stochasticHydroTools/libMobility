@@ -10,9 +10,7 @@
 #include <algorithm>
 
 // This class uses the LanczosAlgorithm library to compute fluctuations.
-// Donev: Suggest renaming to Velocities instead of Displacements
-// for consistency with libMobility (see my comments on naming)
-class LanczosStochasticDisplacements{
+class LanczosStochasticVelocities{
   using real = lanczos::real;
   lanczos::Solver lanczos;
   std::vector<real> lanczosNoise;
@@ -21,7 +19,7 @@ class LanczosStochasticDisplacements{
   std::mt19937 engine;
 public:
 
-  LanczosStochasticDisplacements(int N, real tol, std::uint64_t seed){
+  LanczosStochasticVelocities(int N, real tol, std::uint64_t seed){
     this->numberParticles = N;
     this->lanczosTolerance = tol;
     engine = std::mt19937{seed};
@@ -29,7 +27,7 @@ public:
 
   //Given a functor that applies the mobility operator, returns prefactor*(B dW). Where B is an operator that applies the square root of the provided mobility.
   template<class MobilityDot>
-  void stochasticDisplacements(MobilityDot dot, real* result, real prefactor = 1){
+  void sqrtMdotW(MobilityDot dot, real* result, real prefactor = 1){
     std::normal_distribution<real> dist {0, 1};
     auto gen = [&](){return dist(engine);};
     lanczosNoise.resize(3*numberParticles);

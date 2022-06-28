@@ -13,7 +13,7 @@ import libMobility
 
 numberParticles = 3
 #Each module can be compiled using a different precision, you can know which one with this
-precision = np.float32 if libMobility.SelfMobility.precision=="float" else np.float64 
+precision = np.float32 if libMobility.SelfMobility.precision=="float" else np.float64
 pos = np.random.rand(3*numberParticles).astype(precision)
 force = np.ones(3*numberParticles).astype(precision)
 result = np.zeros(3*numberParticles).astype(precision)
@@ -21,16 +21,14 @@ result = np.zeros(3*numberParticles).astype(precision)
 #Any solver can be used interchangeably, some of them need additional initialization via a "setParameters" function
 
 
-nb = libMobility.SelfMobility(dimension=3, periodicity='open', numberSpecies=1, device='cpu')
+nb = libMobility.SelfMobility(periodicityX='open',periodicityY='open',periodicityZ='open')
 
+#For NBody periodicityZ can also be single_wall
+#nb = libMobility.NBody(periodicityX='open',periodicityY='open',periodicityZ='open')
+#nb.setParametersNBody(algorithm="advise", Nbatch=-1, NperBatch=-1)
 
-#nb = libMobility.NBody(dimension=3, periodicity='open', numberSpecies=1, device='gpu')
-
-#nb = libMobility.NBody_wall(dimension=3, periodicity='single_wall', numberSpecies=1, device='gpu')
-#nb.setParametersNBody_wall(Lx=128, Ly=128, Lz=128);
-
-#nb = libMobility.PSE(dimension=3, periodicity='triply_periodic', numberSpecies=1, device='gpu')
-#nb.setParametersPSE(psi=1, Lx=128, Ly=128, Lz=128 );
+#nb = libMobility.PSE(periodicityX='periodic',periodicityY='periodic',periodicityZ='periodic')
+#nb.setParametersPSE(psi=1, Lx=128, Ly=128, Lz=128,shearStrain=0);
 
 nb.initialize(temperature=1.0, viscosity = 1/(6*np.pi),
               hydrodynamicRadius = 1.0,
@@ -42,9 +40,6 @@ print(f"{numberParticles} particles located at ( X Y Z ): {pos}")
 print("Forces:", force)
 print("M*F:", result)
 #result = prefactor*sqrt(2*temperature*M)*dW
-nb.stochasticDisplacements(prefactor = 1.0, result = result)
+nb.sqrtMdotW(prefactor = 1.0, result = result)
 print("sqrt(2*T*M)*N(0,1):", result)
 nb.clean()
-
-
-
