@@ -1,24 +1,22 @@
-PYTHON=python3
-INCLUDE_FLAGS:= `$(PYTHON)-config --includes`   -I ../../include -I ../../third_party/pybind11/include $(LAPACK_INCLUDE)
 CXX=g++
 NVCC=nvcc
+PYTHON=python3
 MODULENAME=DPStokes
+VERBOSITY=1
+
+INCLUDE_FLAGS:= `$(PYTHON)-config --includes`   -I ../../include -I ../../third_party/pybind11/include $(LAPACK_INCLUDE)
+UAMMD_ROOT=../../third_party/uammd
+GPU_INCLUDE_FLAGS   = -I$(UAMMD_ROOT)/src -I$(UAMMD_ROOT)/src/third_party $(LAPACK_INCLUDE)
+NVCCFLAGS=-ccbin=$(CXX) -O3 -DMAXLOGLEVEL=$(VERBOSITY) $(DOUBLEPRECISION) $(GPU_INCLUDE_FLAGS) -Xcompiler "-fPIC -w"
 LIBRARY_NAME:=$(MODULENAME)$(shell $(PYTHON)-config --extension-suffix)
 
-all: base $(LIBRARY_NAME) mobility.so
+all: $(LIBRARY_NAME) mobility.so
 
-$(LIBRARY_NAME): python_wrapper.o
-	$(CXX) -O3 -w -shared   $< -o $@ $(LAPACK_LIBS)
+$(LIBRARY_NAME): python_wrapper.cpp mobility.h
+	$(CXX) -O3 -shared -fPIC -std=c++14 $(DOUBLEPRECISION) $(INCLUDE_FLAGS) $<  -o $@ $(LAPACK_LIBS)
 
+mobility.so: extra/uammd_wrapper.cu
+	$(NVCC) -shared -std=c++14 $(NVCCFLAGS) $< -o $@  -lcufft -lcublas  $(LAPACK_LIBS)
 
-python_wrapper.o: python_wrapper.cpp mobility.h
-	$(CXX) -O3 -c -fPIC -std=c++14 $(DOUBLEPRECISION) $(INCLUDE_FLAGS) $<  -o $@
-
-mobility.so: DPStokes/uammd_gpu.o
-	$(NVCC) -ccbin=$(CXX) -O3 -w -shared $< -o $@  -lcufft -lcublas $(LAPACK_LIBS)
-
-base:
-	make -C DPStokes
 clean:
-	make -C DPStokes clean
-	rm -f $(LIBRARY_NAME) mobility.so python_wrapper.o
+	rm -f $(LIBRARY_NAME) mobility.so

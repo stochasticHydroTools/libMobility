@@ -3,7 +3,7 @@
 #ifndef MOBILITY_SELFMOBILITY_H
 #define MOBILITY_SELFMOBILITY_H
 #include <MobilityInterface/MobilityInterface.h>
-#include"DPStokes/uammd_interface.h"
+#include"extra/uammd_interface.h"
 #include<vector>
 #include<cmath>
 #include<type_traits>

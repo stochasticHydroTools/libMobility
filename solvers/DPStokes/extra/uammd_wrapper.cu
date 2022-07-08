@@ -41,7 +41,7 @@ namespace uammd_dpstokes{
     }
   };
 
-  FCM::Parameters createFCMParameters(PyParameters pypar){
+  auto createFCMParameters(PyParameters pypar){
     FCM::Parameters par;
     par.temperature = 0; //FCM can compute fluctuations, but they are turned off here
     par.viscosity = pypar.viscosity;
@@ -66,7 +66,7 @@ namespace uammd_dpstokes{
     else return WallMode::none;
   }
 
-  DPStokesSlab::Parameters createDPStokesParameters(PyParameters pypar){
+  auto createDPStokesParameters(PyParameters pypar){
     DPStokesSlab::Parameters par;
     par.nx         = pypar.nx;
     par.ny         = pypar.ny;
@@ -96,8 +96,8 @@ namespace uammd_dpstokes{
       auto torque = pd->getTorqueIfAllocated(uammd::access::gpu, uammd::access::read);
       auto d_torques_ptr = useTorque?torque.raw():nullptr;
       if(fcm){
-	return fcm->computeHydrodynamicDisplacements(pos.raw(), force.raw(),
-						     d_torques_ptr, numberParticles, st);
+	return fcm->computeHydrodynamicDisplacements(pos.raw(), force.raw(),  d_torques_ptr,
+						     numberParticles, 0.0, 0.0, st);
       }
       else if(dpstokes){
 	return dpstokes->Mdot(pos.raw(), force.raw(),
@@ -173,7 +173,6 @@ namespace uammd_dpstokes{
     }
 
   };
-
 
   //Initialize the modules with a certain set of parameters
   //Reinitializes if the module was already initialized
