@@ -24,7 +24,7 @@ Each solver is encased in a single class which is default constructible (no argu
 Each solver provides the following set of functions (called the same in C++ and python and described here in a kind of language agnostic way):  
   * **[Constructor] (configuration)**: The solver constructors must be provided with a series of system-related parameters (see below).  
   * **initialize(parameters)**: Initializes the module according to the parameters (see below).  
-  * **setParameters[SolverName]([extra parameters])**: Some modules might need special parameters, in these instances this function must also be called.  
+  * **setParameters[SolverName]([extra parameters])**: Some modules might need special parameters, in these instances this function must also be called. Check the README for each module and its mobility.h file.  
   * **setPositions(positions)**: Sets the positions to compute the mobility of.  
   * **Mdot(forces, result)**: Computes the deterministic hydrodynamic displacements, i.e applies the mobility operator. 
   * **sqrtMdotW(result, prefactor = 1)**: Computes the stochastic displacements and multiplies them by the provided prefactor.  
@@ -35,8 +35,6 @@ An equal sign denotes defaults.
 
 ### Data format
 Positions, forces, torques and the results provided by the functions are packed in a 3*numberParticles contiguos array containing ```[x_1, y_1, z_1, x_2,...z_N]``` .   
-
-
 
 ### Parameters
 The valid parameters accepted by the interface are:  
@@ -53,7 +51,6 @@ At contruction, solvers must be provided with the following information:
   * **periodicityX**, **periodicityY**, **periodicityZ**: The periodicity, can any of "periodic", "open", "single_wall", "two_walls", "unspecified".  
   
 The solvers constructor will check the provided configuration and throw an error if something invalid is requested of it (for instance, the PSE solver will complain if open boundaries are chosen).
-
 
 
 ## How to use this repo
