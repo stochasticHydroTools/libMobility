@@ -9,7 +9,7 @@
 	url = git@github.com:pybind/pybind11
 [submodule "third_party/uammd"]
 	path = third_party/uammd
-	url = git@github.com:RaulPPelaez/uammd
+	url = git@github.com:/raulppelaez/uammd
 [submodule "third_party/LanczosAlgorithm"]
 	path = third_party/LanczosAlgorithm
 	url = git@github.com:Raulppelaez/LanczosAlgorithm
