@@ -1,4 +1,4 @@
-/*Raul P. Pelaez 2021. Python wrapper for the NBody module
+/*Raul P. Pelaez 2021-2022. Python wrapper for the NBody module
 */
 #include"mobility.h"
 #include <MobilityInterface/pythonify.h>
@@ -18,8 +18,8 @@ namespace nbody_rpy{
 MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(NBody,
 		   solver.def("setParametersNBody",
 			      [](NBody &myself, std::string algo, int NBatch, int NperBatch){
-				myself.setParametersNBody(nbody_rpy::string2NBodyAlgorithm(algo),
-							  NBatch, NperBatch);
+				myself.setParametersNBody({nbody_rpy::string2NBodyAlgorithm(algo),
+				    NBatch, NperBatch});
 			      },
 			      "algorithm"_a = "advise", "Nbatch"_a=-1, "NperBatch"_a=-1);,
 		   "This module computes the RPY mobility using an N^2 algorithm in the GPU. Different hydrodynamic kernels can be chosen.");
