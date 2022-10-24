@@ -27,3 +27,9 @@ Three algorithms are provided, each one works better in different regimes (a.i. 
 	
 In general, testing suggests that Block is better for low sizes (less than 10K particles), Naive works best for intermediate sizes (10K-50K) and after that Fast is the better choice.  
 As a side note, the reduction performed by Block is more accurate than the others, so while the results of Naive and Fast will be numerically identical, some differences due to numerical errors are expected between the latter and the former.  
+
+### Arguments to the setParametersNBody function  
+
+*    nbody_rpy::algorithm algo; The algorithm to use, one of fast, naive, block, advise. Defaults to advise.
+*    int Nbatch; Number of batches, defaults to 1.
+*    int NperBatch; Number of particles per batch, defaults to number of particles
