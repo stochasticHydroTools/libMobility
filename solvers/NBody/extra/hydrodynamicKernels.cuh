@@ -77,7 +77,7 @@ namespace nbody_rpy{
       else{
 	real h_hat = hj / rij.z;
 	real invR = rsqrt(dot(rij, rij));
-	real3 e = rij/invR;
+	real3 e = rij*invR;
 	real invR3 = invR * invR * invR;
 	real invR5 = invR3 * invR * invR;
 	real fact1 = -(real(3.0)*(real(1.0)+real(2.0)*h_hat*(real(1.0)-h_hat)*e.z*e.z) * invR + real(2.0)*(real(1.0)-real(3.0)*e.z*e.z) * invR3 - real(2.0)*(real(1.0)-real(5.0)*e.z*e.z) * invR5)  / real(3.0);
