@@ -60,6 +60,7 @@ namespace nbody_rpy{
 
     //Computes the correction to the open boundary RPY mobility due to a wall located at z=0
     //rij: distance between particles
+    //rij.z: This component contains ((pi.z-pj.z) + 2*pj.z)/rh
     //r: length of rij
     //hj: height of the particle j
     //vj: quantity (i.e force) of particle j
