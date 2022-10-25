@@ -61,12 +61,12 @@ namespace nbody_rpy{
     //Computes the correction to the open boundary RPY mobility due to a wall located at z=0
     //rij: distance between particles
     //rij.z: This component contains ((pi.z-pj.z) + 2*pj.z)/rh
-    //r: length of rij
+    //self: self interaction
     //hj: height of the particle j
     //vj: quantity (i.e force) of particle j
-    __device__ real3 computeWallCorrection(real3 rij, real hj, real r, real3 vj){
+    __device__ real3 computeWallCorrection(real3 rij, bool self, real hj, real3 vj){
       real3 correction = real3();
-      if(r==0){
+      if(self){
 	real invZi = real(1.0) / hj;
 	real invZi3 = invZi * invZi * invZi;
 	real invZi5 = invZi3 * invZi * invZi;
@@ -76,7 +76,7 @@ namespace nbody_rpy{
       }
       else{
 	real h_hat = hj / rij.z;
-	real invR = real(1.0)/r;
+	real invR = rsqrt(dot(rij, rij));
 	real3 e = rij/invR;
 	real invR3 = invR * invR * invR;
 	real invR5 = invR3 * invR * invR;
@@ -113,7 +113,7 @@ namespace nbody_rpy{
       real3 Mv_t = f*vj + (r>real(0)?gv*rij:real3());
       const real hj = pj.z;
       rij.z = rij.z +2*pj.z;
-      Mv_t += computeWallCorrection(rij/rh, hj/rh, r/rh, vj);
+      Mv_t += computeWallCorrection(rij/rh,(r==0), hj/rh, vj);
       return m0*Mv_t;
     }
   };
