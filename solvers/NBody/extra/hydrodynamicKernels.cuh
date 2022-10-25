@@ -103,7 +103,7 @@ namespace nbody_rpy{
 
     //Computes M(ri, rj)*vj
     __device__ real3 dotProduct(real3 pi, real3 pj, real3 vj){
-      const real3 rij = make_real3(pi)-make_real3(pj);
+      real3 rij = make_real3(pi)-make_real3(pj);
       const real r = sqrt(dot(rij, rij));
       const real2 c12 = RPY(r, rh);
       const real f = c12.x;
@@ -111,6 +111,7 @@ namespace nbody_rpy{
       const real gv = gdivr2*dot(rij, vj);
       real3 Mv_t = f*vj + (r>real(0)?gv*rij:real3());
       const real hj = pj.z;
+      rij.z = rij.z +2*pj.z;
       Mv_t += computeWallCorrection(rij/rh, hj/rh, r/rh, vj);
       return m0*Mv_t;
     }
