@@ -9,7 +9,7 @@ LIBRARY_NAME:=$(MODULENAME)$(shell $(PYTHON)-config --extension-suffix)
 all: $(LIBRARY_NAME) mobility.so
 
 $(LIBRARY_NAME): python_wrapper.o extra/NbodyRPY.o
-	$(NVCC) -O3 -w -shared $< -o $@ $(LAPACK_LIBS)
+	$(NVCC) -O3 -w -shared $^ -o $@ $(LAPACK_LIBS)
 
 mobility.so: extra/NbodyRPY.o
 	$(NVCC) -O3 -w -shared $< -o $@ $(LAPACK_LIBS)

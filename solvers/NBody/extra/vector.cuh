@@ -6,7 +6,7 @@
 //Include built in ones
 #include "cuda_runtime.h"
 #include <math.h>
-#include <MobilityInterface/MobilityInterface.h>
+#include <MobilityInterface/defines.h>
 
 namespace nbody_rpy{
   using  real  = libmobility::real;

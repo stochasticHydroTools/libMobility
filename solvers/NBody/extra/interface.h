@@ -1,7 +1,7 @@
 #ifndef NBODYRPY_INTERFACE_H
 #define NBODYRPY_INTERFACE_H
 
-#include <MobilityInterface/MobilityInterface.h>
+#include <MobilityInterface/defines.h>
 
 namespace nbody_rpy{
   using  real  = libmobility::real;

@@ -4,21 +4,13 @@
  */
 #ifndef MOBILITYINTERFACE_H
 #define MOBILITYINTERFACE_H
-#define LIBMOBILITYVERSION "2.0"
-#ifndef DOUBLE_PRECISION
-#define SINGLE_PRECISION
-#endif
 #include<stdexcept>
 #include <vector>
 #include <random>
 #include <array>
 #include"lanczos.h"
+#include"defines.h"
 namespace libmobility{
-#if defined SINGLE_PRECISION
-  using  real  = float;
-#else
-  using  real  = double;
-#endif
 
   enum class periodicity_mode{single_wall, two_walls, open, periodic, unspecified};
 
