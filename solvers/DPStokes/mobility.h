@@ -35,7 +35,6 @@ public:
       throw std::runtime_error("[DPStokes] This is a doubly periodic solver");
   }
 
-  // I am confused by this function. Isn't it supposed to be called setParameters?
   void setParametersDPStokes(DPStokesParameters i_dppar){
     this->dppar = i_dppar;
     // DPStokesParameters dppar;
@@ -92,6 +91,8 @@ public:
     }
     lanczos->sqrtMdotW([this](const real*f, real* mv){Mdot(f, mv);}, result, prefactor);
   }
+
+  // Donev: Is there a Lanczos implementation on the GPU or that is always done on CPU? If there is a GPU version, is it possible with the current interface to make a more efficient hydrodynamicDisplacements routine that does not do the CPU<->GPU twice of say the positions. That is, there is no return back to the GPU until both Mdot and sqrtMdotW are finished? I cannot follow the UAMMD stuff so just tell me what the code does now and if it is possible to optimize further.
 
   void clean() override{
     Mobility::clean();

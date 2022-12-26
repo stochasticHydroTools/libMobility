@@ -1,11 +1,13 @@
 # libMobility
 This repository contains several GPU solvers that can compute the action of the hydrodynamic mobility (at the RPY/FCM level) of a group of particles (in different geometries) with forces acting on them.  
 
-In particular, given a group of forces, $\boldsymbol{F} $ , acting on a group of positions, $\boldsymbol{X} $, the libMobility solvers can compute:
+In particular, given a group of forces, $\boldsymbol{F}$ , acting on a group of positions, $\boldsymbol{X}$, the libMobility solvers can compute:
 
 $$d\boldsymbol{X} = \boldsymbol{\mathcal{M}}\boldsymbol{F} + \text{prefactor}\sqrt{2T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}$$  
 
-Where dX are the linear displacements, prefactor is an user provided prefactor and dW is a collection of i.i.d Weinner processes. T is the temperature. Finally $\boldsymbol{\mathcal{M}}$ represents the mobility tensor.  
+<!--- Donev: The default value for prefactor is 1. Default value should be 0, and in that case the calculation of sqrtW should be omitted and zero returned for efficiency. ---> 
+
+Where dX are the linear displacements, prefactor is an user provided prefactor and dW is a collection of i.i.d Weinner processes. T is the temperature (really $k_B T$). Finally $\boldsymbol{\mathcal{M}}$ represents the mobility tensor.  
 Each solver in libMobility allows to compute either the deterministic term, the stochastic term, or both at the same time.  
 
 For each solver, a python and a C++ interface are provided. All solvers have the same interface, although some input parameters might change (an open boundaries solver does not accept a box size as a parameter).  
@@ -27,14 +29,18 @@ Each solver provides the following set of functions (called the same in C++ and 
   * **setParameters[SolverName]([extra parameters])**: Some modules might need special parameters, in these instances this function must also be called. Check the README for each module and its mobility.h file.  
   * **setPositions(positions)**: Sets the positions to compute the mobility of.  
   * **Mdot(forces, result)**: Computes the deterministic hydrodynamic displacements, i.e applies the mobility operator. 
-  * **sqrtMdotW(result, prefactor = 1)**: Computes the stochastic displacements and multiplies them by the provided prefactor.  
+  * **sqrtMdotW(result, prefactor = 1)**: Computes the stochastic displacements and multiplies them by the provided prefactor.
+!--- Donev: If prefactor=0 do nothing --->    
   * **hydrodynamicVelocities(forces = null, torques = null, result, prefactor = 1)**: Equivalent to calling Mdot followed by sqrtMdotW (some algorithms might benefit from doing these operations together, e.g., solvers based on fluctuating hydrodynamics).  
+!--- Donev: default value of prefactor should be 0. This function is confusing with regards to the torques. NOTE: I only later saw torques were removed from mobility.h... I assume what you mean here is that stochastic increments are only computed for linear velocity, and if torques are provided only the deterministic term is provided? If you mean that M in the case of torques is the combined force-torque mobility, then forces and torques should be in one vector called "applied". There has to be consistency between result and input and cleared up. I have a strong feeling I wrote this comment already but not sure you ever saw it or never looked at my last round of comments.  --->  
   * **clean()**: Cleans any memory allocated by the module. The initialization function must be called again in order to use the module again.  
 The many examples in this repository offer more insight about the interface and how to use them. See cpp/example.cpp or python/example.py. See solvers/NBody for an example of a module implementation. Even though the algorithm behind it is quite convoluted, the files in this directory are short and simple, since they are only a thin wrapper to the actual algorithm, located under BatchedNBodyRPY there.  
 An equal sign denotes defaults.  
 
 ### Data format
-Positions, forces, torques and the results provided by the functions are packed in a 3*numberParticles contiguos array containing ```[x_1, y_1, z_1, x_2,...z_N]``` .   
+Positions, forces, torques and the results provided by the functions are packed in a 3*numberParticles contiguos array containing ```[x_1, y_1, z_1, x_2,...z_N]``` .
+
+!--- Donev: This is not clear if both forces and torques are provided as input. What is the format of result? 6*N or 2*3*N? --->  
 
 ### Parameters
 The valid parameters accepted by the interface are:  

@@ -1,18 +1,20 @@
 # NBody solver
 
-Raul P. Pelaez 2020-2022.  
+Raul P. Pelaez 2020-2022.       <!--- Donev: Maybe 2020-2023? ;-) ---> 
+
 
 Computes the RPY mobility using the GPU with a O(N^2) evaluation of the RPY tensor.  
 	
 Multiple hydrodynamic kernels are available (see extra/hydrodynamicKernels.cuh for a list).  
-They are chosen via the libmobility configuration periodicity option at creation (see mobility.h).  
+They are chosen via the libmobility configuration kernel_type option at creation (see mobility.h).       <!--- Donev: You mean kernel_type not periodicity as it was so I changed---> 
+
 
 This module can work on batches of particles (hydrodynamically independent groups of particles), see setParametersNBody in mobility.h for more info.  
 
 
 ## About the GPU Batched RPY evaluator
 
-Given a set of positions and forces acting on each particle, this module computes the product between the RPY tensor and the forces in the GPU.  
+Given a set of positions and forces acting on each particle, this module computes the product between the generalized RPY tensor (generalized for example to account for confinement) and the forces in the GPU.  
 
 This module can work on batches of particles, all batches must have the same size. Note that a single batch is equivalent to every particle interacting to every other.  
 

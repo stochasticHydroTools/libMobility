@@ -1,6 +1,6 @@
 ## Mobility interface for use in libMobility
-Donev: This seems to simply duplicate stuff from the top-level README, nothing new
-It only invites troubles to maintain consistency. I suggest deleting or drastically shortening
+<!--- Donev: This seems to simply duplicate stuff from the top-level README, nothing new
+It only invites troubles to maintain consistency. I suggest deleting or drastically shortening to not repeat stuff from toplevel README like the requried methods.--->
 
 The files in this repository are not very useful on their on, rather being a part of the libMobility repo.  
 

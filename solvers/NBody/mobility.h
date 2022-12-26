@@ -71,6 +71,8 @@ public:
 
   virtual void Mdot(const real* forces, real* result) override{
     int numberParticles = positions.size()/3;
+    // Donev: Why can't there be a single callBatchedNBody routine that does if(kernel == kernel_type::bottom_wall) internally? 
+    // Example, what if in the future we add manually periodized RPY where one repeats a unit cell a certain number of times in each direction. This is actually easy to do with 3 loops and useful, and only requires adding a parameter nUnitCellsRepeat[3] and removing the error if some direction is periodic and only spitting an error if two walls are asked for.
     auto solver = nbody_rpy::callBatchedNBodyOpenBoundaryRPY;
     if(kernel == kernel_type::bottom_wall)
       solver = nbody_rpy::callBatchedNBodyBottomWallRPY;

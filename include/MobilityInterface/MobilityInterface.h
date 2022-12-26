@@ -106,6 +106,7 @@ namespace libmobility{
     }
 
     //Equivalent to calling Mdot and then stochasticDisplacements, can be faster in some solvers
+    // Donev: The README says there is a torque parameter here but I do not see it (I asked that it be removed but maybe this README never got updated)?
     virtual void hydrodynamicVelocities(const real* forces, real* result, real prefactor = 1){
       Mdot(forces, result);
       sqrtMdotW(result, prefactor);

@@ -207,6 +207,7 @@ namespace nbody_rpy{
     thrust::copy(Mv.begin(), Mv.end(), h_MF);
   }
 
+// Donev: These two seem identical to me except for the using HydrodynamicKernel = ???; line. Why can't there just be one routine callBatchedNBody that dispatches the right routine based on if(kernel == kernel_type::bottom_wall)? This doubling of code seems redundant
   void callBatchedNBodyOpenBoundaryRPY(const real* h_pos, const real* h_forces,
 				       real* h_MF, int Nbatches, int NperBatch,
 				       real selfMobility, real hydrodynamicRadius, algorithm alg){
