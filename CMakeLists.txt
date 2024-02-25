@@ -57,6 +57,7 @@ endif()
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 include_directories(${Python3_INCLUDE_DIRS})
 include_directories(${UAMMD_INCLUDE} ${BLAS_INCLUDE_DIRS} ${LAPACKE_INCLUDE_DIRS})
+include_directories(third_party/LanczosAlgorithm/include)
 include_directories(include)
 link_libraries(${CUDA_LIBRARY})
 if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
@@ -81,3 +82,5 @@ ENDIF()
 
 # Install headers under include/ to the CMAKE_INSTALL_PREFIX include directory
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install(DIRECTORY third_party/LanczosAlgorithm/include DESTINATION ${CMAKE_INSTALL_PREFIX}/include/LanczosAlgorithm)
+install(DIRECTORY third_party/uammd/src/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/uammd/src)
