@@ -1,11 +1,10 @@
-/*Raul P. Pelaez 2021. Example usage of the NBody mobility solver.
+/*Raul P. Pelaez 2021-2024. Example usage of the NBody mobility solver.
  All available solvers are used in a similar way, providing, in each case, the required parameters.
  For instance, a triply periodic algorithm will need at least a box size.
- Donev: Looks good!
  */
 #include "MobilityInterface/MobilityInterface.h"
-#include"NBody/mobility.h"
-#include"PSE/mobility.h"
+#include"libMobility/solvers/NBody/mobility.h"
+#include"libMobility/solvers/PSE/mobility.h"
 #include <type_traits>
 #include<vector>
 #include<random>
