@@ -1,0 +1,10 @@
+add_library(libMobility_NBody SHARED extra/NbodyRPY.cu)
+add_library(NBody.${Python3_SOABI} SHARED python_wrapper.cpp)
+# Remove the "lib" prefix from the shared library
+set_target_properties(NBody.${Python3_SOABI} PROPERTIES PREFIX "")
+target_include_directories(libMobility_NBody PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+set_target_properties(libMobility_NBody PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_target_properties(NBody.${Python3_SOABI} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python")
+target_link_libraries(NBody.${Python3_SOABI} libMobility_NBody)
+install(TARGETS NBody.${Python3_SOABI} DESTINATION ${Python3_SITEARCH}/libMobility)
+install(TARGETS libMobility_NBody DESTINATION ${CMAKE_INSTALL_LIBDIR})

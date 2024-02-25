@@ -1,0 +1,11 @@
+add_library(libMobility_DPStokes SHARED extra/uammd_wrapper.cu)
+add_library(DPStokes.${Python3_SOABI} SHARED python_wrapper.cpp)
+# Remove the "lib" prefix from the shared library
+set_target_properties(DPStokes.${Python3_SOABI} PROPERTIES PREFIX "")
+target_include_directories(libMobility_DPStokes PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(libMobility_DPStokes cufft cublas cusolver curand)
+set_target_properties(libMobility_DPStokes PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_target_properties(DPStokes.${Python3_SOABI} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python")
+target_link_libraries(DPStokes.${Python3_SOABI} libMobility_DPStokes)
+install(TARGETS DPStokes.${Python3_SOABI} DESTINATION ${Python3_SITEARCH}/libMobility)
+install(TARGETS libMobility_DPStokes DESTINATION ${CMAKE_INSTALL_LIBDIR})
