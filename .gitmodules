@@ -1,9 +1,6 @@
 [submodule "solvers/nbody/BatchedNBodyRPY"]
 	path = solvers/NBody/BatchedNBodyRPY
 	url = git@github.com:RaulPPelaez/BatchedNBodyRPY.git
-[submodule "solvers/pse/UAMMD_PSE_Python"]
-	path = solvers/PSE/UAMMD_PSE_Python
-	url = git@github.com:RaulPPelaez/UAMMD_PSE_Python.git
 [submodule "third_party/uammd"]
 	path = third_party/uammd
 	url = git@github.com:/raulppelaez/uammd
