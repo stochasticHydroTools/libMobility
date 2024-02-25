@@ -65,29 +65,37 @@ Some solvers might be included as a git submodule (So that each solver has its o
 After compilation (see below) you will have all the tools mentioned above available for each solver. Note that it is not required to compile all modules, only the ones you need (so you do not need to worry about dependencies of unused solvers).
 
 ## Compilation
-Running ```make``` on the root of the repository will compile all modules under the solvers directory as long as they adhere to the conventions described in "Adding a new solver".  
-Compilation for each module happens separatedly. Since each module might have its own particular dependencies, it is quite possible that compilation fails for some of them. The user must manually address these issues by modifying the relevant Makefiles for the modules they intend to make use of.  
 
-To aide with this a number of usual variables are defined in the Makefiles:  
+We recommend working with a [conda](https://docs.conda.io/en/latest/) environment. The file environment.yml contains the necessary dependencies to compile and use the library.
 
-  * DOUBLEPRECISION : If this variable is "-DDOUBLE_PRECISION" libMobility is compiled in double precision (single by default).  
-  * CXX : The c++ compiler binary  
-  * NVCC : The cuda compiler binary  
-  * PYTHON : The Python3 binary.  
-  * PYBIND_ROOT: Location of the root of the pybind11 library  
-  * LAPACK_INCLUDE : Some modules need lapack/cblas, this is the include for their headers  
-  * LAPACK_LIBS: Lapack linker flags (default is -llapacke -lcblas)  
-  
-You can customize these variables when calling make, for instance:  
+You can create the environment with:
 
-```make CXX=g++11 DOUBLEPRECISION=-DDOUBLE_PRECISION```  
-
-Note that only the modules that are going to be used need to be compiled. It is possible to compile only a particular module (or list of them) by calling:  
+```shell
+$ conda env create -f environment.yml
 ```
-make solvers/SolverName/
+
+Then, activate the environment with:
+
+```shell
+$ conda activate libmobility
 ```
-Where SolverName is the name of the solver directory, for instance, NBody.  
-Any uncompiled modules will simply be ignored by python/libMobility.py (although a warning is issued when importing).  
+
+CMake is used for compilation, you can compile and install everything with:
+
+```shell
+$ mkdir build && cd build
+$ cmake -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
+$ make all install
+```
+It is advisable to install the library in the conda environment, so that the python bindings are available. The environment variable $CONDA_PREFIX is set to the root of the conda environment.
+
+CMake will compile all modules under the solvers directory as long as they adhere to the conventions described in "Adding a new solver".  
+
+The following variables are available to customize the compilation process:  
+
+  * DOUBLEPRECISION : If this variable is defined libMobility is compiled in double precision (single by default).  
+
+
 ## Python Usage
 
 Importing libMobility.py will make available any module under "solvers" that has been compiled correctly (or, in the case of python-only modules, any module that provides a valid SolverName.py script).  
@@ -125,15 +133,12 @@ Every pure virtual function in ```libmobility::Mobility``` must be overriden and
 mobility.h can include and make use of any existent utilities/files from the solvers repository.  
   * **python_wrapper.cpp**: This file must provide the python bindings for the class in mobility.h. If this class follows the ```libmobility::Mobility``` correctly, this file can in general be quite simple, having only a single line using the ```MOBILITY_PYTHONIFY``` utility in include/MobilityInterface/pythonify.h. See solvers/NBody/python_wrapper.cpp for an example.  
   In the case of a module being python only (or in general not providing a correct child of ```libmobility::Mobility```), python_wrapper.cpp might be ommited, but a file called [solver].py must exist instead, providing a python class that is compatible with ```libmobility::Mobility``` (so that the user can write ```from solver import *``` and get a class, called "solver" that adheres to the libmobility requirements).  
-  * **Makefile**: This Makefile must contain rules to create two files:  
-	* **mobility.so**: A shared library that provides access to the solver's C++ class.  
-	* **[solver].[python-config --extension-suffix]**: A shared library that provides access to the solver's Python class.  
-Furthermore, the Makefile must provide an "all" rule (which creates both libraries) and a "clean" rule.  
-In order to create the two libraries, the Makefile has the freedom to call, for instance, any build tools in the solvers repository (such as another Makefile).  
+  * **CMakeLists.txt**: This must contain rules to create the shared library for the particular solver and its python wrapper. The solver library should be called "lib[Solver].so", while the python library should be called "[Solver].[Python_SOABI].so" with the correct extension suffix. See one of the available CMakeLists.txt for an example.
  * **example.py**: An example script using the python bindings of the module.  
  * **test.py**: A correctness test (as simple as possible) that ensures the module is working as intended.  
  * **README.md**: The documentation for the specific module (stating the geometry, required arguments,...).  
-If these conventions are followed, the Makefile in the root directory will compile the module along the rest and libMobility.py will import it without any modifications to each of them.  
+
+Finally, a new line should be added to solvers/CMakeLists.txt to include the new module in the compilation process.
 
 Regarding the different functions of the interface, some of them provide default behavior if not defined. In particular, the stochastich displacements will be computed using a Lanczos solver if the module does not override the corresponding function. Additionally, the hydrodynamicDisplacements functions defaults to calling Mdot followed by stochasticDisplacements. Finally, the clean function defaults to doing nothing.  
 An example of this is NBody, which only provides an initialization and Mdot functions.  
