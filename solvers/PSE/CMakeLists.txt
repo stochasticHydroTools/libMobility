@@ -3,6 +3,7 @@ add_library(PSE.${Python3_SOABI} SHARED python_wrapper.cpp)
 # Remove the "lib" prefix from the shared library
 set_target_properties(PSE.${Python3_SOABI} PROPERTIES PREFIX "")
 target_include_directories(libMobility_PSE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(libMobility_PSE cufft cublas cusolver curand)
 set_target_properties(libMobility_PSE PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 set_target_properties(PSE.${Python3_SOABI} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python")
 target_link_libraries(PSE.${Python3_SOABI} libMobility_PSE)
