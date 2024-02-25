@@ -82,5 +82,5 @@ ENDIF()
 
 # Install headers under include/ to the CMAKE_INSTALL_PREFIX include directory
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
-install(DIRECTORY third_party/LanczosAlgorithm/include DESTINATION ${CMAKE_INSTALL_PREFIX}/include/LanczosAlgorithm)
+install(DIRECTORY third_party/LanczosAlgorithm/include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/MobilityInterface)
 install(DIRECTORY third_party/uammd/src/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/uammd/src)
