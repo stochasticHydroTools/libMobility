@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, v2.x ]
+  pull_request:
+    branches: [ master, v2.x ]
+  schedule:
+    # Run every Sunday at midnight
+    - cron:  '0 0 * * 0'
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Latest supported versions
+          - name: Linux (CUDA 12)
+    steps:
+    - name: Check out
+      uses: actions/checkout@v2
+    - name: Manage disk space
+      run: |
+          sudo mkdir -p /opt/empty_dir || true
+          for d in \
+                   /opt/ghc \
+                   /opt/hostedtoolcache \
+                   /usr/lib/jvm \
+                   /usr/local/.ghcup \
+                   /usr/local/lib/android \
+                   /usr/local/share/powershell \
+                   /usr/share/dotnet \
+                   /usr/share/swift \
+                   ; do
+            sudo rsync --stats -a --delete /opt/empty_dir/ $d || true
+          done
+          sudo apt-get purge -y -f firefox \
+                                   google-chrome-stable \
+                                   microsoft-edge-stable gcc
+          sudo apt-get autoremove -y >& /dev/null
+          sudo apt-get autoclean -y >& /dev/null
+          sudo docker image prune --all --force
+          df -h
+
+    - name: Show dependency file
+      run: cat environment.yml
+      
+    - name: Install Mamba
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        environment-file: environment.yml
+        cache-environment: false
+        cache-downloads: true
+
+    - name: List environment
+      run: |
+        micromamba activate libmobility
+        micromamba list
+
+    - name: Configure and compile the library
+      run: |
+        micromamba activate libmobility
+        mkdir build && cd build
+        cmake -DCMAKE_VERBOSE_MAKEFILE=yes ..
+        make -j3 all install
+
+        
