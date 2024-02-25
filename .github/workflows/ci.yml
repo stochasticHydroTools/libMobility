@@ -68,7 +68,12 @@ jobs:
       run: |
         micromamba activate libmobility
         mkdir build && cd build
-        cmake -DCMAKE_VERBOSE_MAKEFILE=yes ..
+        cmake -DCMAKE_VERBOSE_MAKEFILE=yes -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
         make -j3 all install
-
+        
+    - name: Try to import libMobility
+      run: |
+        micromamba activate libmobility
+        python -c "import libMobility"
+        python -c "from libMobility import DPStokes, PSE, NBody, SelfMobility"
         
