@@ -12,6 +12,9 @@ build:
 conda:
   environment: environment.yml
 
+
+submodules:
+  recursive: true
     
 sphinx:
   configuration: docs/source/conf.py
