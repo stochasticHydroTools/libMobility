@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(libMobility)
 enable_language(CUDA)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/" "$ENV{CONDA_PREFIX}/share/cmake/Modules")
 set(CMAKE_BUILD_TYPE Release)
 
 #add_compile_definitions(PUBLIC MAXLOGLEVEL=15)
@@ -13,6 +13,9 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
 
 #add_compile_definitions(PUBLIC DOUBLE_PRECISION)
 set(UAMMD_INCLUDE third_party/uammd/src third_party/uammd/src/third_party)
+# When UAMMD is available in conda-forge, use the following lines to find it instead of the above
+# find_package(UAMMD REQUIRED)
+# set(UAMMD_INCLUDE ${UAMMD_INCLUDE_DIR})
 set(BLA_STATIC OFF)
 set(BLA_VENDOR Intel10_64lp)
 find_package(BLAS)
