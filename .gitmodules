@@ -1,13 +1,6 @@
-[submodule "solvers/nbody/BatchedNBodyRPY"]
-	path = solvers/NBody/BatchedNBodyRPY
-	url = git@github.com:RaulPPelaez/BatchedNBodyRPY.git
 [submodule "third_party/uammd"]
 	path = third_party/uammd
 	url = git@github.com:/raulppelaez/uammd
 [submodule "third_party/LanczosAlgorithm"]
 	path = third_party/LanczosAlgorithm
 	url = git@github.com:Raulppelaez/LanczosAlgorithm
-[submodule "solvers/DPStokes/DPStokes"]
-	path = solvers/DPStokes/DPStokes/uammd
-	url = https://github.com/raulppelaez/uammd
-	branch = dpstokes
