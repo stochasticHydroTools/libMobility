@@ -26,7 +26,9 @@ jobs:
     steps:
     - name: Check out
       uses: actions/checkout@v2
-
+      with:
+        submodules: recursive
+        
     - name: Show dependency file
       run: cat environment.yml
       
