@@ -9,3 +9,6 @@ set_target_properties(DPStokes.${Python3_SOABI} PROPERTIES RUNTIME_OUTPUT_DIRECT
 target_link_libraries(DPStokes.${Python3_SOABI} libMobility_DPStokes)
 install(TARGETS DPStokes.${Python3_SOABI} DESTINATION ${Python3_SITEARCH}/libMobility)
 install(TARGETS libMobility_DPStokes DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/mobility.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libMobility/solvers/DPStokes)
+file(GLOB EXTRA_HEADERS extra/*.h)
+install(FILES ${EXTRA_HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libMobility/solvers/DPStokes/extra)

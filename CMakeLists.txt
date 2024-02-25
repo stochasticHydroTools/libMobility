@@ -75,3 +75,6 @@ IF (CMAKE_BUILD_TYPE MATCHES "Debug")
   endif()
  set(CMAKE_CXX_FLAGS "-g -Wall -Wextra -pedantic")
 ENDIF()
+
+# Install headers under include/ to the CMAKE_INSTALL_PREFIX include directory
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include)

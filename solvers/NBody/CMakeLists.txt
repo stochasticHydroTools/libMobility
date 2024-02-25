@@ -8,3 +8,6 @@ set_target_properties(NBody.${Python3_SOABI} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
 target_link_libraries(NBody.${Python3_SOABI} libMobility_NBody)
 install(TARGETS NBody.${Python3_SOABI} DESTINATION ${Python3_SITEARCH}/libMobility)
 install(TARGETS libMobility_NBody DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/mobility.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libMobility/solvers/NBody)
+file(GLOB EXTRA_HEADERS extra/*.h)
+install(FILES ${EXTRA_HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libMobility/solvers/NBody/extra)

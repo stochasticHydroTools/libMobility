@@ -8,3 +8,4 @@ set_target_properties(SelfMobility.${Python3_SOABI} PROPERTIES RUNTIME_OUTPUT_DI
 target_link_libraries(SelfMobility.${Python3_SOABI} libMobility_SelfMobility)
 install(TARGETS SelfMobility.${Python3_SOABI} DESTINATION ${Python3_SITEARCH}/libMobility)
 install(TARGETS libMobility_SelfMobility DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/mobility.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libMobility/solvers/SelfMobility)

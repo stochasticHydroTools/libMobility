@@ -8,3 +8,6 @@ set_target_properties(PSE.${Python3_SOABI} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "
 target_link_libraries(PSE.${Python3_SOABI} libMobility_PSE)
 install(TARGETS PSE.${Python3_SOABI} DESTINATION ${Python3_SITEARCH}/libMobility)
 install(TARGETS libMobility_PSE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/mobility.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libMobility/solvers/PSE)
+file(GLOB EXTRA_HEADERS extra/*.h)
+install(FILES ${EXTRA_HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libMobility/solvers/PSE/extra)
