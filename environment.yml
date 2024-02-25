@@ -10,4 +10,5 @@ dependencies:
   - make
   - mkl-devel
   - pybind11
+  - numpy
   - python 3.11.*
