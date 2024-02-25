@@ -87,9 +87,11 @@ $ mkdir build && cd build
 $ cmake -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
 $ make all install
 ```
-It is advisable to install the library in the conda environment, so that the python bindings are available. The environment variable $CONDA_PREFIX is set to the root of the conda environment.
+It is advisable to install the library in the conda environment, so that the python bindings are available. The environment variable $CONDA_PREFIX is set to the root of the conda environment.  
 
 CMake will compile all modules under the solvers directory as long as they adhere to the conventions described in "Adding a new solver".  
+
+After compilation, the python bindings will be available in the conda environment under the name libMobility.  
 
 The following variables are available to customize the compilation process:  
 
@@ -98,7 +100,7 @@ The following variables are available to customize the compilation process:
 
 ## Python Usage
 
-Importing libMobility.py will make available any module under "solvers" that has been compiled correctly (or, in the case of python-only modules, any module that provides a valid SolverName.py script).  
+Importing libMobility will make available any module under "solvers".  
 
 An usage example is available in python/example.py.  
 Calling
