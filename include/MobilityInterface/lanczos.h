@@ -3,7 +3,7 @@
  */
 #ifndef LIBMOBILITY_LANCZOS_ADAPTOR_H
 #define LIBMOBILITY_LANCZOS_ADAPTOR_H
-#include"../../third_party/LanczosAlgorithm/include/LanczosAlgorithm.h"
+#include"LanczosAlgorithm.h"
 #include<cstdint>
 #include <random>
 #include<vector>
