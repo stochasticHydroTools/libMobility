@@ -3,8 +3,8 @@
  For instance, a triply periodic algorithm will need at least a box size.
  */
 #include "MobilityInterface/MobilityInterface.h"
-#include"libMobility/solvers/NBody/mobility.h"
-#include"libMobility/solvers/PSE/mobility.h"
+#include"../solvers/NBody/mobility.h"
+#include"../solvers/PSE/mobility.h"
 #include <type_traits>
 #include<vector>
 #include<random>
@@ -24,9 +24,12 @@ template<class Solver>
 auto initializeSolver(Parameters par){
   std::shared_ptr<MobilityBase> solver;
   if(std::is_same<Solver,NBody>::value){
-    solver = std::make_shared<NBody>(Configuration{.periodicityX = libmobility::periodicity_mode::open,
+    auto nbody = std::make_shared<NBody>(Configuration{.periodicityX = libmobility::periodicity_mode::open,
 						   .periodicityY = libmobility::periodicity_mode::open,
 						   .periodicityZ = libmobility::periodicity_mode::open});
+
+    nbody->setParametersNBody({nbody_rpy::algorithm::advise, 1,par.numberParticles});
+    solver = nbody;
   }
   if(std::is_same<Solver,PSE>::value){
     auto pse = std::make_shared<PSE>(Configuration{.periodicityX = libmobility::periodicity_mode::periodic,
@@ -48,6 +51,7 @@ auto computeMFWithSolver(std::shared_ptr<MobilityBase> solver,
 			 std::vector<scalar> &pos,
 			 std::vector<scalar> &forces){
   std::vector<scalar> result(pos.size(), 0);
+  solver->setPositions(pos.data());
   solver->Mdot(forces.data(), result.data());
   return result;
 }
