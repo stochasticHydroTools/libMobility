@@ -2,7 +2,7 @@
 #ifndef MOBILITY_PSE_H
 #define MOBILITY_PSE_H
 #include<MobilityInterface/MobilityInterface.h>
-#include"UAMMD_PSE_Python/uammd_interface.h"
+#include"extra/uammd_interface.h"
 #include<vector>
 #include<cmath>
 #include<type_traits>

@@ -1,0 +1,14 @@
+name: libmobility
+channels:
+  - conda-forge
+dependencies:
+  - cmake >=3.22
+  - cuda-version 12.*
+  - gxx
+  - cuda-libraries-dev
+  - cuda-nvcc 
+  - make
+  - mkl-devel
+  - pybind11
+  - numpy
+  - python 3.11.*
