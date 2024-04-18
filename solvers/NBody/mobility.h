@@ -54,7 +54,14 @@ public:
     this->Nbatch = par.Nbatch;
     this->NperBatch = par.NperBatch;
     if(Nbatch<0) Nbatch = 1;
-    if(NperBatch<0) NperBatch = this->numberParticles;
+    if(NperBatch < 0){
+      if(this->initialized){
+        NperBatch = this->numberParticles;
+      }else{
+        throw std::runtime_error("[Mobility] NBody is missing batch size. "
+        "Provide a batch size in NBody parameters or initialize the solver before setting parameters.");
+      }
+    }
   }
 
   virtual void initialize(Parameters ipar) override{
