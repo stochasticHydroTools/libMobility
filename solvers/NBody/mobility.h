@@ -21,6 +21,7 @@ class NBody: public libmobility::Mobility{
   real hydrodynamicRadius;
   int numberParticles;
   nbody_rpy::algorithm algorithm = nbody_rpy::algorithm::advise;
+  bool initialized = false;
 
   //Batched functionality configuration
   int Nbatch;
@@ -50,18 +51,16 @@ public:
   // Only the elements of the mobility matrix that correspond to pairs that belong to the same batch are non zero. It is equivalent to computing an NPerBatch^2 matrix-vector products for each batch separately.
   // The data layout is 3 interleaved coordinates with each batch placed after the previous one: [x_1_1, y_1_1, z_1_1,...x_1_NperBatch,...x_Nbatches_NperBatch]
   void setParametersNBody(NBodyParameters par){
+
+    if(!this->initialized){
+      throw std::runtime_error("[Mobility] Initialize the NBody solver before setting parameters.");
+    }
+
     this->algorithm = par.algo;
     this->Nbatch = par.Nbatch;
     this->NperBatch = par.NperBatch;
     if(Nbatch<0) Nbatch = 1;
-    if(NperBatch < 0){
-      if(this->initialized){
-        NperBatch = this->numberParticles;
-      }else{
-        throw std::runtime_error("[Mobility] NBody is missing batch size. "
-        "Provide a batch size in NBody parameters or initialize the solver before setting parameters.");
-      }
-    }
+    if(NperBatch<0) NperBatch = this->numberParticles;
   }
 
   virtual void initialize(Parameters ipar) override{

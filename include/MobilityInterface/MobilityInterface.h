@@ -37,12 +37,12 @@ namespace libmobility{
   class Mobility{
   private:
     int numberParticles;
+    bool initialized = false;
     std::uint64_t lanczosSeed;
     real lanczosTolerance;
     std::shared_ptr<LanczosStochasticVelocities> lanczos;
     real temperature;
   protected:
-    bool initialized = false;
     Mobility(){};
   public:
     //These constants are available to all solvers
