@@ -27,7 +27,7 @@ auto initializeSolver(Parameters par){
     auto nbody = std::make_shared<NBody>(Configuration{.periodicityX = libmobility::periodicity_mode::open,
 						   .periodicityY = libmobility::periodicity_mode::open,
 						   .periodicityZ = libmobility::periodicity_mode::open});
-
+    nbody->initialize(par);
     nbody->setParametersNBody({nbody_rpy::algorithm::advise, 1,par.numberParticles});
     solver = nbody;
   }
@@ -39,10 +39,11 @@ auto initializeSolver(Parameters par){
     lx=ly=lz=128;
     scalar split = 1.0;
     scalar shearStrain = 0.0;
+    pse->initialize(par);
     pse->setParametersPSE({split, lx,ly,lz, shearStrain});
     solver = pse;
   }
-  solver->initialize(par);
+  // solver->initialize(par);
   return solver;
 }
 
