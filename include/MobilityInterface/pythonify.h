@@ -48,7 +48,7 @@ inline auto createConfiguration(std::string perx, std::string pery, std::string 
     par.numberParticles = N;						\
     myself.initialize(par);						\
   },									\
-    "Initialize the module with a given set of parameters.",		\
+    R"pbdoc(Initialize the module with a given set of parameters.)pbdoc",		\
     "temperature"_a, "viscosity"_a,					\
     "hydrodynamicRadius"_a,						\
     "numberParticles"_a).						\
