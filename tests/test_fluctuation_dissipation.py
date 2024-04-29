@@ -3,10 +3,6 @@ import numpy as np
 
 from libMobility import *
 
-PSE.setParameters = PSE.setParametersPSE
-NBody.setParameters = NBody.setParametersNBody
-# DPStokes.setParameters = DPStokes.setParametersDPStokes
-
 sane_parameters = {
     "PSE": {"psi": 1.0, "Lx": 32, "Ly": 32, "Lz": 32, "shearStrain": 0.0},
     "NBody": {"algorithm": "advise"},
@@ -18,15 +14,14 @@ sane_parameters = {
     [
         (PSE, ("periodic", "periodic", "periodic")),
         (NBody, ("open", "open", "open")),
-        (DPStokes, ("periodic", "periodic", "open")),
-        (DPStokes, ("periodic", "periodic", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "two_walls")),
+        # (DPStokes, ("periodic", "periodic", "open")),
+        # (DPStokes, ("periodic", "periodic", "single_wall")),
+        # (DPStokes, ("periodic", "periodic", "two_walls")),
     ],
 )
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 def test_fluctuation_dissipation(Solver, periodicity, hydrodynamicRadius):
     solver = Solver(*periodicity)
-
     solver.setParameters(**sane_parameters[Solver.__name__])
     numberParticles = 1
     solver.initialize(

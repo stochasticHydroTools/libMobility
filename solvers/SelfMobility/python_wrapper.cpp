@@ -4,7 +4,7 @@
 #include <MobilityInterface/pythonify.h>
 
 MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(SelfMobility,
-				   solver.def("setParametersSelfMobility",
+				   solver.def("setParameters",
 					      [](SelfMobility &self, real parameter){
 						self.setParametersSelfMobility(parameter);
 					      }, "parameter"_a, "Some example parameter");,
