@@ -16,7 +16,7 @@ namespace nbody_rpy{
 }
 
 MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(NBody,
-		   solver.def("setParametersNBody",
+		   solver.def("setParameters",
 			      [](NBody &myself, std::string algo, int NBatch, int NperBatch){
 				myself.setParametersNBody({nbody_rpy::string2NBodyAlgorithm(algo),
 				    NBatch, NperBatch});
