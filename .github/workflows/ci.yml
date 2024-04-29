@@ -57,3 +57,8 @@ jobs:
         python -c "import libMobility"
         python -c "from libMobility import DPStokes, PSE, NBody, SelfMobility"
         
+    - name: Run pytest
+      run: |
+        micromamba activate libmobility
+        pytest -s -v tests/test_initialization.py
+        
