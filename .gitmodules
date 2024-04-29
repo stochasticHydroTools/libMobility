@@ -1,19 +1,6 @@
-[submodule "solvers/nbody/BatchedNBodyRPY"]
-	path = solvers/NBody/BatchedNBodyRPY
-	url = git@github.com:RaulPPelaez/BatchedNBodyRPY.git
-[submodule "solvers/pse/UAMMD_PSE_Python"]
-	path = solvers/PSE/UAMMD_PSE_Python
-	url = git@github.com:RaulPPelaez/UAMMD_PSE_Python.git
-[submodule "third_party/pybind11"]
-	path = third_party/pybind11
-	url = git@github.com:pybind/pybind11
 [submodule "third_party/uammd"]
 	path = third_party/uammd
 	url = git@github.com:/raulppelaez/uammd
 [submodule "third_party/LanczosAlgorithm"]
 	path = third_party/LanczosAlgorithm
 	url = git@github.com:Raulppelaez/LanczosAlgorithm
-[submodule "solvers/DPStokes/DPStokes"]
-	path = solvers/DPStokes/DPStokes/uammd
-	url = https://github.com/raulppelaez/uammd
-	branch = dpstokes
