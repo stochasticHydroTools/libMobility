@@ -2,7 +2,7 @@
 #include <MobilityInterface/pythonify.h>
 
 static const char *docstringSetParameters = R"pbdoc(
-		Set the parameters for the PSE mobility calculation.
+		Set the parameters for the PSE solver.
 
 		Parameters
 		----------
