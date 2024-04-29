@@ -1,10 +1,10 @@
 # Configuration file for the Sphinx documentation builder.
-
-# -- Project information
 project = "libMobility"
 author = "RaulPPelaez"
 
 import git
+import sys
+import os
 
 
 def get_latest_git_tag(repo_path="."):
@@ -14,6 +14,7 @@ def get_latest_git_tag(repo_path="."):
 
 
 current_tag = get_latest_git_tag("../../")
+sys.path.append(os.path.abspath("./extensions"))
 if current_tag is None:
     current_tag = "master"
 release = current_tag
@@ -29,6 +30,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinxcontrib.autoprogram",
+    "customsig",
 ]
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
