@@ -8,6 +8,7 @@ Welcome to the libMobility Documentation!
       
    installation
    usage
+   solvers
    api
 
 ..
