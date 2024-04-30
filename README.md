@@ -3,7 +3,7 @@ This repository contains several GPU solvers that can compute the action of the 
 
 In particular, given a group of forces, $\boldsymbol{F}$ , acting on a group of positions, $\boldsymbol{X}$, the libMobility solvers can compute:
 
-$$d\boldsymbol{X} = \boldsymbol{\mathcal{M}}\boldsymbol{F} + \text{prefactor}\sqrt{2T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}$$  
+$$d\boldsymbol{X} = \boldsymbol{\mathcal{M}}\boldsymbol{F}dt + \text{prefactor}\sqrt{2T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}$$  
 
 
 Where dX are the linear displacements, prefactor is an user provided prefactor and dW is a collection of i.i.d Weinner processes. T is the temperature (really $k_B T$). Finally $\boldsymbol{\mathcal{M}}$ represents the mobility tensor.  
