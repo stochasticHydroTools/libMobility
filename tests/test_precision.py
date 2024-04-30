@@ -66,14 +66,16 @@ def test_incorrect_precision(Solver, periodicity):
     )
 
     # Set precision to be opposite from compiled precision
-    precision = np.float32 if Solver.precision != "float" else np.float64
-    positions = np.random.rand(numberParticles, 3).astype(precision)
+    precision_bad = np.float32 if Solver.precision != "float" else np.float64
+    precision_good = np.float32 if Solver.precision == "float" else np.float64
+    positions = np.random.rand(numberParticles, 3).astype(precision_bad)
 
     size = 3 * numberParticles
-
+    with pytest.raises(RuntimeError):
+        solver.setPositions(positions)
+    positions = positions.astype(precision_good)
     solver.setPositions(positions)
-    forces = np.ones(size, dtype=precision)
-    mf = np.zeros(size, dtype=precision)
-
+    forces = np.ones(size, dtype=precision_bad)
+    mf = np.zeros(size, dtype=precision_bad)
     with pytest.raises(RuntimeError):
         solver.Mdot(forces, mf)
