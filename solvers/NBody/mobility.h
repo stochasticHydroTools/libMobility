@@ -53,12 +53,15 @@ public:
     this->algorithm = par.algo;
     this->Nbatch = par.Nbatch;
     this->NperBatch = par.NperBatch;
-    if(Nbatch<0) Nbatch = 1;
-    if(NperBatch<0) NperBatch = this->numberParticles;
   }
 
   virtual void initialize(Parameters ipar) override{
     this->numberParticles = ipar.numberParticles;
+    if(Nbatch<0) Nbatch = 1;
+    if(NperBatch<0) NperBatch = ipar.numberParticles;
+    if(NperBatch*Nbatch != numberParticles) 
+      throw std::runtime_error("[Mobility] Invalid batch parameters for NBody. If in doubt, use the defaults.");
+
     this->hydrodynamicRadius = ipar.hydrodynamicRadius[0];
     this->selfMobility = 1.0/(6*M_PI*ipar.viscosity*this->hydrodynamicRadius);
     Mobility::initialize(ipar);
