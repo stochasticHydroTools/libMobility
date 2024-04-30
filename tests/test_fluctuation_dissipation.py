@@ -56,9 +56,9 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
     [
         (PSE, ("periodic", "periodic", "periodic")),
         (NBody, ("open", "open", "open")),
-        # (DPStokes, ("periodic", "periodic", "open")),
-        # (DPStokes, ("periodic", "periodic", "single_wall")),
-        # (DPStokes, ("periodic", "periodic", "two_walls")),
+        (DPStokes, ("periodic", "periodic", "open")),
+        (DPStokes, ("periodic", "periodic", "single_wall")),
+        (DPStokes, ("periodic", "periodic", "two_walls")),
     ],
 )
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
