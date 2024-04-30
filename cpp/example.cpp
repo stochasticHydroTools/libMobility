@@ -27,7 +27,6 @@ auto initializeSolver(Parameters par){
     auto nbody = std::make_shared<NBody>(Configuration{.periodicityX = libmobility::periodicity_mode::open,
 						   .periodicityY = libmobility::periodicity_mode::open,
 						   .periodicityZ = libmobility::periodicity_mode::open});
-
     nbody->setParametersNBody({nbody_rpy::algorithm::advise, 1,par.numberParticles});
     solver = nbody;
   }
