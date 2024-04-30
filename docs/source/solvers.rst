@@ -6,7 +6,7 @@ The following solvers are available in libMobility.
 
 Self Mobility
 -------------
-This module neglects hydrodynamic interactions and simply sets :math:`\boldsymbol{\mathcal{M}} = \frac{1}{6\pi\eta a} \mathbb{I}`.
+This module neglects hydrodynamic interactions and simply sets :math:`\boldsymbol{\mathcal{M} }= \frac{1}{6\pi\eta a} \mathbb{I}`.
 
 .. autoclass:: libMobility.SelfMobility
    :members:
