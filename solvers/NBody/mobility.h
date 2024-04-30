@@ -21,7 +21,6 @@ class NBody: public libmobility::Mobility{
   real hydrodynamicRadius;
   int numberParticles;
   nbody_rpy::algorithm algorithm = nbody_rpy::algorithm::advise;
-  bool initialized = false;
 
   //Batched functionality configuration
   int Nbatch;
