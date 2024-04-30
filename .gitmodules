@@ -1,6 +1,6 @@
 [submodule "third_party/uammd"]
 	path = third_party/uammd
-	url = git@github.com:/raulppelaez/uammd
+	url = https://github.com/raulppelaez/uammd
 [submodule "third_party/LanczosAlgorithm"]
 	path = third_party/LanczosAlgorithm
-	url = git@github.com:Raulppelaez/LanczosAlgorithm
+	url = https://github.com/Raulppelaez/LanczosAlgorithm

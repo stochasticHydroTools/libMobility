@@ -1,0 +1,21 @@
+version: "2"
+
+submodules:
+  include: all
+  recursive: true
+
+build:
+  os: "ubuntu-22.04"
+  tools:
+     python: "mambaforge-22.9"
+  jobs:
+     post_create_environment:
+       - pip install -r docs/requirements.txt
+       - cmake -DCMAKE_INSTALL_PREFIX=$(which pip | rev | cut -d/ -f3- | rev) . && make -j4  all install
+
+conda:
+  environment: environment.yml
+
+    
+sphinx:
+  configuration: docs/source/conf.py

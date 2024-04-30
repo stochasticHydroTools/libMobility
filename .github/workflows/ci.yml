@@ -62,3 +62,13 @@ jobs:
         micromamba activate libmobility
         pytest -s -v tests/test_initialization.py tests/test_precision.py
         
+    - name: Install docs dependencies
+      run: |
+        pip install -r docs/requirements.txt
+      shell: bash -el {0}
+      
+    - name: Build Sphinx Documentation
+      run: |
+        cd docs
+        make html
+      shell: bash -el {0}
