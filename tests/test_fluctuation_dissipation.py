@@ -11,13 +11,26 @@ sane_parameters = {
     "PSE": {"psi": 1.0, "Lx": 32, "Ly": 32, "Lz": 32, "shearStrain": 0.0},
     "NBody": {"algorithm": "advise"},
     "DPStokes": {"dt": 1, "Lx": 32, "Ly": 32, "zmin": -32, "zmax": 32},
+    "SelfMobility": {"parameter": 5.0},
 }
 
 
 def compute_M(solver, numberParticles):
-    forces = np.zeros((numberParticles, 3))
-    mf = np.zeros((numberParticles, 3))
-    assert False, "This is not implemented"
+
+    precision = np.float32 if solver.precision == "float" else np.float64
+
+    size = 3 * numberParticles
+    M = np.zeros((size, size), dtype=precision)
+
+    I = np.identity(size, dtype=precision)
+    for i in range(0, size):
+        forces = I[:, i].copy()
+        mf = np.zeros(size, dtype=precision)
+        solver.Mdot(forces, mf)
+
+        M[:, i] = mf
+
+    return M
 
 
 def fluctuation_dissipation_KS(M, fluctuation_method):
@@ -54,6 +67,7 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
 @pytest.mark.parametrize(
     ("Solver", "periodicity"),
     [
+        (SelfMobility, ("open", "open", "open")),
         (PSE, ("periodic", "periodic", "periodic")),
         (NBody, ("open", "open", "open")),
         (DPStokes, ("periodic", "periodic", "open")),
@@ -63,22 +77,25 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
 )
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 def test_fluctuation_dissipation(Solver, periodicity, hydrodynamicRadius):
+
+    precision = np.float32 if Solver.precision == "float" else np.float64
+
     solver = Solver(*periodicity)
     solver.setParameters(**sane_parameters[Solver.__name__])
-    numberParticles = 1
+    numberParticles = 10
     solver.initialize(
-        temperature=1.0,
+        temperature=0.5,  # needs to be 1/2 to cancel out the sqrt(2*T) when computing Mdot
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
         numberParticles=numberParticles,
     )
-    positions = np.random.rand(numberParticles, 3)
+    positions = np.random.rand(numberParticles, 3).astype(precision)
     solver.setPositions(positions)
     M = compute_M(solver, numberParticles)
-    sqrtmnoise = np.zeros((numberParticles, 3))
-    solver.sqrtMdotW(sqrtmnoise, prefactor=1.0)
 
     def fluctuation_method():
-        return solver.sqrtMdotW(sqrtmnoise, prefactor=1.0)
+        sqrtmnoise = np.zeros(numberParticles * 3).astype(precision)
+        solver.sqrtMdotW(sqrtmnoise, prefactor=1.0)
+        return sqrtmnoise
 
     fluctuation_dissipation_KS(M, fluctuation_method)
