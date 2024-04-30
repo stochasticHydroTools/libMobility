@@ -36,6 +36,10 @@ void check_dtype(pyarray &arr){
   if(not py::isinstance<py::array_t<T>>(arr)){
     throw std::runtime_error("Input array must have the correct data type.");
   }
+  if(not py::isinstance<py::array_t<T, py::array::c_style | py::array::forcecast>>(arr)){
+    throw std::runtime_error("The input array is not contiguous and cannot be used as a buffer.");
+  }
+
 }
 
 libmobility::real* cast_to_real(pyarray &arr){
