@@ -33,18 +33,18 @@ inline auto createConfiguration(std::string perx, std::string pery, std::string 
 
 template<typename T>
 void check_dtype(pyarray &arr){
-  if (!arr.dtype().is(py::dtype::of<T>())) {
+  if(not py::isinstance<py::array_t<T>>(arr)){
     throw std::runtime_error("Input array must have the correct data type.");
   }
 }
 
 libmobility::real* cast_to_real(pyarray &arr){
-  check_dtype<libmobility::real*>(arr);
+  check_dtype<libmobility::real>(arr);
   return static_cast<libmobility::real*>(arr.mutable_data());
 }
 
 const libmobility::real* cast_to_const_real(pyarray &arr){
-  check_dtype<const libmobility::real*>(arr);
+  check_dtype<const libmobility::real>(arr);
   return static_cast<const libmobility::real*>(arr.data());
 }
 
