@@ -60,5 +60,5 @@ jobs:
     - name: Run pytest
       run: |
         micromamba activate libmobility
-        pytest -s -v tests/test_initialization.py
+        pytest -s -v tests/test_initialization.py tests/test_precision.py
         
