@@ -31,6 +31,26 @@ inline auto createConfiguration(std::string perx, std::string pery, std::string 
   return conf;
 }
 
+const char *constructor_docstring = R"pbdoc(
+Initialize the module with a given set of periodicity conditions.
+
+Each periodicity condition can be one of the following:
+	- open: No periodicity in the corresponding direction.
+	- unspecified: The periodicity is not specified.
+	- single_wall: The system is bounded by a single wall in the corresponding direction.
+	- two_walls: The system is bounded by two walls in the corresponding direction.
+	- periodic: The system is periodic in the corresponding direction.
+
+Parameters
+----------
+periodicityX : str
+		Periodicity condition in the x direction.
+periodicityY : str
+		Periodicity condition in the y direction.
+periodicityZ : str
+		Periodicity condition in the z direction.
+)pbdoc";
+
 #define xMOBILITY_PYTHONIFY(MODULENAME, EXTRACODE, documentation)	\
   PYBIND11_MODULE(MODULENAME, m){		      \
   using real = libmobility::real;		      \
@@ -39,7 +59,7 @@ inline auto createConfiguration(std::string perx, std::string pery, std::string 
   auto solver = py::class_<MODULENAME>(m, MOBILITYSTR(MODULENAME), documentation); \
   solver.def(py::init([](std::string perx, std::string pery, std::string perz){	\
     return std::unique_ptr<MODULENAME>(new MODULENAME(createConfiguration(perx, pery, perz))); }), \
-    "Class constructor.", "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a). \
+    constructor_docstring, "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a). \
   def("initialize", [](MODULENAME &myself, real T, real eta, real a, int N){ \
     Parameters par;							\
     par.temperature = T;						\
