@@ -25,9 +25,7 @@ CMake is used for compilation, you can compile and install everything with:
 
 It is advisable to install the library in the conda environment, so that the python bindings are available. The environment variable ``$CONDA_PREFIX`` is set to the root of the conda environment.
 
-CMake will compile all modules under the ``solvers`` directory as long as they adhere to the conventions described in "Adding a new solver".
-
-After compilation, the python bindings will be available in the conda environment under the name ``libMobility``.
+After compilation, the python bindings will be available in the conda environment under the name ``libMobility``. See :ref:`usage` for more information.
 
 The following variables are available to customize the compilation process:
 
