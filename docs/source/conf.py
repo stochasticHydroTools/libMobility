@@ -40,7 +40,7 @@ napoleon_include_special_with_doc = True
 napoleon_use_admonition_for_examples = True
 napoleon_use_admonition_for_notes = True
 napoleon_use_admonition_for_references = True
-napoleon_use_ivar = False
+napoleon_use_ivar = True
 napoleon_use_param = True
 napoleon_use_rtype = True
 napoleon_preprocess_types = True
@@ -52,6 +52,7 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
+    "pybind11": ("https://pybind11.readthedocs.io/en/stable/", None),
 }
 intersphinx_disabled_domains = ["std"]
 
