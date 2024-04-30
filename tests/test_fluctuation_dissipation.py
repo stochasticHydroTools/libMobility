@@ -18,9 +18,6 @@ def compute_M(solver, numberParticles):
 
     precision = np.float32 if solver.precision == "float" else np.float64
 
-    # forces = np.zeros((numberParticles, 3), dtype=precision)
-    # mf = np.zeros((numberParticles, 3), dtype=precision)
-
     size = 3*numberParticles
     M = np.zeros((size,size), dtype=precision)
 
@@ -70,8 +67,8 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
     ("Solver", "periodicity"),
     [
         (SelfMobility, ("open", "open", "open")),
-        # (PSE, ("periodic", "periodic", "periodic")),
-        # (NBody, ("open", "open", "open")),
+        (PSE, ("periodic", "periodic", "periodic")),
+        (NBody, ("open", "open", "open")),
         # (DPStokes, ("periodic", "periodic", "open")),
         # (DPStokes, ("periodic", "periodic", "single_wall")),
         # (DPStokes, ("periodic", "periodic", "two_walls")),
@@ -84,7 +81,7 @@ def test_fluctuation_dissipation(Solver, periodicity, hydrodynamicRadius):
 
     solver = Solver(*periodicity)
     solver.setParameters(**sane_parameters[Solver.__name__])
-    numberParticles = 1
+    numberParticles = 10
     solver.initialize(
         temperature=0.5, # needs to be 1/2 to cancel out the sqrt(2*T) when computing Mdot
         viscosity=1.0,
