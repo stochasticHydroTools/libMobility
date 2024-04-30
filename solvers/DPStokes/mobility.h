@@ -50,6 +50,15 @@ public:
     this->temperature = ipar.temperature;
     this->lanczosTolerance = ipar.tolerance;
     this->dppar.mode = this->wallmode;
+    this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius; //a
+    this->dppar.w = 6;
+    this->dppar.beta = 1.714*this->dppar.w;
+    this->dppar.alpha = this->dppar.w/2.0;
+    real h = this->dppar.hydrodynamicRadius/1.554;
+    this->dppar.nx = this->dppar.Lx/h;
+    this->dppar.ny = this->dppar.Ly/h;
+    real Lz = this->dppar.zmax - this->dppar.zmin;
+    this->dppar.nz = M_PI*Lz/h;
     dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);
   }

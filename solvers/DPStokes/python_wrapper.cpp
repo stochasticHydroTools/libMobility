@@ -31,12 +31,6 @@ MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(DPStokes,
                                          params.Ly = Ly;
                                          params.zmin = zmin;
                                          params.zmax = zmax;
-                                         params.w = 6;
-                                         //	  params.w_d = w_d;
-                                         params.beta = 1.714*params.w;
-                                         // params.beta_d = beta_d;
-                                         params.alpha = params.w/2.0;
-                                         // params.alpha_d = alpha_d;
                                          self.setParametersDPStokes(params);
                                        },
                                        "dt"_a, "Lx"_a, "Ly"_a, "zmin"_a,
