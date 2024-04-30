@@ -8,7 +8,7 @@ The MOBILITY_PYTHONIFY(className, description) macro creates a pybind11 module f
 #include<pybind11/numpy.h>
 namespace py = pybind11;
 using namespace pybind11::literals;
-using pyarray = py::array_t<libmobility::real>;
+using pyarray = py::array;
 
 #define MOBILITYSTR(s) xMOBILITYSTR(s)
 #define xMOBILITYSTR(s) #s
@@ -29,6 +29,23 @@ inline auto createConfiguration(std::string perx, std::string pery, std::string 
   conf.periodicityY = string2Periodicity(pery);
   conf.periodicityZ = string2Periodicity(perz);
   return conf;
+}
+
+template<typename T>
+void check_dtype(pyarray &arr){
+  if (!arr.dtype().is(py::dtype::of<T>())) {
+    throw std::runtime_error("Input array must have the correct data type.");
+  }
+}
+
+libmobility::real* cast_to_real(pyarray &arr){
+  check_dtype<libmobility::real*>(arr);
+  return static_cast<libmobility::real*>(arr.mutable_data());
+}
+
+const libmobility::real* cast_to_const_real(pyarray &arr){
+  check_dtype<const libmobility::real*>(arr);
+  return static_cast<const libmobility::real*>(arr.data());
 }
 
 #define xMOBILITY_PYTHONIFY(MODULENAME, EXTRACODE, documentation)	\
@@ -52,22 +69,22 @@ inline auto createConfiguration(std::string perx, std::string pery, std::string 
     "temperature"_a, "viscosity"_a,					\
     "hydrodynamicRadius"_a,						\
     "numberParticles"_a).						\
-    def("setPositions", [](MODULENAME &myself, pyarray pos){myself.setPositions(pos.data());}, \
+    def("setPositions", [](MODULENAME &myself, pyarray pos){myself.setPositions(cast_to_const_real(pos));}, \
 	"The module will compute the mobility according to this set of positions.", \
 	"positions"_a).							\
     def("Mdot", [](MODULENAME &myself, pyarray forces, pyarray result){\
-      auto f = forces.size()?forces.data():nullptr;			\
-      myself.Mdot(f, result.mutable_data());},			\
+      auto f = forces.size()?cast_to_const_real(forces):nullptr;	\
+      myself.Mdot(f, cast_to_real(result));},	\
       "Computes the product of the RPY Mobility matrix with a group of forces.",	\
       "forces"_a = pyarray(), "result"_a).	\
     def("sqrtMdotW", [](MODULENAME &myself, pyarray result, libmobility::real prefactor){ \
-      myself.sqrtMdotW(result.mutable_data(), prefactor);}, \
+      myself.sqrtMdotW(cast_to_real(result), prefactor);},		\
       "Computes the stochastic contribution, sqrt(2*T*M) dW, where M is the mobility and dW is a Weiner process.", \
       "result"_a = pyarray(), "prefactor"_a = 1.0).			\
     def("hydrodynamicVelocities", [](MODULENAME &myself, pyarray forces,\
 					       pyarray result, libmobility::real prefactor){ \
-      auto f = forces.size()?forces.data():nullptr;			\
-      myself.hydrodynamicVelocities(f, result.mutable_data(), prefactor);}, \
+      auto f = forces.size()?cast_to_const_real(forces):nullptr;	\
+      myself.hydrodynamicVelocities(f, cast_to_real(result), prefactor);}, \
 	"Computes the hydrodynamic (deterministic and stochastic) velocities. If the forces are ommited only the stochastic part is computed. If the temperature is zero (default) the stochastic part is ommited. The result is equivalent to calling Mdot followed by stochasticDisplacements.", \
 	"forces"_a = pyarray(), "result"_a  = pyarray(), "prefactor"_a = 1). \
     def("clean", &MODULENAME::clean, "Frees any memory allocated by the module."). \
