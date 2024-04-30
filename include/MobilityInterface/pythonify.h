@@ -51,6 +51,76 @@ periodicityZ : str
 		Periodicity condition in the z direction.
 )pbdoc";
 
+const char *initialize_docstring = R"pbdoc(
+Initialize the module with a given set of parameters.
+
+Parameters
+----------
+temperature : float
+		Temperature of the system in energy units (i.e. kT).
+viscosity : float
+		Viscosity of the fluid.
+hydrodynamicRadius : float
+		Hydrodynamic radius of the particles.
+numberParticles : int
+		Number of particles in the system.
+)pbdoc";
+
+const char *mdot_docstring = R"pbdoc(
+Computes the product of the Mobility matrix with a group of forces, :math:`\boldsymbol{\mathcal{M}}\boldsymbol{F}`.
+
+It is required that :py:mod:`setPositions` has been called before calling this function.
+Both inputs must have precision given by the precision attribute of the module.
+Both inputs must have size 3*N, where N is the number of particles.
+The arrays are ordered as :code:`[f0x, f0y, f0z, f1x, f1y, f1z, ...]`.
+
+Parameters
+----------
+forces : array_like,
+		Forces acting on the particles.
+result : array_like,
+		Where the result will be stored.
+)pbdoc";
+
+const char *sqrtMdotW_docstring = R"pbdoc(
+Computes the stochastic contribution, :math:`\text{prefactor}\sqrt{2T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}`, where :math:`\boldsymbol{\mathcal{M}}` is the mobility matrix and :math:`d\boldsymbol{W}` is a Wiener process.
+
+It is required that :py:mod:`setPositions` has been called before calling this function.
+Both inputs must have precision given by the precision attribute of the module.
+Both inputs must have size 3*N, where N is the number of particles.
+The arrays are ordered as :code:`[f0x, f0y, f0z, f1x, f1y, f1z, ...]`.
+
+Parameters
+----------
+result : array_like,
+		Where the result will be stored. The result will have the same format as the forces array.
+prefactor : float, optional
+		Prefactor to multiply the result by. Default is 1.0.
+)pbdoc";
+
+
+
+const char *hydrodynamicvelocities_docstring = R"pbdoc(
+Computes the hydrodynamic (deterministic and stochastic) velocities.
+
+.. math::
+        \boldsymbol{\mathcal{M}}\boldsymbol{F} + \text{prefactor}\sqrt{2T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}
+
+If the forces are ommited only the stochastic part is computed.
+If the temperature is zero the stochastic part is ommited.
+Calling this function is equivalent to calling :py:mod:`Mdot` and :py:mod:`sqrtMdotW` in sequence, but in some solvers this can be done more efficiently.
+
+Parameters
+----------
+forces : array_like, optional
+		Forces acting on the particles.
+result : array_like
+		Where the result will be stored.
+prefactor : float, optional
+		Prefactor to multiply the result by. Default is 1.0.
+)pbdoc";
+
+
 #define xMOBILITY_PYTHONIFY(MODULENAME, EXTRACODE, documentation)	\
   PYBIND11_MODULE(MODULENAME, m){		      \
   using real = libmobility::real;		      \
@@ -68,7 +138,7 @@ periodicityZ : str
     par.numberParticles = N;						\
     myself.initialize(par);						\
   },									\
-    R"pbdoc(Initialize the module with a given set of parameters.)pbdoc",		\
+    initialize_docstring,		\
     "temperature"_a, "viscosity"_a,					\
     "hydrodynamicRadius"_a,						\
     "numberParticles"_a).						\
@@ -78,20 +148,20 @@ periodicityZ : str
     def("Mdot", [](MODULENAME &myself, pyarray forces, pyarray result){\
       auto f = forces.size()?forces.data():nullptr;			\
       myself.Mdot(f, result.mutable_data());},			\
-      "Computes the product of the RPY Mobility matrix with a group of forces.",	\
+      mdot_docstring,	\
       "forces"_a = pyarray(), "result"_a).	\
     def("sqrtMdotW", [](MODULENAME &myself, pyarray result, libmobility::real prefactor){ \
       myself.sqrtMdotW(result.mutable_data(), prefactor);}, \
-      "Computes the stochastic contribution, sqrt(2*T*M) dW, where M is the mobility and dW is a Weiner process.", \
+      sqrtMdotW_docstring, \
       "result"_a = pyarray(), "prefactor"_a = 1.0).			\
     def("hydrodynamicVelocities", [](MODULENAME &myself, pyarray forces,\
 					       pyarray result, libmobility::real prefactor){ \
       auto f = forces.size()?forces.data():nullptr;			\
       myself.hydrodynamicVelocities(f, result.mutable_data(), prefactor);}, \
-	"Computes the hydrodynamic (deterministic and stochastic) velocities. If the forces are ommited only the stochastic part is computed. If the temperature is zero (default) the stochastic part is ommited. The result is equivalent to calling Mdot followed by stochasticDisplacements.", \
+	hydrodynamicvelocities_docstring, \
 	"forces"_a = pyarray(), "result"_a  = pyarray(), "prefactor"_a = 1). \
     def("clean", &MODULENAME::clean, "Frees any memory allocated by the module."). \
-    def_property_readonly_static("precision", [](py::object){return MODULENAME::precision;}, "Compilation precision, a string holding either float or double."); \
+    def_property_readonly_static("precision", [](py::object){return MODULENAME::precision;}, R"pbdoc(Compilation precision, a string holding either float or double.)pbdoc"); \
   EXTRACODE\
 }
 #define MOBILITY_PYTHONIFY(MODULENAME, documentationPrelude) xMOBILITY_PYTHONIFY(MODULENAME,; ,documentationPrelude)
