@@ -61,7 +61,7 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
         _, p = kstest(noise_scaled, "norm")
         assert p > (
             1 - mu_alpha
-        ), f"KS test failed for component {m}, p = {p}, 1-mu_alpha = {1-mu_alpha}"
+        ), f"KS test failed for component {m}, p = {p}, 1-mu_alpha = {1-mu_alpha}. This stochastic test may fail occasionally, try running it again."
 
 
 @pytest.mark.parametrize(
