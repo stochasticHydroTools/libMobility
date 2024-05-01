@@ -1,4 +1,4 @@
-from utils import sane_parameters, compute_M
+from utils import sane_parameters, compute_M, generate_positions_in_box
 import pytest
 import numpy as np
 from libMobility import SelfMobility, PSE, NBody, DPStokes
@@ -28,15 +28,7 @@ def test_mobility_matrix(Solver, periodicity, hydrodynamicRadius, numberParticle
         hydrodynamicRadius=hydrodynamicRadius,
         numberParticles=numberParticles,
     )
-    positions = np.random.rand(numberParticles, 3).astype(precision) - 0.5
-    if "Lx" in parameters:
-        positions[:, 0] *= parameters["Lx"]
-    if "Ly" in parameters:
-        positions[:, 1] *= parameters["Ly"]
-    if "Lz" in parameters:
-        positions[:, 2] *= parameters["Lz"]
-    if "zmin" in parameters:
-        positions[:, 2] *= parameters["zmax"] - parameters["zmin"]
+    positions = generate_positions_in_box(parameters, numberParticles)
     solver.setPositions(positions)
     M = compute_M(solver, numberParticles)
     assert M.shape == (3 * numberParticles, 3 * numberParticles)

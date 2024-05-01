@@ -5,11 +5,21 @@ from scipy.stats import kstest, norm
 from numpy.linalg import eig
 import logging
 
-from libMobility import *
-from utils import compute_M, sane_parameters
+from libMobility import SelfMobility, PSE, NBody, DPStokes
+from utils import compute_M, sane_parameters, generate_positions_in_box
 
 
 def fluctuation_dissipation_KS(M, fluctuation_method):
+    """
+    Test the fluctuation-dissipation theorem using the Kolmogorov-Smirnov test.
+
+    Parameters
+    ----------
+    M : np.ndarray
+        Mobility matrix, :math:`\boldsymbol{\mathcal{M}}`
+    fluctuation_method : function
+        Function that returns :math:`\sqrt{\boldsymbol{\mathcal{M}}} \cdot \xi`, where :math:`\xi` is a random vector
+    """
     if M.shape[0] != M.shape[1] or not np.allclose(M, M.T):
         raise ValueError("Matrix M must be square and symmetric.")
     Sigma, Q = eig(M)
@@ -56,9 +66,7 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
 def test_fluctuation_dissipation(
     Solver, periodicity, hydrodynamicRadius, numberParticles
 ):
-
     precision = np.float32 if Solver.precision == "float" else np.float64
-
     solver = Solver(*periodicity)
     parameters = sane_parameters[Solver.__name__]
     solver.setParameters(**parameters)
@@ -69,23 +77,11 @@ def test_fluctuation_dissipation(
         hydrodynamicRadius=hydrodynamicRadius,
         numberParticles=numberParticles,
     )
-    positions = np.random.rand(numberParticles, 3).astype(precision) - 0.5
-
-    if "Lx" in parameters:
-        positions[:, 0] *= parameters["Lx"]
-    if "Ly" in parameters:
-        positions[:, 1] *= parameters["Ly"]
-    if "Lz" in parameters:
-        positions[:, 2] *= parameters["Lz"]
-    if "zmin" in parameters:
-        positions[:, 2] *= parameters["zmax"] - parameters["zmin"]
-
+    positions = generate_positions_in_box(parameters, numberParticles)
     solver.setPositions(positions)
     M = compute_M(solver, numberParticles)
-
     def fluctuation_method():
         sqrtmnoise = np.zeros(numberParticles * 3).astype(precision)
         solver.sqrtMdotW(sqrtmnoise, prefactor=1.0)
         return sqrtmnoise
-
     fluctuation_dissipation_KS(M, fluctuation_method)

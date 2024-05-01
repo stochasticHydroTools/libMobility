@@ -20,3 +20,16 @@ def compute_M(solver, numberParticles):
         solver.Mdot(forces, mf)
         M[:, i] = mf
     return M
+
+
+def generate_positions_in_box(parameters, numberParticles):
+    positions = np.random.rand(numberParticles, 3) - 0.5
+    if "Lx" in parameters:
+        positions[:, 0] *= parameters["Lx"]
+    if "Ly" in parameters:
+        positions[:, 1] *= parameters["Ly"]
+    if "Lz" in parameters:
+        positions[:, 2] *= parameters["Lz"]
+    if "zmin" in parameters:
+        positions[:, 2] *= parameters["zmax"] - parameters["zmin"]
+    return positions
