@@ -36,7 +36,7 @@ def test_mobility_matrix(Solver, periodicity, hydrodynamicRadius, numberParticle
     if "Lz" in parameters:
         positions[:, 2] *= parameters["Lz"]
     if "zmin" in parameters:
-        positions[:, 2] *= (parameters["zmax"] - parameters["zmin"]) * 0.5
+        positions[:, 2] *= parameters["zmax"] - parameters["zmin"]
     solver.setPositions(positions)
     M = compute_M(solver, numberParticles)
     assert M.shape == (3 * numberParticles, 3 * numberParticles)
