@@ -6,6 +6,8 @@ using DPStokesParameters = uammd_dpstokes::PyParameters;
 static const char *docstring = R"pbdoc(
 In the Doubly periodic Stokes geometry (DPStokes), an incompressible fluid exists in a domain which is periodic in the plane and open (or walled) in the third direction.
 
+When the periodicity is set to :code:`single_wall` a wall in the bottom of the domain is added.
+
 Parameters
 ----------
 dt : float
