@@ -54,8 +54,7 @@ public:
     this->dppar.w = 6;
     this->dppar.beta = 1.714*this->dppar.w;
     real h = this->dppar.hydrodynamicRadius/1.554;
-    real cbeta = this->dppar.hydrodynamicRadius/(this->dppar.w*h);
-    this->dppar.alpha = this->dppar.hydrodynamicRadius/(2.0*h*cbeta);
+    this->dppar.alpha = this->dppar.w/2.0;
     this->dppar.tolerance = 1e-6;
     this->dppar.nx = int(this->dppar.Lx/h + 0.5);
     this->dppar.ny = int(this->dppar.Ly/h + 0.5);
