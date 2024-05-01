@@ -54,12 +54,21 @@ public:
     this->dppar.w = 6;
     this->dppar.beta = 1.714*this->dppar.w;
     real h = this->dppar.hydrodynamicRadius/1.554;
-    this->dppar.alpha = this->dppar.w*0.5;
-    this->dppar.tolerance = 1e-3;
+    real cbeta = this->dppar.hydrodynamicRadius/(this->dppar.w*h);
+    this->dppar.alpha = this->dppar.hydrodynamicRadius/(2.0*h*cbeta);
+    this->dppar.tolerance = 1e-6;
     this->dppar.nx = int(this->dppar.Lx/h + 0.5);
     this->dppar.ny = int(this->dppar.Ly/h + 0.5);
+    // Add a buffer of w*h/2 when there is an open boundary
+    if(this->wallmode == "nowall"){
+      this->dppar.zmax += this->dppar.w*h/2;
+      this->dppar.zmin -= this->dppar.w*h/2;
+    }
+    if(this->wallmode == "bottom"){
+      this->dppar.zmin -= this->dppar.w*h/2;
+    }
     real Lz = this->dppar.zmax - this->dppar.zmin;
-    this->dppar.nz = M_PI*Lz/(2*h);
+    this->dppar.nz = M_PI*Lz/(h);
     dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);
   }
