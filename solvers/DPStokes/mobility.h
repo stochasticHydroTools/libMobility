@@ -50,7 +50,7 @@ public:
     this->temperature = ipar.temperature;
     this->lanczosTolerance = ipar.tolerance;
     this->dppar.mode = this->wallmode;
-    this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius; //a
+    this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
     this->dppar.w = 6;
     this->dppar.beta = 1.714*this->dppar.w;
     this->dppar.alpha = this->dppar.w/2.0;
