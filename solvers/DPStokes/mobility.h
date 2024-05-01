@@ -53,12 +53,13 @@ public:
     this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
     this->dppar.w = 6;
     this->dppar.beta = 1.714*this->dppar.w;
-    this->dppar.alpha = this->dppar.w/2.0;
     real h = this->dppar.hydrodynamicRadius/1.554;
-    this->dppar.nx = this->dppar.Lx/h;
-    this->dppar.ny = this->dppar.Ly/h;
+    this->dppar.alpha = this->dppar.w*0.5;
+    this->dppar.tolerance = 1e-3;
+    this->dppar.nx = int(this->dppar.Lx/h + 0.5);
+    this->dppar.ny = int(this->dppar.Ly/h + 0.5);
     real Lz = this->dppar.zmax - this->dppar.zmin;
-    this->dppar.nz = M_PI*Lz/h;
+    this->dppar.nz = M_PI*Lz/(2*h);
     dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);
   }
