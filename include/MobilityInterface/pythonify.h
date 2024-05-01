@@ -165,7 +165,7 @@ prefactor : float, optional
     "temperature"_a, "viscosity"_a,					\
     "hydrodynamicRadius"_a,						\
 	  "numberParticles"_a,						\
-	  "tol"_a = 1e-4).						\
+	  "tolerance"_a = 1e-4).						\
     def("setPositions", [](MODULENAME &myself, pyarray pos){myself.setPositions(cast_to_const_real(pos));}, \
 	"The module will compute the mobility according to this set of positions.", \
 	"positions"_a).							\
