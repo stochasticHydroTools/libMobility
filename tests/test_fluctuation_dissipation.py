@@ -77,11 +77,13 @@ def test_fluctuation_dissipation(
         hydrodynamicRadius=hydrodynamicRadius,
         numberParticles=numberParticles,
     )
-    positions = generate_positions_in_box(parameters, numberParticles)
+    positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
     solver.setPositions(positions)
     M = compute_M(solver, numberParticles)
+
     def fluctuation_method():
         sqrtmnoise = np.zeros(numberParticles * 3).astype(precision)
         solver.sqrtMdotW(sqrtmnoise, prefactor=1.0)
         return sqrtmnoise
+
     fluctuation_dissipation_KS(M, fluctuation_method)

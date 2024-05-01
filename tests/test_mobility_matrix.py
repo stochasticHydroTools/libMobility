@@ -28,7 +28,7 @@ def test_mobility_matrix(Solver, periodicity, hydrodynamicRadius, numberParticle
         hydrodynamicRadius=hydrodynamicRadius,
         numberParticles=numberParticles,
     )
-    positions = generate_positions_in_box(parameters, numberParticles)
+    positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
     solver.setPositions(positions)
     M = compute_M(solver, numberParticles)
     assert M.shape == (3 * numberParticles, 3 * numberParticles)
