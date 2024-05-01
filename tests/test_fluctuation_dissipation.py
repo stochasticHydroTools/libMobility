@@ -10,7 +10,7 @@ from libMobility import *
 sane_parameters = {
     "PSE": {"psi": 1.0, "Lx": 32, "Ly": 32, "Lz": 32, "shearStrain": 0.0},
     "NBody": {"algorithm": "advise"},
-    "DPStokes": {"dt": 1, "Lx": 32, "Ly": 32, "zmin": -32, "zmax": 32},
+    "DPStokes": {"dt": 1, "Lx": 16, "Ly": 16, "zmin": -6, "zmax": 6},
     "SelfMobility": {"parameter": 5.0},
 }
 
@@ -81,7 +81,8 @@ def test_fluctuation_dissipation(Solver, periodicity, hydrodynamicRadius):
     precision = np.float32 if Solver.precision == "float" else np.float64
 
     solver = Solver(*periodicity)
-    solver.setParameters(**sane_parameters[Solver.__name__])
+    parameters = sane_parameters[Solver.__name__]
+    solver.setParameters(**parameters)
     numberParticles = 10
     solver.initialize(
         temperature=0.5,  # needs to be 1/2 to cancel out the sqrt(2*T) when computing Mdot
@@ -89,7 +90,17 @@ def test_fluctuation_dissipation(Solver, periodicity, hydrodynamicRadius):
         hydrodynamicRadius=hydrodynamicRadius,
         numberParticles=numberParticles,
     )
-    positions = np.random.rand(numberParticles, 3).astype(precision)
+    positions = np.random.rand(numberParticles, 3).astype(precision) - 0.5
+
+    if "Lx" in parameters:
+        positions[:, 0] *= parameters["Lx"]
+    if "Ly" in parameters:
+        positions[:, 1] *= parameters["Ly"]
+    if "Lz" in parameters:
+        positions[:, 2] *= parameters["Lz"]
+    if "zmin" in parameters:
+        positions[:, 2] *= parameters["zmax"] - parameters["zmin"]
+
     solver.setPositions(positions)
     M = compute_M(solver, numberParticles)
 
