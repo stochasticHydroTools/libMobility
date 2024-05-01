@@ -10,7 +10,7 @@ from utils import compute_M, sane_parameters, generate_positions_in_box
 
 
 def fluctuation_dissipation_KS(M, fluctuation_method):
-    """
+    R"""
     Test the fluctuation-dissipation theorem using the Kolmogorov-Smirnov test.
 
     Parameters
