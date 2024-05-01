@@ -84,6 +84,8 @@ hydrodynamicRadius : float
 		Hydrodynamic radius of the particles.
 numberParticles : int
 		Number of particles in the system.
+tolerance : float, optional
+		Tolerance, used for approximate methods and also for Lanczos (default fluctuation computation). Default is 1e-4.
 )pbdoc";
 
 const char *mdot_docstring = R"pbdoc(
@@ -150,18 +152,20 @@ prefactor : float, optional
   solver.def(py::init([](std::string perx, std::string pery, std::string perz){	\
     return std::unique_ptr<MODULENAME>(new MODULENAME(createConfiguration(perx, pery, perz))); }), \
     constructor_docstring, "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a). \
-  def("initialize", [](MODULENAME &myself, real T, real eta, real a, int N){ \
+    def("initialize", [](MODULENAME &myself, real T, real eta, real a, int N, real tol){ \
     Parameters par;							\
     par.temperature = T;						\
     par.viscosity = eta;						\
     par.hydrodynamicRadius = {a};					\
+    par.tolerance = tol;						\
     par.numberParticles = N;						\
     myself.initialize(par);						\
   },									\
     initialize_docstring,		\
     "temperature"_a, "viscosity"_a,					\
     "hydrodynamicRadius"_a,						\
-    "numberParticles"_a).						\
+	  "numberParticles"_a,						\
+	  "tol"_a = 1e-4).						\
     def("setPositions", [](MODULENAME &myself, pyarray pos){myself.setPositions(cast_to_const_real(pos));}, \
 	"The module will compute the mobility according to this set of positions.", \
 	"positions"_a).							\
