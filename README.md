@@ -5,10 +5,10 @@ This repository contains several GPU solvers that can compute the action of the 
 
 In particular, given a group of forces, $\boldsymbol{F}$ , acting on a group of positions, $\boldsymbol{X}$, the libMobility solvers can compute:
 
-$$d\boldsymbol{X} = \boldsymbol{\mathcal{M}}\boldsymbol{F}dt + \text{prefactor}\sqrt{2T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}$$  
+$$d\boldsymbol{X} = \boldsymbol{\mathcal{M}}\boldsymbol{F}dt + \text{prefactor}\sqrt{2 k_B T \boldsymbol{\mathcal{M}}}d\boldsymbol{W}$$  
 
 
-Where dX are the linear displacements, prefactor is an user provided prefactor and dW is a collection of i.i.d Weinner processes. T is the temperature (really $k_B T$). Finally $\boldsymbol{\mathcal{M}}$ represents the mobility tensor.  
+Where dX are the linear displacements, prefactor is an user provided prefactor and dW is a collection of i.i.d Weinner processes and T is the temperature. Finally $\boldsymbol{\mathcal{M}}$ represents the mobility tensor.  
 Each solver in libMobility allows to compute either the deterministic term, the stochastic term, or both at the same time.  
 
 For each solver, a python and a C++ interface are provided. All solvers have the same interface, although some input parameters might change (an open boundaries solver does not accept a box size as a parameter).  
