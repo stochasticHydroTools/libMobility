@@ -7,9 +7,19 @@ In particular, libMobility solvers can compute the different elements in the rig
 
 .. math::
    
-   d\boldsymbol{X} = \boldsymbol{\mathcal{M}}\boldsymbol{F}dt + \text{prefactor}\sqrt{2T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}
+   d\boldsymbol{X} = \boldsymbol{\mathcal{M}}\boldsymbol{F}dt + \text{prefactor}\sqrt{2 k_B T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}
 
 .. hint:: See the :ref:`solvers` section for a list of available solvers.
+
+Where dX are the linear displacements, prefactor is a user provided prefactor and dW is a collection of i.i.d Weinner processes and T is the temperature. Finally $\boldsymbol{\mathcal{M}}$ represents the mobility tensor. 
+
+.. warning:: libMobility does *not* include the thermal drift :math:`k_B T \nabla_{\boldsymbol{X}} \cdot \mathcal{M}` and the user must supply their own implementation in order to maintain detailed ballance. The thermal drift can be approximated in libMobility using Random Finite Differences (RFD)  
+
+.. math::
+
+   \nabla_{\boldsymbol{X}} \cdot \mathcal{M} = \lim_{\delta \to 0} \frac{1}{\delta} \left\langle \mathcal{M}\left(\boldsymbol{X} + \frac{\delta}{2} \boldsymbol{W}  \right) - \mathcal{M}\left(\boldsymbol{X} - \frac{\delta}{2} \boldsymbol{W}  \right) \right\rangle_{\boldsymbol{W}}, \hspace{1cm} \boldsymbol{W} \sim \mathcal{N}\left(0,1 \right)
+
+Each solver in libMobility allows to compute either the deterministic term, the stochastic term, or both at the same time.  
 
 
 The libMobility interface
