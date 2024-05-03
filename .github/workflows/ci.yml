@@ -74,3 +74,9 @@ jobs:
         cd docs
         make html
       shell: bash -el {0}
+      
+    - name: Build conda package
+      run: |
+        micromamba activate libmobility
+        conda build conda
+      shell: bash -el {0}
