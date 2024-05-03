@@ -1,0 +1,41 @@
+package:
+  name: libmobility
+  version: 0.1.0
+
+source:
+  path: ../  # Path to your project's source code
+    
+requirements:
+
+  build:
+    - cmake >=3.22
+    - cuda-version 12.*
+    - gxx
+    - cuda-libraries-dev
+    - cuda-nvcc 
+    - make
+    - mkl-devel
+    - pybind11
+    - python 3.11.*
+  run:
+    - python 3.11.*
+    - cuda-version 12.*
+    - numpy
+    - cuda-libraries
+    - mkl
+
+test:
+  requires:
+    - pytest
+    - scipy
+  imports:
+    - libMobility
+  source_files:
+    - tests
+  commands:
+    - pytest -vs -k SelfMobility tests/test_*py
+    
+about:
+  home: https://github.com/stochasticHydroTools/libmobility
+  license: MIT
+  summary: Compute the action of the hydrodynamic mobility (at the RPY/FCM level) of a group of particles (in different geometries) with forces acting on them.
