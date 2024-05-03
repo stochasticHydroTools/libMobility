@@ -18,7 +18,9 @@ Then, activate the environment with:
 
     $ conda activate libmobility
 
+.. hint:: At the moment we offer several installation methods: via pip, conda or building from source. We recommend using pip or conda first, resorting to building from source only if the other methods do not work for you.
 
+	  
 Installing via pip
 ------------------
 
