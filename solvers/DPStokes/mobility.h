@@ -23,6 +23,7 @@ class DPStokes: public libmobility::Mobility{
   real lanczosTolerance;
   std::uint64_t lanczosSeed;
   std::shared_ptr<LanczosStochasticVelocities> lanczos;
+  std::string wallmode;
 public:
 
   DPStokes(Configuration conf){
@@ -33,31 +34,13 @@ public:
 	    conf.periodicityZ == libmobility::periodicity_mode::two_walls)
 	    )
       throw std::runtime_error("[DPStokes] This is a doubly periodic solver");
+    if(conf.periodicityZ == periodicity_mode::open) wallmode = "nowall";
+    else if(conf.periodicityZ == periodicity_mode::single_wall) wallmode = "bottom";
+    else if(conf.periodicityZ == periodicity_mode::two_walls) wallmode = "slit";
   }
 
   void setParametersDPStokes(DPStokesParameters i_dppar){
     this->dppar = i_dppar;
-    // DPStokesParameters dppar;
-    // int nx = -1;
-    // int ny = -1;
-    // int nz = -1;
-    // dppar.dt
-    // dppar.viscosity
-    // dppar.Lx
-    // dppar.Ly
-    // dppar.zmin
-    //   dppar. zmax
-    // //Tolerance will be ignored in DP mode, TP will use only tolerance and nxy/nz
-    // dppar.tolerance = 1e-5;
-    // dppar.w
-    // dppar.w_d;
-    // dppar.hydrodynamicRadius = -1;
-    // dppar.beta = -1;
-    // dppar.beta_d = -1;
-    // dppar.alpha = -1;
-    // dppar.alpha_d = -1;
-    // //Can be either none, bottom, slit or periodic
-    // dppar.mode;
     dpstokes = std::make_shared<uammd_dpstokes::DPStokesGlue>();
   }
 
@@ -66,6 +49,25 @@ public:
     this->dppar.viscosity = ipar.viscosity;
     this->temperature = ipar.temperature;
     this->lanczosTolerance = ipar.tolerance;
+    this->dppar.mode = this->wallmode;
+    this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
+    this->dppar.w = 6;
+    this->dppar.beta = 1.714*this->dppar.w;
+    real h = this->dppar.hydrodynamicRadius/1.554;
+    this->dppar.alpha = this->dppar.w/2.0;
+    this->dppar.tolerance = 1e-6;
+    this->dppar.nx = int(this->dppar.Lx/h + 0.5);
+    this->dppar.ny = int(this->dppar.Ly/h + 0.5);
+    // Add a buffer of w*h/2 when there is an open boundary
+    if(this->wallmode == "nowall"){
+      this->dppar.zmax += this->dppar.w*h/2;
+      this->dppar.zmin -= this->dppar.w*h/2;
+    }
+    if(this->wallmode == "bottom"){
+      this->dppar.zmin -= this->dppar.w*h/2;
+    }
+    real Lz = this->dppar.zmax - this->dppar.zmin;
+    this->dppar.nz = M_PI*Lz/(h);
     dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);
   }
@@ -77,22 +79,6 @@ public:
   void Mdot(const real* forces, real* result) override{
     dpstokes->Mdot(forces, nullptr, result, nullptr);
   }
-
-  void sqrtMdotW(real* result, real prefactor = 1) override{
-    if(this->temperature == 0) return;
-    if(not dpstokes)
-      throw std::runtime_error("[libMobility] You must initialize the base class in order to use the default stochastic displacement computation");
-    if(not lanczos){
-      if(this->lanczosSeed==0){//If a seed is not provided, get one from random device
-	this->lanczosSeed = std::random_device()();
-      }
-      lanczos = std::make_shared<LanczosStochasticVelocities>(this->numberParticles,
-							      this->lanczosTolerance, this->lanczosSeed);
-    }
-    lanczos->sqrtMdotW([this](const real*f, real* mv){Mdot(f, mv);}, result, prefactor);
-  }
-
-  // Donev: Is there a Lanczos implementation on the GPU or that is always done on CPU? If there is a GPU version, is it possible with the current interface to make a more efficient hydrodynamicDisplacements routine that does not do the CPU<->GPU twice of say the positions. That is, there is no return back to the GPU until both Mdot and sqrtMdotW are finished? I cannot follow the UAMMD stuff so just tell me what the code does now and if it is possible to optimize further.
 
   void clean() override{
     Mobility::clean();

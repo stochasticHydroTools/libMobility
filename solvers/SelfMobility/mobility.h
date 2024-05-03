@@ -34,7 +34,6 @@ public:
   }
 
   void initialize(Parameters ipar) override{
-    Mobility::initialize(ipar);
     auto seed = ipar.seed;
     if(not seed) seed = std::random_device()();
     this->rng = std::mt19937{seed};
