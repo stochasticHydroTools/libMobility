@@ -3,6 +3,31 @@ Installation
 
 We recommend working with a `conda <https://docs.conda.io/en/latest/>`_ environment. The file ``environment.yml`` contains the necessary dependencies to compile and use the library.
 
+Getting dependencies
+--------------------
+
+You can create the environment with:
+
+.. code-block:: shell
+
+    $ conda env create -f environment.yml
+
+Then, activate the environment with:
+
+.. code-block:: shell
+
+    $ conda activate libmobility
+
+
+Installing via pip
+------------------
+
+After installing the dependencies, you can install the library with pip. Go to the root of the repository and run:
+
+.. code-block:: shell
+
+    $ pip install .
+    
 
 Building a conda package
 ------------------------
@@ -31,23 +56,6 @@ Conda will automatically install all the dependencies needed to run the library.
 Building from source
 --------------------
 
-Getting dependencies
-~~~~~~~~~~~~~~~~~~~~
-
-You can create the environment with:
-
-.. code-block:: shell
-
-    $ conda env create -f environment.yml
-
-Then, activate the environment with:
-
-.. code-block:: shell
-
-    $ conda activate libmobility
-
-Compiling and installing
-~~~~~~~~~~~~~~~~~~~~~~~~
 
 CMake is used for compilation, you can compile and install everything with:
 
