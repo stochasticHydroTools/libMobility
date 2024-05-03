@@ -24,7 +24,7 @@ This module computes the RPY mobility in triply periodic boundaries using Ewald 
 MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(
     PSE,
     solver.def(
-        "setParametersPSE",
+        "setParameters",
         [](PSE &self, real psi, real Lx, real Ly, real Lz, real shearStrain) {
           self.setParametersPSE({psi, Lx, Ly, Lz, shearStrain});
         },

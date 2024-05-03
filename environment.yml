@@ -12,3 +12,5 @@ dependencies:
   - pybind11
   - numpy
   - python 3.11.*
+  - pytest
+  - scipy
