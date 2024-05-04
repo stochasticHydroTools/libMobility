@@ -11,7 +11,7 @@ In particular, libMobility solvers can compute the different elements on the rig
 
 .. hint:: See the :ref:`solvers` section for a list of available solvers.
 
-Where :math:`d\boldsymbol{X}` are the linear displacements, prefactor is a user-provided prefactor and :math:`d\boldsymbol{W}` is a collection of i.i.d Weinner processes and T is the temperature. Finally :math:`\boldsymbol{\mathcal{M}}` represents the mobility tensor. 
+Where :math:`d\boldsymbol{X}` are the linear displacements, prefactor is a user-provided prefactor and :math:`d\boldsymbol{W}` is a collection of i.i.d Weinner processes and T is the temperature. Finally :math:`\boldsymbol{M}` represents the mobility tensor. 
 
 .. warning:: libMobility does *not* include the thermal drift :math:`k_B T \nabla_{\boldsymbol{X}} \cdot \mathcal{M}` and the user must supply their own implementation in order to maintain detailed balance. The thermal drift can be approximated in libMobility using Random Finite Differences (RFD)  
 
