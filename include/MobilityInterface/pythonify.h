@@ -98,22 +98,6 @@ tolerance : float, optional
 		Tolerance, used for approximate methods and also for Lanczos (default fluctuation computation). Default is 1e-4.
 )pbdoc";
 
-const char *mdot_docstring = R"pbdoc(
-Computes the product of the Mobility matrix with a group of forces, :math:`\boldsymbol{\mathcal{M}}\boldsymbol{F}`.
-
-It is required that :py:mod:`setPositions` has been called before calling this function.
-Both inputs must have precision given by the precision attribute of the module.
-Both inputs must have size 3*N, where N is the number of particles.
-The arrays are ordered as :code:`[f0x, f0y, f0z, f1x, f1y, f1z, ...]`.
-
-Parameters
-----------
-forces : array_like,
-		Forces acting on the particles.
-result : array_like,
-		Where the result will be stored.
-)pbdoc";
-
 const char *sqrtMdotW_docstring = R"pbdoc(
 Computes the stochastic contribution, :math:`\text{prefactor}\sqrt{2T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}`, where :math:`\boldsymbol{\mathcal{M}}` is the mobility matrix and :math:`d\boldsymbol{W}` is a Wiener process.
 
@@ -156,11 +140,38 @@ auto call_sqrtMdotW(Solver &solver, pyarray result,
   solver.sqrtMdotW(cast_to_real(result), prefactor);
 }
 
-template <class Solver>
-auto call_mdot(Solver &myself, pyarray forces, pyarray result) {
+template <class Solver> auto call_mdot(Solver &myself, pyarray forces) {
+  int N = myself.getNumberParticles();
+  if (forces.size() < 3 * N) {
+    throw std::runtime_error("The forces array must have size 3*N.");
+  }
   auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
+  auto result =
+      py::array_t<libmobility::real>(py::array::ShapeContainer({3 * N}));
+  result.attr("fill")(0);
   myself.Mdot(f, cast_to_real(result));
+  auto shape =
+      py::array::ShapeContainer(forces.shape(), forces.shape() + forces.ndim());
+  return result.reshape(shape);
 }
+
+const char *mdot_docstring = R"pbdoc(
+Computes the product of the Mobility matrix with a group of forces, :math:`\boldsymbol{\mathcal{M}}\boldsymbol{F}`.
+
+It is required that :py:mod:`setPositions` has been called before calling this function.
+Both inputs must have precision given by the precision attribute of the module.
+The arrays are ordered as :code:`[f0x, f0y, f0z, f1x, f1y, f1z, ...]`.
+
+Parameters
+----------
+forces : array_like,
+		Forces acting on the particles. Must have size 3*N, where N is the number of particles.
+
+Returns
+-------
+array_like
+		The result of the product. The result will have the same format as the forces array.
+)pbdoc";
 
 template <class Solver>
 void call_initialize(Solver &myself, libmobility::real T, libmobility::real eta,
@@ -186,8 +197,7 @@ void call_hydrodynamicVelocities(Solver &myself, pyarray forces, pyarray result,
 }
 
 template <class Solver>
-void call_construct(std::string perx, std::string pery,
-                    std::string perz) {
+auto call_construct(std::string perx, std::string pery, std::string perz) {
   return std::unique_ptr<Solver>(
       new Solver(createConfiguration(perx, pery, perz)));
 }
@@ -200,17 +210,18 @@ void call_construct(std::string perx, std::string pery,
     auto solver =                                                                            \
         py::class_<MODULENAME>(m, MOBILITYSTR(MODULENAME), documentation);                   \
     solver                                                                                   \
-        .def(py::init(&call_construct<MODULENAME>), constructor_docstring,                    \
+        .def(py::init(&call_construct<MODULENAME>), constructor_docstring,                   \
              "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)                           \
         .def("initialize", call_initialize<MODULENAME>, initialize_docstring,                \
              "temperature"_a, "viscosity"_a, "hydrodynamicRadius"_a,                         \
              "numberParticles"_a, "tolerance"_a = 1e-4)                                      \
         .def("setPositions", call_setPositions<MODULENAME>,                                  \
-             "The module will compute the mobility according to this set of positions.",                                                                   \
+             "The module will compute the mobility according to this set of "                \
+             "positions.",                                                                   \
              "positions"_a)                                                                  \
         .def("Mdot", call_mdot<MODULENAME>, mdot_docstring,                                  \
-             "forces"_a = pyarray(), "result"_a)                                             \
-        .def("sqrtMdotW", call_sqrtMdotW<MODULENAME>, sqrtMdotW_docstring,                  \
+             "forces"_a = pyarray())                                                         \
+        .def("sqrtMdotW", call_sqrtMdotW<MODULENAME>, sqrtMdotW_docstring,                   \
              "result"_a = pyarray(), "prefactor"_a = 1.0)                                    \
         .def("hydrodynamicVelocities",                                                       \
              call_hydrodynamicVelocities<MODULENAME>,                                        \
