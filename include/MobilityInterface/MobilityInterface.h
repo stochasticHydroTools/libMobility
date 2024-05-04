@@ -111,6 +111,10 @@ namespace libmobility{
       sqrtMdotW(result, prefactor);
     }
 
+    int getNumberParticles() const{
+      return this->numberParticles;
+    }
+
     //Clean any memory allocated by the solver
     virtual void clean(){
       lanczos.reset();
