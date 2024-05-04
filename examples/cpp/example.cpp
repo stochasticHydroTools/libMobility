@@ -2,9 +2,9 @@
  All available solvers are used in a similar way, providing, in each case, the required parameters.
  For instance, a triply periodic algorithm will need at least a box size.
  */
-#include "MobilityInterface/MobilityInterface.h"
-#include"../solvers/NBody/mobility.h"
-#include"../solvers/PSE/mobility.h"
+#include"MobilityInterface/MobilityInterface.h"
+#include"libMobility/solvers/NBody/mobility.h"
+#include"libMobility/solvers/PSE/mobility.h"
 #include <type_traits>
 #include<vector>
 #include<random>
