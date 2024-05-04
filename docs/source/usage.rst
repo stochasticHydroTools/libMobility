@@ -3,7 +3,7 @@ Usage
 
 libMobility offers a set of solvers to compute the hydrodynamic displacements of particles in a fluid under different constraints and boundary conditions. The solvers are written in C++ and wrapped in Python.
 
-In particular, libMobility solvers can compute the different elements in the right hand side of the following stochastic differential equation:
+In particular, libMobility solvers can compute the different elements on the right hand side of the following stochastic differential equation:
 
 .. math::
    
@@ -11,9 +11,9 @@ In particular, libMobility solvers can compute the different elements in the rig
 
 .. hint:: See the :ref:`solvers` section for a list of available solvers.
 
-Where dX are the linear displacements, prefactor is a user provided prefactor and dW is a collection of i.i.d Weinner processes and T is the temperature. Finally $\boldsymbol{\mathcal{M}}$ represents the mobility tensor. 
+Where :math:`d\boldsymbol{X}` are the linear displacements, prefactor is a user-provided prefactor and :math:`d\boldsymbol{W}` is a collection of i.i.d Weinner processes and T is the temperature. Finally :math:`\boldsymbol{\mathcal{M}}` represents the mobility tensor. 
 
-.. warning:: libMobility does *not* include the thermal drift :math:`k_B T \nabla_{\boldsymbol{X}} \cdot \mathcal{M}` and the user must supply their own implementation in order to maintain detailed ballance. The thermal drift can be approximated in libMobility using Random Finite Differences (RFD)  
+.. warning:: libMobility does *not* include the thermal drift :math:`k_B T \nabla_{\boldsymbol{X}} \cdot \mathcal{M}` and the user must supply their own implementation in order to maintain detailed balance. The thermal drift can be approximated in libMobility using Random Finite Differences (RFD)  
 
 .. math::
 
