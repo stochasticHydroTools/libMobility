@@ -50,6 +50,13 @@ jobs:
         mkdir build && cd build
         cmake -DCMAKE_VERBOSE_MAKEFILE=yes -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
         make -j3 all install
+
+    - name: Compile examples
+      run: |
+        micromamba activate libmobility
+        mkdir examples/cpp/build && cd examples/cpp/build
+        cmake -DCMAKE_VERBOSE_MAKEFILE=yes -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
+        make -j3
         
     - name: Try to import libMobility
       run: |
