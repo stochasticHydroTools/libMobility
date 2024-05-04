@@ -4,10 +4,16 @@ The code example.cpp showcases how a solver can be included and used with libMob
 
 
 ### Compilation
-In order to succesfully compile example.cpp, ensure the Makefile in the root directory of the repo has generated the libraries for all the modules used (in this case ../solvers/NBody/mobility.so and ../solvers/PSE/mobility.so).  
 
-It is required to compile using the same precision as the libraries, so modify the Makefile if necessary (single precision is the default).  
-Running the Makefile at the root folder, instead of the one directly in this folder, will take care of that.
+After [installing libMobility](https://libmobility.readthedocs.io) you can use CMake to compile this file:
+
+```bash
+	mkdir build
+	cd build
+	cmake ..
+	make
+```
+
 
 ### Running
 A valid CUDA environment and a GPU are needed to run the example.  
