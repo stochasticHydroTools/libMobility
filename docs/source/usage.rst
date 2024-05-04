@@ -62,7 +62,6 @@ A libMobility solver is initialized in three steps:
 	  precision = np.float32 if Solver.precision=="float" else np.float64
 	  pos = np.random.rand(3*numberParticles).astype(precision)
 	  force = np.ones(3*numberParticles).astype(precision)
-	  result = np.zeros(3*numberParticles).astype(precision)
 
           # The solver will fail if it is not compatible with the provided periodicity
 	  nb = Solver(periodicityX='open',periodicityY='open',periodicityZ='open')
@@ -72,11 +71,11 @@ A libMobility solver is initialized in three steps:
                         hydrodynamicRadius = 1.0,
                         numberParticles = numberParticles)
 	  nb.setPositions(pos)
-	  nb.Mdot(forces = force, result = result)
+	  result = nb.Mdot(forces = force)
 	  print(f"{numberParticles} particles located at ( X Y Z ): {pos}")
 	  print("Forces:", force)
 	  print("M*F:", result)
 	  # result = prefactor*sqrt(2*temperature*M)*dW
-	  nb.sqrtMdotW(prefactor = 1.0, result = result)
+	  result = nb.sqrtMdotW(prefactor = 1.0)
 	  print("sqrt(2*T*M)*N(0,1):", result)
 	  nb.clean()
