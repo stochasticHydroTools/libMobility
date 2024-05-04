@@ -31,7 +31,7 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
     # within +/- mu_a of the real mean
     # with probability mu_alpha for all N components
     N = Sigma.size
-    mu_alpha = 0.99 ** (1 / N)
+    mu_alpha = 0.999 ** (1 / N)
     mu_a = 0.05
     Ns = int(round(2 * (norm.ppf(mu_alpha) / mu_a) ** 2))
     ScaledNoise = np.full((N, Ns), np.nan)
@@ -82,8 +82,6 @@ def test_fluctuation_dissipation(
     M = compute_M(solver, numberParticles)
 
     def fluctuation_method():
-        sqrtmnoise = np.zeros(numberParticles * 3).astype(precision)
-        solver.sqrtMdotW(sqrtmnoise, prefactor=1.0)
-        return sqrtmnoise
+        return solver.sqrtMdotW(prefactor=1.0).flatten()
 
     fluctuation_dissipation_KS(M, fluctuation_method)

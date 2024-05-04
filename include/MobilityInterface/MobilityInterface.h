@@ -107,8 +107,14 @@ namespace libmobility{
 
     //Equivalent to calling Mdot and then stochasticDisplacements, can be faster in some solvers
     virtual void hydrodynamicVelocities(const real* forces, real* result, real prefactor = 1){
-      Mdot(forces, result);
+      if(forces){
+	Mdot(forces, result);
+      }
       sqrtMdotW(result, prefactor);
+    }
+
+    int getNumberParticles() const{
+      return this->numberParticles;
     }
 
     //Clean any memory allocated by the solver

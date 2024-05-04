@@ -55,9 +55,8 @@ def test_self_mobility_selfmobility():
     )
     positions = np.zeros((1, 3), dtype=precision)
     solver.setPositions(positions)
-    result = np.zeros(3, dtype=precision)
     forces = np.ones(3, dtype=precision)
-    solver.Mdot(forces, result)
+    result = solver.Mdot(forces)
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
     assert np.allclose(result, m0 * forces, rtol=0, atol=1e-7)
 
@@ -79,9 +78,8 @@ def test_self_mobility_nbody():
     )
     positions = np.zeros((1, 3), dtype=precision)
     solver.setPositions(positions)
-    result = np.zeros(3, dtype=precision)
     forces = np.ones(3, dtype=precision)
-    solver.Mdot(forces, result)
+    result = solver.Mdot(forces)
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
     assert np.allclose(result, m0 * forces, rtol=0, atol=1e-7)
 
@@ -111,9 +109,8 @@ def test_self_mobility_pse_cubic_box(psi):
     )
     positions = np.zeros((1, 3), dtype=precision)
     solver.setPositions(positions)
-    result = np.zeros(3, dtype=precision)
     forces = np.ones(3, dtype=precision)
-    solver.Mdot(forces, result)
+    result = solver.Mdot(forces)
     leff = hydrodynamicRadius / parameters["Lx"]
     m0 = (
         1.0

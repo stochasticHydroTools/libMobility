@@ -52,6 +52,9 @@ public:
   void setPositions(const real* ipositions) override{ }
 
   void Mdot(const real* forces, real* result) override{
+    if(not forces){
+      std::fill(result, result+3*numberParticles, 0);
+    }
     for(int i = 0; i<3*numberParticles; i++){
       result[i] = forces[i]*selfMobility;
     }

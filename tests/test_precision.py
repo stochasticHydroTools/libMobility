@@ -37,8 +37,7 @@ def test_precision(Solver, periodicity):
 
     solver.setPositions(positions)
     forces = np.ones(size, dtype=precision)
-    mf = np.zeros(size, dtype=precision)
-    solver.Mdot(forces, mf)
+    mf = solver.Mdot(forces)
 
     zeros = np.zeros(size, dtype=precision)
     assert (
@@ -51,7 +50,7 @@ def test_precision(Solver, periodicity):
     [(SelfMobility, ("open", "open", "open"))],
 )
 def test_incorrect_precision(Solver, periodicity):
-    # tests that Mdot gives an error when inputs are in the wrong precision
+    # libMobility should work even if the inputs have an unexpected precision
 
     hydrodynamicRadius = 1.0
 
@@ -71,11 +70,8 @@ def test_incorrect_precision(Solver, periodicity):
     positions = np.random.rand(numberParticles, 3).astype(precision_bad)
 
     size = 3 * numberParticles
-    with pytest.raises(RuntimeError):
-        solver.setPositions(positions)
+    solver.setPositions(positions)
     positions = positions.astype(precision_good)
     solver.setPositions(positions)
     forces = np.ones(size, dtype=precision_bad)
-    mf = np.zeros(size, dtype=precision_bad)
-    with pytest.raises(RuntimeError):
-        solver.Mdot(forces, mf)
+    mf = solver.Mdot(forces)
