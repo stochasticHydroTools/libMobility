@@ -31,7 +31,7 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
     # within +/- mu_a of the real mean
     # with probability mu_alpha for all N components
     N = Sigma.size
-    mu_alpha = 0.99 ** (1 / N)
+    mu_alpha = 0.999 ** (1 / N)
     mu_a = 0.05
     Ns = int(round(2 * (norm.ppf(mu_alpha) / mu_a) ** 2))
     ScaledNoise = np.full((N, Ns), np.nan)
