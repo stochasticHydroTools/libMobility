@@ -1,15 +1,17 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.24)
 project(libMobility)
 enable_language(CUDA)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/" "$ENV{CONDA_PREFIX}/share/cmake/Modules")
 set(CMAKE_BUILD_TYPE Release)
 
-#add_compile_definitions(PUBLIC MAXLOGLEVEL=15)
+add_compile_definitions(PUBLIC MAXLOGLEVEL=3)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
+# Set CUDA archs so all supported GPUs are covered
+set(CMAKE_CUDA_ARCHITECTURES "all")
 
 #add_compile_definitions(PUBLIC DOUBLE_PRECISION)
 set(UAMMD_INCLUDE third_party/uammd/src third_party/uammd/src/third_party)
