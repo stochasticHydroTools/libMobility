@@ -82,8 +82,6 @@ def test_fluctuation_dissipation(
     M = compute_M(solver, numberParticles)
 
     def fluctuation_method():
-        sqrtmnoise = np.zeros(numberParticles * 3).astype(precision)
-        solver.sqrtMdotW(sqrtmnoise, prefactor=1.0)
-        return sqrtmnoise
+        return solver.sqrtMdotW(prefactor=1.0).flatten()
 
     fluctuation_dissipation_KS(M, fluctuation_method)
