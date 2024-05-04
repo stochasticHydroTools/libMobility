@@ -1,6 +1,7 @@
 import pytest
 from libMobility import *
 import numpy as np
+from utils import sane_parameters
 
 
 @pytest.mark.parametrize(
@@ -17,7 +18,8 @@ import numpy as np
 def test_contiguous(Solver, periodicity):
     hydrodynamicRadius = 1.0
     solver = Solver(*periodicity)
-    solver.setParameters(parameter=1)
+    parameters = sane_parameters[Solver.__name__]
+    solver.setParameters(*parameters)
     numberParticles = 1
     solver.initialize(
         temperature=1.0,
@@ -51,7 +53,8 @@ def test_contiguous(Solver, periodicity):
 def test_returns_mf(Solver, periodicity):
     hydrodynamicRadius = 1.0
     solver = Solver(*periodicity)
-    solver.setParameters(parameter=1)
+    parameters = sane_parameters[Solver.__name__]
+    solver.setParameters(*parameters)
     numberParticles = 1
     solver.initialize(
         temperature=1.0,
@@ -86,7 +89,8 @@ def test_returns_mf(Solver, periodicity):
 def test_returns_sqrtM(Solver, periodicity):
     hydrodynamicRadius = 1.0
     solver = Solver(*periodicity)
-    solver.setParameters(parameter=1)
+    parameters = sane_parameters[Solver.__name__]
+    solver.setParameters(*parameters)
     numberParticles = 1
     solver.initialize(
         temperature=1.0,
@@ -117,7 +121,8 @@ def test_returns_sqrtM(Solver, periodicity):
 def test_returns_hydrodisp(Solver, periodicity):
     hydrodynamicRadius = 1.0
     solver = Solver(*periodicity)
-    solver.setParameters(parameter=1)
+    parameters = sane_parameters[Solver.__name__]
+    solver.setParameters(*parameters)
     numberParticles = 1
     solver.initialize(
         temperature=1.0,
@@ -132,4 +137,6 @@ def test_returns_hydrodisp(Solver, periodicity):
     forces = np.random.rand(numberParticles, 3).astype(precision)
     solver.setPositions(positions)
     sqrtmw = solver.hydrodynamicVelocities()
+    assert sqrtmw.shape == (numberParticles, 3)
+    sqrtmw = solver.hydrodynamicVelocities(forces)
     assert sqrtmw.shape == (numberParticles, 3)
