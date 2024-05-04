@@ -15,12 +15,17 @@ For each solver, a python and a C++ interface are provided. All solvers have the
 
 Some of the solvers have different functionalities than the others. For instance, some modules accept torques while others don't. The documentation for a particular solver must be visited to know more.  
 
-## How this repository is organized
+## Repository Structure
 
-The directory **solvers** contains a subfolder for each module. The folder for each solver the implementation of the libMobility interface for that solver.  
-The directory **python** contains the file libMobility.py, which can be imported giving access to all the compiled modules.  
-The directory **cpp** contains an example usage of the C++ interface to the modules.  
-The directory **include** contains the C++ base class and utilities used to construct the modules.  
+This repository is organized into the following directories:
+
+- **solvers/**: This directory hosts a subfolder for each solver module. Each subfolder contains the implementation of the `libMobility` interface specific to that solver.
+
+- **examples/**: Contains examples on how to use the library from Python and C++.
+
+- **include/**: Includes the essential C++ base classes and utility files needed to construct the modules.
+
+- **conda/**: Contains a meta.yaml file to build a conda package for libMobility using conda-build.
 
 ## The libMobility interface
 Each solver is encased in a single class which is default constructible (no arguments required for its constructor).  
