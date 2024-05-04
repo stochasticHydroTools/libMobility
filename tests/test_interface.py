@@ -19,7 +19,7 @@ def test_contiguous(Solver, periodicity):
     hydrodynamicRadius = 1.0
     solver = Solver(*periodicity)
     parameters = sane_parameters[Solver.__name__]
-    solver.setParameters(*parameters)
+    solver.setParameters(**parameters)
     numberParticles = 1
     solver.initialize(
         temperature=1.0,
@@ -54,7 +54,7 @@ def test_returns_mf(Solver, periodicity):
     hydrodynamicRadius = 1.0
     solver = Solver(*periodicity)
     parameters = sane_parameters[Solver.__name__]
-    solver.setParameters(*parameters)
+    solver.setParameters(**parameters)
     numberParticles = 1
     solver.initialize(
         temperature=1.0,
@@ -90,7 +90,7 @@ def test_returns_sqrtM(Solver, periodicity):
     hydrodynamicRadius = 1.0
     solver = Solver(*periodicity)
     parameters = sane_parameters[Solver.__name__]
-    solver.setParameters(*parameters)
+    solver.setParameters(**parameters)
     numberParticles = 1
     solver.initialize(
         temperature=1.0,
@@ -122,7 +122,7 @@ def test_returns_hydrodisp(Solver, periodicity):
     hydrodynamicRadius = 1.0
     solver = Solver(*periodicity)
     parameters = sane_parameters[Solver.__name__]
-    solver.setParameters(*parameters)
+    solver.setParameters(**parameters)
     numberParticles = 1
     solver.initialize(
         temperature=1.0,
