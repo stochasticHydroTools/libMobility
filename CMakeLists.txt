@@ -20,7 +20,6 @@ set(UAMMD_INCLUDE include/third_party/uammd/src include/third_party/uammd/src/th
 # find_package(UAMMD REQUIRED)
 # set(UAMMD_INCLUDE ${UAMMD_INCLUDE_DIR})
 set(BLA_STATIC OFF)
-
 find_package(BLAS)
 find_package(LAPACK)
 
@@ -45,7 +44,6 @@ if(BLAS_FOUND AND LAPACK_FOUND)
   endif()
   # Linking BLAS and LAPACK libraries
   link_libraries(BLAS::BLAS LAPACK::LAPACK)
-  link_libraries(${LAPACK_LIBRARIES} ${LAPACKE_LIBRARIES})
 else()
   message(FATAL_ERROR "BLAS and LAPACK not found. Please install them.")
 endif()
