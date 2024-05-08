@@ -32,16 +32,17 @@ if(BLAS_FOUND AND LAPACK_FOUND)
     message(STATUS "Intel MKL environment detected")
     add_compile_definitions(PUBLIC USE_MKL)
     include_directories(${MKL_INCLUDE_DIR})
+  else()
+    find_path(BLAS_INCLUDE_DIR NAMES lapacke.h PATHS
+      $ENV{CONDA_PREFIX}/include
+      $ENV{PREFIX}/include
+      $ENV{MKLROOT}/include
+      $ENV{BLAS_HOME}/include
+      /usr/include
+      /usr/local/include
+    )
+    include_directories(${BLAS_INCLUDE_DIR})
   endif()
-  find_path(BLAS_INCLUDE_DIR NAMES lapacke.h PATHS
-    $ENV{CONDA_PREFIX}/include
-    $ENV{PREFIX}/include
-    $ENV{MKLROOT}/include
-    $ENV{BLAS_HOME}/include
-    /usr/include
-    /usr/local/include
-  )
-  include_directories(${BLAS_INCLUDE_DIR})
   # Linking BLAS and LAPACK libraries
   link_libraries(BLAS::BLAS)
   link_libraries(${LAPACK_LIBRARIES} ${LAPACKE_LIBRARIES})
