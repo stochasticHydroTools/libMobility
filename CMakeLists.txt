@@ -33,16 +33,13 @@ if(BLAS_FOUND AND LAPACK_FOUND)
     add_compile_definitions(USE_MKL)
     include_directories(${MKL_INCLUDE_DIR})
   endif()
-  message(STATUS "BLAS include dirs: ${BLAS_INCLUDE_DIRS}")
-  message(STATUS "LAPACK include dirs: ${LAPACKE_INCLUDE_DIRS}")
-  find_path(BLAS_INCLUDE_DIR NAMES cblas.h mkl.h PATHS
+  find_path(BLAS_INCLUDE_DIR NAMES lapacke.h PATHS
     $ENV{CONDA_PREFIX}/include
     $ENV{PREFIX}/include
     $ENV{MKLROOT}/include
     $ENV{BLAS_HOME}/include
     /usr/include
     /usr/local/include
-    NO_DEFAULT_PATH  # Avoids searching in default paths
   )
   include_directories(${BLAS_INCLUDE_DIR})
   # Linking BLAS and LAPACK libraries
