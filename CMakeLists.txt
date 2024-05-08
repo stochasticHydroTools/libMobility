@@ -44,7 +44,7 @@ if(BLAS_FOUND AND LAPACK_FOUND)
     include_directories(${BLAS_INCLUDE_DIR})
   endif()
   # Linking BLAS and LAPACK libraries
-  link_libraries(BLAS::BLAS)
+  link_libraries(BLAS::BLAS LAPACK::LAPACK)
   link_libraries(${LAPACK_LIBRARIES} ${LAPACKE_LIBRARIES})
 else()
   message(FATAL_ERROR "BLAS and LAPACK not found. Please install them.")
