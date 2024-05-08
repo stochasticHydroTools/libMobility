@@ -22,7 +22,6 @@ set(UAMMD_INCLUDE include/third_party/uammd/src include/third_party/uammd/src/th
 set(BLA_STATIC OFF)
 find_package(BLAS)
 find_package(LAPACK)
-
 if(BLAS_FOUND AND LAPACK_FOUND)
   message(STATUS "BLAS and LAPACK found")
   # Additional check for MKL
@@ -40,10 +39,25 @@ if(BLAS_FOUND AND LAPACK_FOUND)
       /usr/include
       /usr/local/include
     )
+    find_path(LAPACKE_INCLUDE_DIR lapacke.h)
+    find_library(LAPACKE_LIBRARY NAMES lapacke)
+    if(LAPACKE_INCLUDE_DIR AND LAPACKE_LIBRARY)
+      set(LAPACKE_FOUND TRUE)
+      set(LAPACKE_LIBRARIES ${LAPACKE_LIBRARY})
+      set(LAPACKE_INCLUDE_DIRS ${LAPACKE_INCLUDE_DIR})
+    else()
+      set(LAPACKE_FOUND FALSE)
+    endif()
+
+    include_directories(${LAPACKE_INCLUDE_DIRS})
     include_directories(${BLAS_INCLUDE_DIR})
   endif()
-  # Linking BLAS and LAPACK libraries
   link_libraries(BLAS::BLAS LAPACK::LAPACK)
+  if(LAPACKE_FOUND)
+    link_libraries(${LAPACKE_LIBRARIES})
+  else()
+    message(FATAL_ERROR "LAPACKE not found.")
+  endif()
 else()
   message(FATAL_ERROR "BLAS and LAPACK not found. Please install them.")
 endif()
