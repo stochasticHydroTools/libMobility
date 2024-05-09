@@ -63,9 +63,9 @@ public:
       this->dppar.zmax += this->dppar.w*h/2;
       this->dppar.zmin -= this->dppar.w*h/2;
     }
-    // if(this->wallmode == "bottom"){
-    //   this->dppar.zmin -= this->dppar.w*h/2;
-    // }
+    if(this->wallmode == "bottom"){
+      this->dppar.zmax += this->dppar.w*h/2;
+    }
     real Lz = this->dppar.zmax - this->dppar.zmin;
     this->dppar.nz = M_PI*Lz/(h);
     dpstokes->initialize(dppar, this->numberParticles);
