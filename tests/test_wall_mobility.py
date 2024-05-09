@@ -62,6 +62,8 @@ def test_self_mobility(Solver, periodicity, ref_file):
     interp_diags = [np.diag(matrix) for matrix in Minterp]
     ref_diags = [np.diag(matrix)[0:3] for matrix in refM] # only take diagonal elements from forces
 
+    assert np.all(np.diag(allM[0]) == [0,0,0]), "Self mobility is not zero on the wall at z=0"
+
     assert np.allclose(interp_diags, ref_diags, atol=3e-2), "Self mobility does not match reference"
 
 if __name__ == "__main__":
