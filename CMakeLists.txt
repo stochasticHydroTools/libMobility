@@ -20,44 +20,46 @@ set(UAMMD_INCLUDE include/third_party/uammd/src include/third_party/uammd/src/th
 # find_package(UAMMD REQUIRED)
 # set(UAMMD_INCLUDE ${UAMMD_INCLUDE_DIR})
 set(BLA_STATIC OFF)
-set(BLA_VENDOR Intel10_64lp)
 find_package(BLAS)
-if(BLAS_FOUND)
-  message("mkl environment detected")
-  add_compile_definitions(PUBLIC USE_MKL)
-  link_libraries(
-    BLAS::BLAS
-  )
-  find_path(BLAS_INCLUDE_DIRS mkl.h
-    $ENV{CONDA_PREFIX}/include
-    /usr/include
-    /usr/local/include
-    $ENV{MKLROOT}/include
-    $ENV{BLAS_HOME}/include
-  )
+find_package(LAPACK)
+if(BLAS_FOUND AND LAPACK_FOUND)
+  message(STATUS "BLAS and LAPACK found")
+  # Additional check for MKL
+  find_path(MKL_INCLUDE_DIR NAMES mkl.h PATHS $ENV{MKLROOT}/include)
+  if(MKL_INCLUDE_DIR)
+    message(STATUS "Intel MKL environment detected")
+    add_compile_definitions(PUBLIC USE_MKL)
+    include_directories(${MKL_INCLUDE_DIR})
+  else()
+    find_path(BLAS_INCLUDE_DIR NAMES lapacke.h PATHS
+      $ENV{CONDA_PREFIX}/include
+      $ENV{PREFIX}/include
+      $ENV{MKLROOT}/include
+      $ENV{BLAS_HOME}/include
+      /usr/include
+      /usr/local/include
+    )
+    find_path(LAPACKE_INCLUDE_DIR lapacke.h)
+    find_library(LAPACKE_LIBRARY NAMES lapacke)
+    if(LAPACKE_INCLUDE_DIR AND LAPACKE_LIBRARY)
+      set(LAPACKE_FOUND TRUE)
+      set(LAPACKE_LIBRARIES ${LAPACKE_LIBRARY})
+      set(LAPACKE_INCLUDE_DIRS ${LAPACKE_INCLUDE_DIR})
+    else()
+      message(FATAL_ERROR "LAPACKE not found.")
+    endif()
+    include_directories(${LAPACKE_INCLUDE_DIRS})
+    include_directories(${BLAS_INCLUDE_DIR})
+    link_libraries(${LAPACKE_LIBRARIES})
+  endif()
+  link_libraries(BLAS::BLAS LAPACK::LAPACK)
 else()
-  unset(BLA_VENDOR)
-  find_package(LAPACK REQUIRED)
-  find_package(LAPACKE REQUIRED)
-  find_package(BLAS REQUIRED)
-  link_libraries(${LAPACK_LIBRARIES} ${LAPACKE_LIBRARIES})
-  find_path(BLAS_INCLUDE_DIRS cblas.h
-    $ENV{CONDA_PREFIX}/include
-    /usr/include
-    /usr/local/include
-    $ENV{MKLROOT}/include
-    $ENV{BLAS_HOME}/include
-  )
-  find_path(LAPACKE_INCLUDE_DIRS lapacke.h
-    $ENV{CONDA_PREFIX}/include
-    /usr/include
-    /usr/local/include
-    $ENV{MKLROOT}/include
-    $ENV{LAPACKE_HOME}/include
-  )
-
+  message(FATAL_ERROR "BLAS and LAPACK not found. Please install them.")
 endif()
+
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+find_package(pybind11 CONFIG)
+include_directories(${pybind11_INCLUDE_DIRS})
 include_directories(${Python3_INCLUDE_DIRS})
 include_directories(${UAMMD_INCLUDE} ${BLAS_INCLUDE_DIRS} ${LAPACKE_INCLUDE_DIRS})
 include_directories(include/third_party/LanczosAlgorithm/include)

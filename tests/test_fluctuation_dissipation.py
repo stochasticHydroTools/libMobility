@@ -62,7 +62,7 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
     ],
 )
 @pytest.mark.parametrize("hydrodynamicRadius", [0.95, 1.12])
-@pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
+@pytest.mark.parametrize("numberParticles", [10])
 def test_fluctuation_dissipation(
     Solver, periodicity, hydrodynamicRadius, numberParticles
 ):

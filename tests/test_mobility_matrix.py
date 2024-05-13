@@ -62,7 +62,7 @@ def test_self_mobility_selfmobility():
 
 
 def test_self_mobility_nbody():
-    # Mobility should be just 1/(6\pi\eta R)*(1 - 2.83729748/L) for a single particle.
+    # Mobility should be just 1/(6\pi\eta R)
     Solver = NBody
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver("open", "open", "open")
