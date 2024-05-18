@@ -70,9 +70,9 @@ namespace nbody_rpy{
 	real invZi = real(1.0) / hj;
 	real invZi3 = invZi * invZi * invZi;
 	real invZi5 = invZi3 * invZi * invZi;
-	correction.x += -vj.x*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) / real(12.0);
-	correction.y += -vj.y*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) / real(12.0);
-	correction.z += -vj.z*(real(9.0)*invZi - real(4.0)*invZi3 + invZi5 ) / real(6.0);
+	correction.x += -vj.x*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) / real(16.0);
+	correction.y += -vj.y*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) / real(16.0);
+	correction.z += -vj.z*(real(9.0)*invZi - real(4.0)*invZi3 + invZi5 ) / real(8.0);
       }
       else{
 	real h_hat = hj / rij.z;

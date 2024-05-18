@@ -111,18 +111,17 @@ def test_self_mobility_nbody(Solver, periodicity, ref_file):
         M /= normMat
         allM[i] = M
 
-    scipy.io.savemat('./temp/test_' + ref_file, {'M': allM, 'heights': heights})
+    # scipy.io.savemat('./temp/test_' + ref_file, {'M': allM, 'heights': heights})
     ref = scipy.io.loadmat(ref_dir + ref_file)
     refM = ref['M']
 
     diags = [np.diag(matrix) for matrix in allM]
     ref_diags = [np.diag(matrix)[0:3] for matrix in refM] # only take diagonal elements from forces
 
-    # assert np.all(np.diag(allM[0]) == [0,0,0]), "Self mobility is not zero on the wall at z=0"
-
-    assert np.allclose(diags, ref_diags, atol=1e-2), "Self mobility does not match reference"
+    assert np.allclose(diags, ref_diags, atol=1e-6), "Self mobility does not match reference"
     
 
 if __name__ == "__main__":
     # test_self_mobility(DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc_ref.mat")
-    test_self_mobility(DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw_ref.mat")
+    # test_self_mobility(DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw_ref.mat")
+    test_self_mobility_nbody(NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.mat")
