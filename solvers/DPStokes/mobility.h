@@ -47,45 +47,35 @@ public:
   double configure_grid_and_kernels_xy(Parameters ipar){
     double hydroRadius = ipar.hydrodynamicRadius[0];
 
-    // TODO: should unify notation. sometimes called w, sometimes called m
-    // CORRECTION: m is for monopole (no torques)
-
-
-    // STEP 1: set w, beta based on kernel type (Table 1/2)
+    // STEP 1: set w & beta based on kernel type (Table 1/2)
     double w = 6.0; // note: should be an int but I'm scared of the consequences
     double beta = 1.714;
-    // START HERE
-    // TODO the above beta is wrong and should come from polynomial fits
-    // on something. look at config_xy starting at line 80
-    // GOAL-ish: this->dppar.beta = 1.689402*this->dppar.w;
 
     // STEP 2: use c(beta*w) polyfit to get c
-    // note: polyfit is to c(beta*w), not just beta
+      // note: polyfit is to c(beta*w), not just beta
     double c_beta = polyEval(cbetam, beta*w);
-    // compute h using h = Rh/(w*c) and nx = Lx/h
-    double h = hydroRadius / (w*c_beta);
+    double h = hydroRadius / (w*c_beta); // compute h using h = Rh/(w*c) and nx = Lx/h
     double nx_unsafe = dppar.Lx/h; // not necessarily fft friendly
 
     // STEP 3: find candidates for fft friendly nx
     std::vector<int> nx_safe = fft_friendly_sizes(floor(nx_unsafe), 100, 10);
     int m = nx_safe.size();
-    std::cout << "NUM CANDIDATES: " << m << std::endl;
 
     std::vector<double> errors(m);
     std::vector<double> h_candidates(m);
     std::vector<double> beta_candidates(m);
 
     int n = 1000;
-    double start = w;
+    double start = w; // interpolation range
     double end = 3*w;
-    std::vector<double> err_axis(n);
+    std::vector<double> err_axis(n); // creates a linspace vector
     h = (end-start)/(n-1);
     std::cout << h << std::endl;
     for(int i = 0; i < n; i++){
       err_axis[i] = start + i*h;
     }
 
-    // for each candidate, compute corresponding h and use c^{-1} polyfits to get beta
+    // STEP 4: for each candidate, compute corresponding h and use c^{-1} polyfits to get beta
     // then, linearly interpolate the error spline using beta*w to get error
     for(int i = 0; i < m; i++){
       h_candidates[i] = dppar.Lx/(1.0*nx_safe[i]); // double cast
@@ -96,14 +86,12 @@ public:
         errors[i] = -1;
         continue;
       }
-      errors[i] = linearInterp(errw6,err_axis,beta_w);
+      errors[i] = linearInterp(errmw6,err_axis,beta_w);
     }
 
+    // pick parameters with minimum error
     int best_index = 0;
     for(int i = 1; i < m; i++){
-        std::cout << "candidate b: " << beta_candidates[i] << std::endl;
-        std::cout << "candidate nx:" << nx_safe[i] << std::endl;
-        std::cout << "err: " << errors[i] << std::endl;
       if(errors[i] != -1 && errors[i] < errors[best_index]){
         best_index = i;
       }
@@ -116,27 +104,7 @@ public:
     this->dppar.beta = beta_candidates[best_index]*w;
     h = h_candidates[best_index];
 
-    std::cout << "BETA: " << beta_candidates[best_index] << std::endl;
-
     return h;
-  }
-
-  double linearInterp(std::vector<double> f, std::vector<double> x, double v){
-
-    // assume x sorted (since it comes from a linspace)
-    // f is some function evaluated on x
-
-    double h = x[1]-x[0];
-    int j = floor( (v-x[0])/h ); // index such that x[j] <= v < x[j+1]
-
-    double x0 = x[j];
-    double x1 = x[j+1];
-    double y0 = f[j];
-    double y1 = f[j+1];
-
-    double f_v = y0 + (v-x0)*( (y1-y0)/(x1-x0) ); // linear interp formula
-
-    return f_v;
   }
 
   void configure_grid_and_kernels_z(real h, double fac=1.5){
@@ -161,7 +129,8 @@ public:
 
     int nz = ceil(M_PI/ (acos(-h/H) - M_PI_2) );
 
-    this->dppar.nz = fft_friendly_sizes(nz, 100, 10)[0] + 1;
+    // correction so 2(Nz-1) is fft friendly
+    this->dppar.nz = fft_friendly_sizes(nz, 100, 1)[0] + 1;
   }
 
   void initialize(Parameters ipar) override{
@@ -173,16 +142,12 @@ public:
     real h = this->configure_grid_and_kernels_xy(ipar);
 
     this->dppar.mode = this->wallmode;
-    // real h = this->dppar.hydrodynamicRadius/1.554;
+
     this->dppar.alpha = this->dppar.w/2.0; // why not (h*w)/2?
     this->dppar.tolerance = 1e-6;
-    // this->dppar.nx = int(this->dppar.Lx/h + 0.5);
-    // this->dppar.ny = int(this->dppar.Ly/h + 0.5);
 
     this->configure_grid_and_kernels_z(h);
 
-    // real Lz = this->dppar.zmax - this->dppar.zmin;
-    // this->dppar.nz = M_PI*Lz/(h);
     dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);
   }
@@ -251,6 +216,30 @@ std::vector<int> fft_friendly_sizes(int N, int sep, int count) {
     return Ns;
 }
 
+  double linearInterp(std::vector<double> f, std::vector<double> x, double v){
+
+    // assume x sorted (since it comes from a linspace)
+    // f is some function evaluated on x
+
+    double h = x[1]-x[0];
+    int j = floor( (v-x[0])/h ); // index such that x[j] <= v < x[j+1]
+
+    double x0 = x[j];
+    double x1 = x[j+1];
+    double y0 = f[j];
+    double y1 = f[j+1];
+
+    double f_v = y0 + (v-x0)*( (y1-y0)/(x1-x0) ); // linear interp formula
+
+    return f_v;
+  }
+
+// fits for cbeta = Rh/(wh) and error
+//  cbetam       - Polynomial fit to c(beta) = R_h/(wh) for monopole 
+//  cbetam_inv   - Polynomial fit to c^{-1} for monopole 
+//  errmw6       - spline sampling for %-error(beta) for monopole
+
+  // note: the m is for monopole (no torques)
   // use polyEval(coeffs, x) to get c(beta) and c^{-1}(rH/(w*h))
   std::vector<double> cbetam = {
   1.377360225705533e-14,
@@ -278,8 +267,9 @@ std::vector<int> fft_friendly_sizes(int N, int sep, int count) {
   -136305.2970161326,
   3445.959503226691};
 
+  // points on an error spline for w=6, monopole
   // err evaluated on linspace(6,18,1000)
-  std::vector<double> errw6={
+  std::vector<double> errmw6={
   0.9525731647831076,
   0.9452855729417519,
   0.9380261897060487,
