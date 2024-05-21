@@ -59,7 +59,7 @@ def test_self_mobility(Solver, periodicity, ref_file):
         M /= normMat
         allM[i] = M
 
-    # scipy.io.savemat('./temp/test_' + ref_file, {'M': allM, 'heights': heights})
+    scipy.io.savemat('./temp/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
     diags = [np.diag(matrix) for matrix in allM]
     ref_diags = [np.diag(matrix)[0:3] for matrix in refM] # only take diagonal elements from forces
@@ -67,4 +67,4 @@ def test_self_mobility(Solver, periodicity, ref_file):
     if Solver.__name__ == "DPStokes": # NBody ref only goes down to a height of z=1
         assert np.all(np.diag(allM[0]) == [0,0,0]), "Self mobility is not zero on the wall at z=0"
 
-    assert np.allclose(diags, ref_diags, atol=1e-2), "Self mobility does not match reference"
+    assert np.allclose(diags, ref_diags, atol=1e-3), "Self mobility does not match reference"
