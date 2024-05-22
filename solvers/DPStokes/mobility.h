@@ -70,7 +70,6 @@ public:
     double end = 3*w;
     std::vector<double> err_axis(n); // creates a linspace vector
     h = (end-start)/(n-1);
-    std::cout << h << std::endl;
     for(int i = 0; i < n; i++){
       err_axis[i] = start + i*h;
     }
@@ -143,7 +142,7 @@ public:
 
     this->dppar.mode = this->wallmode;
 
-    this->dppar.alpha = this->dppar.w/2.0; // why not (h*w)/2?
+    this->dppar.alpha = this->dppar.w/2.0;
     this->dppar.tolerance = 1e-6;
 
     this->configure_grid_and_kernels_z(h);

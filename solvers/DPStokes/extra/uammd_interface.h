@@ -32,7 +32,7 @@ namespace uammd_dpstokes{
     real hydrodynamicRadius = -1;
     real beta = -1;
     real beta_d = -1;
-    real alpha = -1;
+    real alpha = -1; // alpha is in units of h = Lx/nx
     real alpha_d = -1;
     //Can be either none, bottom, slit or periodic
     std::string mode;
