@@ -1,6 +1,8 @@
 /*Raul P. Pelaez 2021.
   An interface code between uammd_wrapper.cu and uammd_python.cpp.
 */
+#ifndef UAMMD_INTERFACE_H
+#define UAMMD_INTERFACE_H
 #include<string>
 #include<memory>
 namespace uammd_dpstokes{
@@ -63,3 +65,5 @@ namespace uammd_dpstokes{
   };
 
 }
+
+#endif
