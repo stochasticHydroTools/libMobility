@@ -12,6 +12,15 @@
 
 namespace dpstokes_parameters{
 
+  // headers for helper functions
+  namespace {
+    bool isValid(int num);
+    int findBest(int N);
+    std::vector<int> fft_friendly_sizes(int N, int sep, int count);
+    double polyEval(std::vector<double> polyCoeffs, double x);
+    double linearInterp(std::vector<double> f, std::vector<double> x, double v);
+  }
+
   double configure_grid_and_kernels_xy(Parameters ipar, DPStokesParameters &dppar){
     double hydroRadius = ipar.hydrodynamicRadius[0];
 
@@ -100,6 +109,8 @@ namespace dpstokes_parameters{
     dppar.nz = fft_friendly_sizes(nz, 100, 1)[0] + 1;
   }
 
+  namespace {
+
   bool isValid(int num) {
     while (num % 2 == 0) num /= 2;
     while (num % 3 == 0) num /= 3;
@@ -165,5 +176,6 @@ namespace dpstokes_parameters{
     double f_v = y0 + (v-x0)*( (y1-y0)/(x1-x0) ); // linear interp formula
 
     return f_v;
+  }
   }
 }
