@@ -1,6 +1,8 @@
 /*Raul P. Pelaez 2021.
   An interface code between uammd_wrapper.cu and uammd_python.cpp.
 */
+#ifndef UAMMD_INTERFACE_H
+#define UAMMD_INTERFACE_H
 #include<string>
 #include<memory>
 namespace uammd_dpstokes{
@@ -32,7 +34,7 @@ namespace uammd_dpstokes{
     real hydrodynamicRadius = -1;
     real beta = -1;
     real beta_d = -1;
-    real alpha = -1;
+    real alpha = -1; // alpha is in units of h = Lx/nx
     real alpha_d = -1;
     //Can be either none, bottom, slit or periodic
     std::string mode;
@@ -63,3 +65,5 @@ namespace uammd_dpstokes{
   };
 
 }
+
+#endif

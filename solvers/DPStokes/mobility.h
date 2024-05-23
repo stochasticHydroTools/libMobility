@@ -4,6 +4,7 @@
 #define MOBILITY_SELFMOBILITY_H
 #include <MobilityInterface/MobilityInterface.h>
 #include"extra/uammd_interface.h"
+#include"extra/dpstokes_parameters.h"
 #include<vector>
 #include<cmath>
 #include<type_traits>
@@ -49,26 +50,17 @@ public:
     this->dppar.viscosity = ipar.viscosity;
     this->temperature = ipar.temperature;
     this->lanczosTolerance = ipar.tolerance;
+
+    real h = dpstokes_parameters::configure_grid_and_kernels_xy(ipar, this->dppar);
+
     this->dppar.mode = this->wallmode;
-    this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
-    this->dppar.w = 6;
-    this->dppar.beta = 1.714*this->dppar.w;
-    real h = this->dppar.hydrodynamicRadius/1.554;
+
     this->dppar.alpha = this->dppar.w/2.0;
     this->dppar.tolerance = 1e-6;
-    this->dppar.nx = int(this->dppar.Lx/h + 0.5);
-    this->dppar.ny = int(this->dppar.Ly/h + 0.5);
-    // Add a buffer of w*h/2 when there is an open boundary
-    if(this->wallmode == "nowall"){
-      this->dppar.zmax += this->dppar.w*h/2;
-      this->dppar.zmin -= this->dppar.w*h/2;
-    }
-    if(this->wallmode == "bottom"){
-      this->dppar.zmax += this->dppar.w*h/2;
-    }
-    real Lz = this->dppar.zmax - this->dppar.zmin;
-    this->dppar.nz = M_PI*Lz/(h);
-    dpstokes->initialize(dppar, this->numberParticles);
+
+    dpstokes_parameters::configure_grid_and_kernels_z(h, this->wallmode, this->dppar);
+
+    dpstokes->initialize(this->dppar, this->numberParticles);
     Mobility::initialize(ipar);
   }
 
@@ -84,5 +76,6 @@ public:
     Mobility::clean();
     dpstokes->clear();
   }
+
 };
 #endif
