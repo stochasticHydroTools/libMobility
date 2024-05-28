@@ -59,7 +59,7 @@ def test_self_mobility(Solver, periodicity, ref_file):
         M /= normMat
         allM[i] = M
 
-    # scipy.io.savemat('./temp/test_' + ref_file, {'M': allM, 'heights': heights})
+    scipy.io.savemat('./temp/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
     diags = [np.diag(matrix) for matrix in allM]
     ref_diags = [np.diag(matrix)[0:3] for matrix in refM] # only take diagonal elements from forces
@@ -68,3 +68,113 @@ def test_self_mobility(Solver, periodicity, ref_file):
         assert np.all(np.diag(allM[0]) == [0,0,0]), "Self mobility is not zero on the wall at z=0"
 
     assert np.allclose(diags, ref_diags, atol=1e-2), "Self mobility does not match reference"
+
+@pytest.mark.parametrize(
+    ("Solver", "periodicity", "ref_file"),
+    [
+        (DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw.mat"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc.mat"),
+        # (NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.mat")
+    ],
+)
+def test_pair_mobility(Solver, periodicity, ref_file):
+    zmax = 19.2
+    xymax = 76.8
+    params = self_mobility_params[Solver.__name__]
+
+    ref_dir = "./ref/"
+    ref = scipy.io.loadmat(ref_dir + ref_file)
+    refM = ref['M']
+    refHeights = ref['heights'].flatten()
+    nHeights = len(refHeights)
+
+    radH = 1.0 # hydrodynamic radius
+    eta = 1/4/np.sqrt(np.pi)
+
+    precision = np.float32 if Solver.precision == "float" else np.float64
+
+    solver = Solver(*periodicity)
+    solver.setParameters(**params)
+    numberParticles = 2
+    solver.initialize(
+        temperature=0,
+        viscosity=eta,
+        hydrodynamicRadius=radH,
+        numberParticles=numberParticles,
+    )
+    
+    normMat = (1/(6*np.pi*eta))*np.ones((3*numberParticles, 3*numberParticles), dtype=precision)
+
+    seps = np.array([3 * radH, 4 * radH, 8 * radH])
+    nSeps = len(seps)
+
+    allM = np.zeros((nSeps, nHeights, 3*numberParticles, 3*numberParticles), dtype=precision)
+    for i in range(0,nSeps):
+        for j in range(0, nHeights):
+            xpos = xymax/2
+            positions = np.array([[xpos+seps[i]/2, xpos, refHeights[j]],
+                                  [xpos-seps[i]/2, xpos, refHeights[j]]], dtype=precision)
+            solver.setPositions(positions)
+            
+            M = compute_M(solver, numberParticles)
+            M /= normMat
+            allM[i][j] = M
+
+    scipy.io.savemat('./temp/test_' + ref_file, {'M': allM, 'heights': refHeights})
+
+    # if np.any(allM < 0):
+    #     print("Negative values in mobility matrix")
+    #     breakpoint()
+
+    ## xx component
+    indx = 4
+    indy = 1
+    checkComponent(indx, indy, allM, refM, nSeps, nHeights)
+
+    ## yy component
+    indx = 5
+    indy = 2
+    checkComponent(indx, indy, allM, refM, nSeps, nHeights)
+
+    ## zz component
+    indx = 6
+    indy = 3
+    checkComponent(indx, indy, allM, refM, nSeps, nHeights)
+
+    ## xz component
+    indx = 4
+    indy = 3
+    checkComponent(indx, indy, allM, refM, nSeps, nHeights)
+
+
+
+    # diags = [np.diag(matrix) for matrix in allM]
+    # ref_diags = [np.diag(matrix)[0:3] for matrix in refM] # only take diagonal elements from forces
+
+
+def checkComponent(indx, indy, allM, refM, nSeps, nHeights):
+
+    indx -= 1 # shift from matlab to python indexing
+    indy -= 1
+    for i in range(0,nSeps):
+        for k in range(0, nHeights):
+
+            # print(f"Checking component {indx}, {indy} for separation {i}, height {j}"
+            xx = allM[i, k, indx, indy]
+            xx_ref = refM[i, k, indx, indy]
+            # diff = np.abs(xx - xx_ref)
+            if np.abs(xx_ref) < 1e-6:
+                diff = np.abs(xx - xx_ref)
+            else:
+                diff = np.abs(xx - xx_ref)/xx_ref
+
+            if indx == 3 and indy == 2:
+                breakpoint()
+            assert diff < 7e-2, f"Pair mobility does not match reference for component {indx}, {indy}, {xx}, {xx_ref}"
+
+
+if __name__ == "__main__":
+    test_self_mobility(DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw.mat")
+    test_self_mobility(DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc.mat")
+    test_self_mobility(NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.mat")
+    # test_pair_mobility(DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw.mat")
