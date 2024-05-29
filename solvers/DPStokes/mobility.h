@@ -51,9 +51,9 @@ public:
     this->lanczosTolerance = ipar.tolerance;
     this->dppar.mode = this->wallmode;
     this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
-    this->dppar.w = 6;
-    this->dppar.beta = 1.714*this->dppar.w;
-    real h = this->dppar.hydrodynamicRadius/1.554;
+    this->dppar.w = 4;
+    this->dppar.beta = 1.785*this->dppar.w;
+    real h = this->dppar.hydrodynamicRadius/1.205;
     this->dppar.alpha = this->dppar.w/2.0;
     this->dppar.tolerance = 1e-6;
     this->dppar.nx = int(this->dppar.Lx/h + 0.5);

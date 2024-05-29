@@ -14,8 +14,8 @@ self_mobility_params = {
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc.mat"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw_w4.mat"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc_w4.mat"),
         (NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.mat")
     ],
 )
@@ -59,7 +59,7 @@ def test_self_mobility(Solver, periodicity, ref_file):
         M /= normMat
         allM[i] = M
 
-    scipy.io.savemat('./temp/test_' + ref_file, {'M': allM, 'heights': refHeights})
+    scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
     diags = [np.diag(matrix) for matrix in allM]
     ref_diags = [np.diag(matrix)[0:3] for matrix in refM] # only take diagonal elements from forces
@@ -120,7 +120,7 @@ def test_pair_mobility(Solver, periodicity, ref_file):
             M /= normMat
             allM[i][j] = M
 
-    scipy.io.savemat('./temp/test_' + ref_file, {'M': allM, 'heights': refHeights})
+    scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
     # if np.any(allM < 0):
     #     print("Negative values in mobility matrix")
