@@ -72,9 +72,9 @@ def test_self_mobility(Solver, periodicity, ref_file):
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc.mat"),
-        # (NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.mat")
+        # (DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw_w4.mat"),
+        # (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc_w4.mat"),
+        (NBody, ("open", "open", "single_wall"), "pair_mobility_bw_ref_noimg.mat")
     ],
 )
 def test_pair_mobility(Solver, periodicity, ref_file):
@@ -122,10 +122,6 @@ def test_pair_mobility(Solver, periodicity, ref_file):
 
     scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
-    # if np.any(allM < 0):
-    #     print("Negative values in mobility matrix")
-    #     breakpoint()
-
     ## xx component
     indx = 4
     indy = 1
@@ -142,14 +138,9 @@ def test_pair_mobility(Solver, periodicity, ref_file):
     checkComponent(indx, indy, allM, refM, nSeps, nHeights)
 
     ## xz component
-    indx = 4
-    indy = 3
+    indx = 3
+    indy = 4
     checkComponent(indx, indy, allM, refM, nSeps, nHeights)
-
-
-
-    # diags = [np.diag(matrix) for matrix in allM]
-    # ref_diags = [np.diag(matrix)[0:3] for matrix in refM] # only take diagonal elements from forces
 
 
 def checkComponent(indx, indy, allM, refM, nSeps, nHeights):
@@ -159,18 +150,15 @@ def checkComponent(indx, indy, allM, refM, nSeps, nHeights):
     for i in range(0,nSeps):
         for k in range(0, nHeights):
 
-            # print(f"Checking component {indx}, {indy} for separation {i}, height {j}"
             xx = allM[i, k, indx, indy]
             xx_ref = refM[i, k, indx, indy]
-            # diff = np.abs(xx - xx_ref)
-            if np.abs(xx_ref) < 1e-6:
+
+            if xx_ref == 0.0:
                 diff = np.abs(xx - xx_ref)
             else:
                 diff = np.abs(xx - xx_ref)/xx_ref
 
-            if indx == 3 and indy == 2:
-                breakpoint()
-            assert diff < 7e-2, f"Pair mobility does not match reference for component {indx}, {indy}, {xx}, {xx_ref}"
+            assert diff < 1e-3, f"Pair mobility does not match reference for component {indx}, {indy}, {xx}, {xx_ref}"
 
 
 if __name__ == "__main__":
