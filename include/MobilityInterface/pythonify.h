@@ -146,12 +146,16 @@ template <class Solver> auto call_mdot(Solver &myself, pyarray_c &forces,
   }
   auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
   auto t = torques.size() ? cast_to_const_real(torques) : nullptr;
-  auto mf =
-      py::array_t<libmobility::real>(py::array::ShapeContainer({3 * N}));
-  mf.attr("fill")(0);
-  auto mt =
-    py::array_t<libmobility::real>(py::array::ShapeContainer({3 * N}));
-  mt.attr("fill")(0);
+    auto mf = py::array_t<libmobility::real>();
+  auto mt = py::array_t<libmobility::real>();
+  if(f){
+    mf.resize({3 * N});
+    mf.attr("fill")(0);
+  }
+  if(t){
+    mt.resize({3 * N});
+    mt.attr("fill")(0);
+  }
   myself.Mdot(f, t, cast_to_real(mf), cast_to_real(mt));
   return std::make_pair(mf.reshape({N, 3}), mt.reshape({N, 3}));
 }
@@ -203,12 +207,21 @@ auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,  pyarray_c &
   if (forces.size() < 3 * N and forces.size() > 0) {
     throw std::runtime_error("The forces array must have size 3*N.");
   }
+  if (torques.size() < 3 * N and torques.size() > 0) {
+    throw std::runtime_error("The torques array must have size 3*N.");
+  }
   auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
   auto t = torques.size() ? cast_to_const_real(torques) : nullptr;
-  auto mf = py::array_t<libmobility::real>({3 * N});
-  mf.attr("fill")(0);
-  auto mt = py::array_t<libmobility::real>({3 * N});
-  mt.attr("fill")(0);
+  auto mf = py::array_t<libmobility::real>();
+  auto mt = py::array_t<libmobility::real>();
+  if(f){
+    mf.resize({3 * N});
+    mf.attr("fill")(0);
+  }
+  if(t){
+    mt.resize({3 * N});
+    mt.attr("fill")(0);
+  }
   myself.hydrodynamicVelocities(f, t, cast_to_real(mf), cast_to_real(mt), prefactor);
   return std::make_pair(mf.reshape({N, 3}), mt.reshape({N, 3}));
 }
