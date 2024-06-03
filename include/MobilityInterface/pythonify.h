@@ -270,7 +270,7 @@ auto call_construct(std::string perx, std::string pery, std::string perz) {
         .def("hydrodynamicVelocities",                                                       \
              call_hydrodynamicVelocities<MODULENAME>,                                        \
              hydrodynamicvelocities_docstring, "forces"_a = pyarray_c(),                     \
-	     "forces"_a = pyarray_c(), "prefactor"_a = 1)                                    \
+	     "torques"_a = pyarray_c(), "prefactor"_a = 1)                                    \
         .def("clean", &MODULENAME::clean,                                                    \
              "Frees any memory allocated by the module.")                                    \
         .def_property_readonly_static(                                                       \
