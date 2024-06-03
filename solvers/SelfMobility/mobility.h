@@ -54,7 +54,7 @@ public:
   void setPositions(const real* ipositions) override{ }
 
   void Mdot(const real* forces, const real* torques, real* linear, real* angular) override{
-    if(torques or angular)
+    if(torques)
       throw std::runtime_error("[SelfMobility] Torque is not implemented");
     if(not forces){
       std::fill(linear, linear+3*numberParticles, 0);
