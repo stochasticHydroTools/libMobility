@@ -97,6 +97,8 @@ hydrodynamicRadius : float
 		Hydrodynamic radius of the particles.
 numberParticles : int
 		Number of particles in the system.
+needs_torque : bool, optional
+		Whether the solver needs torques. Default is false.
 tolerance : float, optional
 		Tolerance, used for approximate methods and also for Lanczos (default fluctuation computation). Default is 1e-4.
 )pbdoc";
@@ -110,7 +112,7 @@ auto call_sqrtMdotW(Solver &solver, libmobility::real prefactor) {
 }
 
 const char *sqrtMdotW_docstring = R"pbdoc(
-Computes the stochastic contribution, :math:`\text{prefactor}\sqrt{2T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}`, where :math:`\boldsymbol{\mathcal{M}}` is the mobility matrix and :math:`d\boldsymbol{W}` is a Wiener process.
+Computes the stochastic contribution, :math:`\text{prefactor}\sqrt{2T\boldsymbol{\mathcal{\Omega}}}d\boldsymbol{W}`, where :math:`\boldsymbol{\mathcal{\Omega}}` is the grand mobility matrix and :math:`d\boldsymbol{W}` is a Wiener process.
 
 It is required that :py:mod:`setPositions` has been called before calling this function.
 
@@ -127,28 +129,40 @@ array_like
 
 )pbdoc";
 
-template <class Solver> auto call_mdot(Solver &myself, pyarray_c &forces) {
+template <class Solver> auto call_mdot(Solver &myself, pyarray_c &forces,
+				       pyarray_c &torques) {
   int N = myself.getNumberParticles();
   if (forces.size() < 3 * N and forces.size() > 0) {
     throw std::runtime_error("The forces array must have size 3*N.");
   }
+  if (torques.size() < 3 * N and torques.size() > 0) {
+		throw std::runtime_error("The torques array must have size 3*N.");
+  }
   auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
-  auto result =
+  auto t = torques.size() ? cast_to_const_real(torques) : nullptr;
+  auto mf =
       py::array_t<libmobility::real>(py::array::ShapeContainer({3 * N}));
-  result.attr("fill")(0);
-  myself.Mdot(f, cast_to_real(result));
-  return result.reshape({N, 3});
+  mf.attr("fill")(0);
+  auto mt =
+    py::array_t<libmobility::real>(py::array::ShapeContainer({3 * N}));
+  mt.attr("fill")(0);
+  myself.Mdot(f, t, cast_to_real(mf), cast_to_real(mf));
+  return std::make_pair(mf.reshape({N, 3}), mf.reshape({N, 3}));
 }
 
 const char *mdot_docstring = R"pbdoc(
-Computes the product of the Mobility matrix with a group of forces, :math:`\boldsymbol{\mathcal{M}}\boldsymbol{F}`.
+Computes the product of the Mobility matrix with a group of forces and/or torques, :math:`\boldsymbol{\mathcal{\Omega}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{\Tau}\end{bmatrix}`.
 
 It is required that :py:mod:`setPositions` has been called before calling this function.
 
+At least one of the forces or torques must be provided.
+
 Parameters
 ----------
-forces : array_like,
+forces : array_like, optional
 		Forces acting on the particles. Must have shape (N, 3), where N is the number of particles.
+torques : array_like, optional
+		Torques acting on the particles. Must have shape (N, 3), where N is the number of particles.
 
 Returns
 -------
@@ -173,34 +187,38 @@ template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
 }
 
 template <class Solver>
-auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,
+auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,  pyarray_c &torques,
                                  libmobility::real prefactor) {
   int N = myself.getNumberParticles();
   if (forces.size() < 3 * N and forces.size() > 0) {
     throw std::runtime_error("The forces array must have size 3*N.");
   }
   auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
-  auto result = py::array_t<libmobility::real>({3 * N});
-  result.attr("fill")(0);
-  myself.hydrodynamicVelocities(f, cast_to_real(result), prefactor);
-  return result.reshape({N, 3});
+  auto t = torques.size() ? cast_to_const_real(torques) : nullptr;
+  auto mf = py::array_t<libmobility::real>({3 * N});
+  mf.attr("fill")(0);
+  auto mt = py::array_t<libmobility::real>({3 * N});
+  mt.attr("fill")(0);
+  myself.hydrodynamicVelocities(f, t, cast_to_real(mf), cast_to_real(mt), prefactor);
+  return std::make_pair(mf.reshape({N, 3}), mt.reshape({N, 3}));
 }
 
 const char *hydrodynamicvelocities_docstring = R"pbdoc(
 Computes the hydrodynamic (deterministic and stochastic) velocities.
 
 .. math::
-        \boldsymbol{\mathcal{M}}\boldsymbol{F} + \text{prefactor}\sqrt{2T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}
+        \boldsymbol{\mathcal{\Omega}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{\Tau}\end{bmatrix} + \text{prefactor}\sqrt{2T\boldsymbol{\mathcal{\Omega}}}d\boldsymbol{W}
 
-If the forces are ommited only the stochastic part is computed.
-If the temperature is zero the stochastic part is ommited.
+If the forces are omitted only the stochastic part is computed.
+If the temperature is zero the stochastic part is omitted.
 Calling this function is equivalent to calling :py:mod:`Mdot` and :py:mod:`sqrtMdotW` in sequence, but in some solvers this can be done more efficiently.
 
 Parameters
 ----------
 forces : array_like, optional
 		Forces acting on the particles.
-
+torques : array_like, optional
+		Torques acting on the particles.
 prefactor : float, optional
 		Prefactor to multiply the result by. Default is 1.0.
 
@@ -228,19 +246,19 @@ auto call_construct(std::string perx, std::string pery, std::string perz) {
              "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)                           \
         .def("initialize", call_initialize<MODULENAME>, initialize_docstring,                \
              "temperature"_a, "viscosity"_a, "hydrodynamicRadius"_a,                         \
-             "numberParticles"_a, "tolerance"_a = 1e-4)                                      \
+             "numberParticles"_a, "needs_torque"_a=false, "tolerance"_a = 1e-4) \
         .def("setPositions", call_setPositions<MODULENAME>,                                  \
              "The module will compute the mobility according to this set of "                \
              "positions.",                                                                   \
              "positions"_a)                                                                  \
         .def("Mdot", call_mdot<MODULENAME>, mdot_docstring,                                  \
-             "forces"_a = pyarray())                                                         \
+             "forces"_a = pyarray(), "torques"_a = pyarray())				     \
         .def("sqrtMdotW", call_sqrtMdotW<MODULENAME>, sqrtMdotW_docstring,                   \
              "prefactor"_a = 1.0)                                                            \
         .def("hydrodynamicVelocities",                                                       \
              call_hydrodynamicVelocities<MODULENAME>,                                        \
              hydrodynamicvelocities_docstring, "forces"_a = pyarray_c(),                     \
-             "prefactor"_a = 1)                                                              \
+	     "forces"_a = pyarray_c(), "prefactor"_a = 1)                                    \
         .def("clean", &MODULENAME::clean,                                                    \
              "Frees any memory allocated by the module.")                                    \
         .def_property_readonly_static(                                                       \
