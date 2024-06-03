@@ -144,9 +144,6 @@ namespace uammd_dpstokes{
     void Mdot(const real* h_forces, const real* h_torques,
 	      real* h_MF,
 	      real* h_MT){
-      // static int uses = 0;
-      // uses++;
-      //if(uses>=10) isNVTXEnabled = true;
       tmp.resize(numberParticles);
       bool useTorque = h_torques;//.size() != 0;
       {

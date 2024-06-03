@@ -21,8 +21,6 @@ class DPStokes: public libmobility::Mobility{
   DPStokesParameters dppar;
   real temperature;
   real lanczosTolerance;
-  std::uint64_t lanczosSeed;
-  std::shared_ptr<LanczosStochasticVelocities> lanczos;
   std::string wallmode;
 public:
 
@@ -70,14 +68,15 @@ public:
     this->dppar.nz = M_PI*Lz/(h);
     dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);
+    if(ipar.needsTorque) throw std::runtime_error("[DPStokes] Torque is not implemented");
   }
 
   void setPositions(const real* ipositions) override{
     dpstokes->setPositions(ipositions);
   }
 
-  void Mdot(const real* forces, real* result) override{
-    dpstokes->Mdot(forces, nullptr, result, nullptr);
+  void Mdot(const real* forces, const real* torques, real* linear, real* angular) override{
+    dpstokes->Mdot(forces, torques, linear, angular);
   }
 
   void clean() override{
