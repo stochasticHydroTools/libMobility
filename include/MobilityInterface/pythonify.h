@@ -279,7 +279,7 @@ auto call_construct(std::string perx, std::string pery, std::string perz) {
              "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)                           \
         .def("initialize", call_initialize<MODULENAME>, initialize_docstring,                \
              "temperature"_a, "viscosity"_a, "hydrodynamicRadius"_a,                         \
-             "numberParticles"_a, "needs_torque"_a=false, "tolerance"_a = 1e-4) \
+             "numberParticles"_a, "needsTorque"_a=false, "tolerance"_a = 1e-4) \
         .def("setPositions", call_setPositions<MODULENAME>,                                  \
              "The module will compute the mobility according to this set of "                \
              "positions.",                                                                   \
