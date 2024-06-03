@@ -105,10 +105,13 @@ tolerance : float, optional
 
 template <class Solver>
 auto call_sqrtMdotW(Solver &solver, libmobility::real prefactor) {
-  auto result =
+  auto linear =
       py::array_t<libmobility::real>({solver.getNumberParticles() * 3});
-  solver.sqrtMdotW(cast_to_real(result), prefactor);
-  return result.reshape({solver.getNumberParticles(), 3});
+  auto angular =
+    py::array_t<libmobility::real>({solver.getNumberParticles() * 3});
+  solver.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
+  return std::make_pair(linear.reshape({solver.getNumberParticles(), 3}),
+			angular.reshape({solver.getNumberParticles(), 3}));
 }
 
 const char *sqrtMdotW_docstring = R"pbdoc(
@@ -125,7 +128,10 @@ prefactor : float, optional
 Returns
 -------
 array_like
-		The resulting fluctuations. Shape is (N, 3), where N is the number of particles.
+		The resulting linear fluctuations. Shape is (N, 3), where N is the number of particles.
+array_like
+		The resulting angular fluctuations. Shape is (N, 3), where N is the number of particles.
+
 
 )pbdoc";
 
@@ -167,7 +173,10 @@ torques : array_like, optional
 Returns
 -------
 array_like
-		The result of the product. The result will have the same format as the forces array.
+		The linear displacements. The result will have the same format as the forces array.
+array_like
+		The angular displacements. The result will have the same format as the torques array.
+
 )pbdoc";
 
 template <class Solver>
@@ -225,7 +234,9 @@ prefactor : float, optional
 Returns
 -------
 array_like
-		The resulting velocities. Shape is (N, 3), where N is the number of particles.
+		The resulting linear displacements. Shape is (N, 3), where N is the number of particles.
+array_like
+		The resulting angular displacements. Shape is (N, 3), where N is the number of particles.
 )pbdoc";
 
 template <class Solver>
