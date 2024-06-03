@@ -108,19 +108,22 @@ namespace libmobility{
 								this->lanczosTolerance, this->lanczosSeed);
 	lanczosOutput.resize(3*numberElements);
       }
+      if(this->needsTorque and not angular)
+	throw std::runtime_error("[libMobility] This solver requires angular velocities when configured with torques");
+      std::fill(lanczosOutput.begin(), lanczosOutput.end(), 0);
       lanczos->sqrtMdotW([this](const real*f, real* mv){
-	const real* t = this->needsTorque ? f+3*this->numberParticles : nullptr;
-        real* mt = this->needsTorque ? mv+3*this->numberParticles : nullptr;
+	const real* t = this->needsTorque ? (f+3*this->numberParticles) : nullptr;
+        real* mt = this->needsTorque ? (mv+3*this->numberParticles) : nullptr;
 	Mdot(f, t, mv, mt);
       }, lanczosOutput.data(), prefactor);
       std::copy(lanczosOutput.begin(), lanczosOutput.begin()+3*this->numberParticles, linear);
-      if(this->needsTorque and angular)
+      if(this->needsTorque)
 	std::copy(lanczosOutput.begin()+3*this->numberParticles, lanczosOutput.end(), angular);
     }
 
     //Equivalent to calling Mdot and then stochasticDisplacements, can be faster in some solvers
     virtual void hydrodynamicVelocities(const real* forces, const real* torques, real* linear, real* angular, real prefactor = 1){
-      if(forces){
+      if(forces or torques){
 	Mdot(forces, torques, linear, angular);
       }
       sqrtMdotW(linear, angular, prefactor);
@@ -133,6 +136,7 @@ namespace libmobility{
     //Clean any memory allocated by the solver
     virtual void clean(){
       lanczos.reset();
+      lanczosOutput.clear();
     }
   };
 }
