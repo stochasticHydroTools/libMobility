@@ -114,7 +114,7 @@ namespace libmobility{
 	Mdot(f, t, mv, mt);
       }, lanczosOutput.data(), prefactor);
       std::copy(lanczosOutput.begin(), lanczosOutput.begin()+3*this->numberParticles, linear);
-      if(this->needsTorque)
+      if(this->needsTorque and angular)
 	std::copy(lanczosOutput.begin()+3*this->numberParticles, lanczosOutput.end(), angular);
     }
 
