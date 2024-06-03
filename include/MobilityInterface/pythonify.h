@@ -152,8 +152,8 @@ template <class Solver> auto call_mdot(Solver &myself, pyarray_c &forces,
   auto mt =
     py::array_t<libmobility::real>(py::array::ShapeContainer({3 * N}));
   mt.attr("fill")(0);
-  myself.Mdot(f, t, cast_to_real(mf), cast_to_real(mf));
-  return std::make_pair(mf.reshape({N, 3}), mf.reshape({N, 3}));
+  myself.Mdot(f, t, cast_to_real(mf), cast_to_real(mt));
+  return std::make_pair(mf.reshape({N, 3}), mt.reshape({N, 3}));
 }
 
 const char *mdot_docstring = R"pbdoc(
