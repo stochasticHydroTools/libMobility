@@ -161,7 +161,7 @@ template <class Solver> auto call_mdot(Solver &myself, pyarray_c &forces,
   myself.Mdot(f, t, mf_ptr, mt_ptr);
   if(mf_ptr) mf = mf.reshape({N, 3});
   if(mt_ptr) mt = mt.reshape({N, 3});
-  return std::make_pair(mf, mt)
+  return std::make_pair(mf, mt);
 }
 
 const char *mdot_docstring = R"pbdoc(
@@ -231,7 +231,7 @@ auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,  pyarray_c &
   myself.hydrodynamicVelocities(f, t, mf_ptr, mt_ptr, prefactor);
   if(mf_ptr) mf = mf.reshape({N, 3});
   if(mt_ptr) mt = mt.reshape({N, 3});
-  return std::make_pair(mf, mt)
+  return std::make_pair(mf, mt);
 }
 
 const char *hydrodynamicvelocities_docstring = R"pbdoc(
