@@ -37,7 +37,7 @@ def test_precision(Solver, periodicity):
 
     solver.setPositions(positions)
     forces = np.ones(size, dtype=precision)
-    mf = solver.Mdot(forces)
+    mf, _ = solver.Mdot(forces)
 
     zeros = np.zeros(size, dtype=precision)
     assert (
@@ -74,4 +74,4 @@ def test_incorrect_precision(Solver, periodicity):
     positions = positions.astype(precision_good)
     solver.setPositions(positions)
     forces = np.ones(size, dtype=precision_bad)
-    mf = solver.Mdot(forces)
+    mf, _ = solver.Mdot(forces)
