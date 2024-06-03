@@ -97,6 +97,7 @@ namespace libmobility{
     //If the solver does not provide a stochastic displacement implementation, the Lanczos algorithm will be used automatically
     virtual void sqrtMdotW(real* linear, real* angular, real prefactor = 1){
       if(this->temperature == 0) return;
+      if(prefactor == 0) return;
       if(not this->initialized)
 	throw std::runtime_error("[libMobility] You must initialize the base class in order to use the default stochastic displacement computation");
       if(not lanczos){
