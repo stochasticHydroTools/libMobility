@@ -16,7 +16,7 @@ def compute_M(solver, numberParticles):
     I = np.identity(size, dtype=precision)
     for i in range(0, size):
         forces = I[:, i].copy()
-        M[:, i] = solver.Mdot(forces).reshape(3 * numberParticles)
+        M[:, i], _ = solver.Mdot(forces).reshape(3 * numberParticles)
     return M
 
 
