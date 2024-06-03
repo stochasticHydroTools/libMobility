@@ -146,7 +146,7 @@ template <class Solver> auto call_mdot(Solver &myself, pyarray_c &forces,
   }
   auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
   auto t = torques.size() ? cast_to_const_real(torques) : nullptr;
-    auto mf = py::array_t<libmobility::real>();
+  auto mf = py::array_t<libmobility::real>();
   auto mt = py::array_t<libmobility::real>();
   if(f){
     mf.resize({3 * N});
@@ -156,8 +156,12 @@ template <class Solver> auto call_mdot(Solver &myself, pyarray_c &forces,
     mt.resize({3 * N});
     mt.attr("fill")(0);
   }
-  myself.Mdot(f, t, cast_to_real(mf), cast_to_real(mt));
-  return std::make_pair(mf.reshape({N, 3}), mt.reshape({N, 3}));
+  auto mf_ptr = mf.size() ? cast_to_real(mf) : nullptr;
+  auto mt_ptr = mt.size() ? cast_to_real(mt) : nullptr;
+  myself.Mdot(f, t, mf_ptr, mt_ptr);
+  if(mf_ptr) mf = mf.reshape({N, 3});
+  if(mt_ptr) mt = mt.reshape({N, 3});
+  return std::make_pair(mf, mt)
 }
 
 const char *mdot_docstring = R"pbdoc(
@@ -222,8 +226,12 @@ auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,  pyarray_c &
     mt.resize({3 * N});
     mt.attr("fill")(0);
   }
-  myself.hydrodynamicVelocities(f, t, cast_to_real(mf), cast_to_real(mt), prefactor);
-  return std::make_pair(mf.reshape({N, 3}), mt.reshape({N, 3}));
+  auto mf_ptr = mf.size() ? cast_to_real(mf) : nullptr;
+  auto mt_ptr = mt.size() ? cast_to_real(mt) : nullptr;
+  myself.hydrodynamicVelocities(f, t, mf_ptr, mt_ptr, prefactor);
+  if(mf_ptr) mf = mf.reshape({N, 3});
+  if(mt_ptr) mt = mt.reshape({N, 3});
+  return std::make_pair(mf, mt)
 }
 
 const char *hydrodynamicvelocities_docstring = R"pbdoc(
