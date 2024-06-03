@@ -181,13 +181,14 @@ array_like
 
 template <class Solver>
 void call_initialize(Solver &myself, libmobility::real T, libmobility::real eta,
-                     libmobility::real a, int N, libmobility::real tol) {
+                     libmobility::real a, int N, bool needsTorque, libmobility::real tol) {
   libmobility::Parameters par;
   par.temperature = T;
   par.viscosity = eta;
   par.hydrodynamicRadius = {a};
   par.tolerance = tol;
   par.numberParticles = N;
+  par.needsTorque = needsTorque;
   myself.initialize(par);
 }
 
