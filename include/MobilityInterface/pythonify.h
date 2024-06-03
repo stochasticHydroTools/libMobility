@@ -142,7 +142,7 @@ template <class Solver> auto call_mdot(Solver &myself, pyarray_c &forces,
     throw std::runtime_error("The forces array must have size 3*N.");
   }
   if (torques.size() < 3 * N and torques.size() > 0) {
-		throw std::runtime_error("The torques array must have size 3*N.");
+    throw std::runtime_error("The torques array must have size 3*N.");
   }
   auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
   auto t = torques.size() ? cast_to_const_real(torques) : nullptr;
@@ -159,8 +159,8 @@ template <class Solver> auto call_mdot(Solver &myself, pyarray_c &forces,
   auto mf_ptr = mf.size() ? cast_to_real(mf) : nullptr;
   auto mt_ptr = mt.size() ? cast_to_real(mt) : nullptr;
   myself.Mdot(f, t, mf_ptr, mt_ptr);
-  if(mf_ptr) mf.reshape({N, 3});
-  if(mt_ptr) mt.reshape({N, 3});
+  if(mf_ptr) mf = mf.reshape({N, 3});
+  if(mt_ptr) mt = mt.reshape({N, 3});
   return std::make_pair(mf, mt);
 }
 

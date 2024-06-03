@@ -68,8 +68,6 @@ public:
 
   //If this function is not present the default behavior is invoked, which uses the Lanczos algorithm
   void sqrtMdotW(real* linear, real* angular, real prefactor = 1) override{
-    if(angular)
-      throw std::runtime_error("[SelfMobility] Torque is not implemented");
     std::normal_distribution<real> d{0,1};
     for(int i = 0; i<3*numberParticles; i++){
       real dW = d(rng);
