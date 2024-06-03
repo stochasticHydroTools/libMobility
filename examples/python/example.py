@@ -48,7 +48,7 @@ nb.initialize(
 )
 nb.setPositions(pos)
 
-result = nb.Mdot(forces=force)
+result, _ = nb.Mdot(forces=force)
 print(f"{numberParticles} particles located at ( X Y Z ): {pos}")
 print("Forces:", force)
 print("M*F:", result)
