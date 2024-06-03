@@ -45,6 +45,8 @@ public:
       pse = std::make_shared<uammd_pse::UAMMD_PSE_Glue>(psepar, this->currentNumberParticles);
     }
     currentpsepar = psepar;
+    if(ipar.needsTorque)
+      throw std::runtime_error("[PSE] Torque is not implemented");
   }
 
   struct PSEParameters{
@@ -68,18 +70,28 @@ public:
     std::copy(ipositions, ipositions + 3*numberParticles, positions.begin());
   }
 
-  virtual void Mdot(const real* forces, real* result) override{
-    pse->computeHydrodynamicDisplacements(positions.data(), forces, result, 0, 0);
+  virtual void Mdot(const real* forces, const real* torques,
+		    real* linear, real* angular) override{
+    if(torques)
+      throw std::runtime_error("[PSE] Torque is not implemented");
+    pse->computeHydrodynamicDisplacements(positions.data(), forces, linear, 0, 0);
   }
 
-  virtual void sqrtMdotW(real* result, real prefactor = 1) override{
-    pse->computeHydrodynamicDisplacements(positions.data(), nullptr, result,
+  virtual void sqrtMdotW(real* linear, real *angular, real prefactor = 1) override{
+    if(angular)
+      throw std::runtime_error("[PSE] Torque is not implemented");
+    pse->computeHydrodynamicDisplacements(positions.data(), nullptr, linear,
 					  temperature, prefactor);
   }
 
   virtual void hydrodynamicVelocities(const real* forces,
-				      real* result, real prefactor = 1) override{
-    pse->computeHydrodynamicDisplacements(positions.data(), forces, result,
+				      const real* torques,
+				      real* linear,
+				      real* angular,
+				      real prefactor = 1) override{
+    if(angular)
+      throw std::runtime_error("[PSE] Torque is not implemented");
+    pse->computeHydrodynamicDisplacements(positions.data(), forces, linear,
 					  temperature, prefactor);
   }
 

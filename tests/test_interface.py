@@ -68,10 +68,10 @@ def test_returns_mf(Solver, periodicity):
     positions = np.random.rand(numberParticles, 3).astype(precision)
     forces = np.random.rand(numberParticles, 3).astype(precision)
     solver.setPositions(positions)
-    mf = solver.Mdot(forces)
+    mf, _ = solver.Mdot(forces)
     assert mf.shape == (numberParticles, 3)
     forces = forces.reshape(3 * numberParticles)
-    mf = solver.Mdot(forces)
+    mf, _ = solver.Mdot(forces)
     assert mf.shape == (numberParticles, 3)
 
 
@@ -103,7 +103,7 @@ def test_returns_sqrtM(Solver, periodicity):
     precision = np.float32 if Solver.precision == "float" else np.float64
     positions = np.random.rand(numberParticles, 3).astype(precision)
     solver.setPositions(positions)
-    sqrtmw = solver.sqrtMdotW()
+    sqrtmw, _ = solver.sqrtMdotW()
     assert sqrtmw.shape == (numberParticles, 3)
 
 
@@ -136,7 +136,7 @@ def test_returns_hydrodisp(Solver, periodicity):
     positions = np.random.rand(numberParticles, 3).astype(precision)
     forces = np.random.rand(numberParticles, 3).astype(precision)
     solver.setPositions(positions)
-    sqrtmw = solver.hydrodynamicVelocities()
+    sqrtmw, _ = solver.hydrodynamicVelocities()
     assert sqrtmw.shape == (numberParticles, 3)
-    sqrtmw = solver.hydrodynamicVelocities(forces)
+    sqrtmw, _ = solver.hydrodynamicVelocities(forces)
     assert sqrtmw.shape == (numberParticles, 3)

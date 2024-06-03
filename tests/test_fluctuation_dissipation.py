@@ -63,7 +63,7 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
 )
 @pytest.mark.parametrize("hydrodynamicRadius", [0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
-def test_fluctuation_dissipation(
+def test_fluctuation_dissipation_linear_displacements(
     Solver, periodicity, hydrodynamicRadius, numberParticles
 ):
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -82,6 +82,6 @@ def test_fluctuation_dissipation(
     M = compute_M(solver, numberParticles)
 
     def fluctuation_method():
-        return solver.sqrtMdotW(prefactor=1.0).flatten()
+        return solver.sqrtMdotW(prefactor=1.0)[0].flatten()
 
     fluctuation_dissipation_KS(M, fluctuation_method)

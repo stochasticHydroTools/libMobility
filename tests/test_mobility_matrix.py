@@ -17,7 +17,9 @@ from libMobility import SelfMobility, PSE, NBody, DPStokes
 )
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
-def test_mobility_matrix(Solver, periodicity, hydrodynamicRadius, numberParticles):
+def test_mobility_matrix_linear(
+    Solver, periodicity, hydrodynamicRadius, numberParticles
+):
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
     parameters = sane_parameters[Solver.__name__]
@@ -39,7 +41,7 @@ def test_mobility_matrix(Solver, periodicity, hydrodynamicRadius, numberParticle
     ), f"Mobility matrix is not symmetric within 1e-6, max diff: {np.max(np.abs(sym))}"
 
 
-def test_self_mobility_selfmobility():
+def test_self_mobility_linear_selfmobility():
     # Mobility should be just 1/(6\pi\eta R) for a single particle.
     precision = np.float32 if SelfMobility.precision == "float" else np.float64
     solver = SelfMobility("open", "open", "open")
@@ -56,12 +58,12 @@ def test_self_mobility_selfmobility():
     positions = np.zeros((1, 3), dtype=precision)
     solver.setPositions(positions)
     forces = np.ones(3, dtype=precision)
-    result = solver.Mdot(forces)
+    result, _ = solver.Mdot(forces)
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
     assert np.allclose(result, m0 * forces, rtol=0, atol=1e-7)
 
 
-def test_self_mobility_nbody():
+def test_self_mobility_linear_nbody():
     # Mobility should be just 1/(6\pi\eta R)*(1 - 2.83729748/L) for a single particle.
     Solver = NBody
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -79,13 +81,13 @@ def test_self_mobility_nbody():
     positions = np.zeros((1, 3), dtype=precision)
     solver.setPositions(positions)
     forces = np.ones(3, dtype=precision)
-    result = solver.Mdot(forces)
+    result, _ = solver.Mdot(forces)
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
     assert np.allclose(result, m0 * forces, rtol=0, atol=1e-7)
 
 
 @pytest.mark.parametrize("psi", [0.0, 0.5, 1.0])
-def test_self_mobility_pse_cubic_box(psi):
+def test_self_mobility_linear_pse_cubic_box(psi):
     # Mobility should be just 1/(6\pi\eta a)*(1 - 2.83729748 a/L) for a single particle.
     Solver = PSE
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -110,7 +112,7 @@ def test_self_mobility_pse_cubic_box(psi):
     positions = np.zeros((1, 3), dtype=precision)
     solver.setPositions(positions)
     forces = np.ones(3, dtype=precision)
-    result = solver.Mdot(forces)
+    result, _ = solver.Mdot(forces)
     leff = hydrodynamicRadius / parameters["Lx"]
     m0 = (
         1.0

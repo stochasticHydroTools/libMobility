@@ -51,7 +51,7 @@ auto computeMFWithSolver(std::shared_ptr<MobilityBase> solver,
 			 std::vector<scalar> &forces){
   std::vector<scalar> result(pos.size(), 0);
   solver->setPositions(pos.data());
-  solver->Mdot(forces.data(), result.data());
+  solver->Mdot(forces.data(), nullptr, result.data(), nullptr);
   return result;
 }
 
@@ -74,6 +74,7 @@ int main(){
   par.numberParticles = numberParticles;
   par.tolerance = 1e-4;
   par.temperature = 1.0;
+  par.needsTorque = false;
 
   //Create two different solvers
   auto solver_pse = initializeSolver<PSE>(par);
@@ -86,7 +87,7 @@ int main(){
   //The solvers can be used to compute stochastic displacements, even if they do not provide a specific way to compute them (defaults to using the lanczos algorithm
   std::vector<scalar> noiseNBody(pos.size(), 0);
   scalar prefactor = 1.0;
-  solver_nbody->sqrtMdotW(noiseNBody.data(), prefactor);
+  solver_nbody->sqrtMdotW(noiseNBody.data(), nullptr, prefactor);
 
   //Remember to clean up when done
   solver_nbody->clean();
