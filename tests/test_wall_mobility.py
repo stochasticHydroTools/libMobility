@@ -14,8 +14,8 @@ self_mobility_params = {
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw_w4.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc_w4.mat"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw_w4_gpu.mat"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc_w4_gpu.mat"),
         (NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.mat")
     ],
 )
@@ -59,7 +59,8 @@ def test_self_mobility(Solver, periodicity, ref_file):
         M /= normMat
         allM[i] = M
 
-    scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
+    # uncomment to save datafile for test plots
+    # scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
     diags = [np.diag(matrix) for matrix in allM]
     ref_diags = [np.diag(matrix)[0:3] for matrix in refM] # only take diagonal elements from forces
@@ -67,13 +68,13 @@ def test_self_mobility(Solver, periodicity, ref_file):
     if Solver.__name__ == "DPStokes": # NBody ref only goes down to a height of z=1
         assert np.all(np.diag(allM[0]) == [0,0,0]), "Self mobility is not zero on the wall at z=0"
 
-    assert np.allclose(diags, ref_diags, atol=1e-2), "Self mobility does not match reference"
+    assert np.allclose(diags, ref_diags, atol=1e-6), "Self mobility does not match reference"
 
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "ref_file"),
     [
-        # (DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw_w4.mat"),
-        # (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc_w4.mat"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw_w4_gpu.mat"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc_w4_gpu.mat"),
         (NBody, ("open", "open", "single_wall"), "pair_mobility_bw_ref_noimg.mat")
     ],
 )
@@ -110,17 +111,18 @@ def test_pair_mobility(Solver, periodicity, ref_file):
 
     allM = np.zeros((nSeps, nHeights, 3*numberParticles, 3*numberParticles), dtype=precision)
     for i in range(0,nSeps):
-        for j in range(0, nHeights):
+        for k in range(0, nHeights):
             xpos = xymax/2
-            positions = np.array([[xpos+seps[i]/2, xpos, refHeights[j]],
-                                  [xpos-seps[i]/2, xpos, refHeights[j]]], dtype=precision)
+            positions = np.array([[xpos+seps[i]/2, xpos, refHeights[k]],
+                                  [xpos-seps[i]/2, xpos, refHeights[k]]], dtype=precision)
             solver.setPositions(positions)
             
             M = compute_M(solver, numberParticles)
             M /= normMat
-            allM[i][j] = M
+            allM[i][k] = M
 
-    scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
+    # uncomment to save datafile for test plots
+    # scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
     ## xx component
     indx = 4
@@ -159,10 +161,3 @@ def checkComponent(indx, indy, allM, refM, nSeps, nHeights):
                 diff = np.abs(xx - xx_ref)/xx_ref
 
             assert diff < 1e-3, f"Pair mobility does not match reference for component {indx}, {indy}, {xx}, {xx_ref}"
-
-
-if __name__ == "__main__":
-    test_self_mobility(DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw.mat")
-    test_self_mobility(DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc.mat")
-    test_self_mobility(NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.mat")
-    # test_pair_mobility(DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw.mat")
