@@ -14,8 +14,8 @@ self_mobility_params = {
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw_w4_gpu.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc_w4_gpu.mat"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw_w4.mat"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc_w4.mat"),
         (NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.mat")
     ],
 )
@@ -73,8 +73,8 @@ def test_self_mobility(Solver, periodicity, ref_file):
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw_w4_gpu.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc_w4_gpu.mat"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw_w4.mat"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc_w4.mat"),
         (NBody, ("open", "open", "single_wall"), "pair_mobility_bw_ref_noimg.mat")
     ],
 )
@@ -160,4 +160,4 @@ def checkComponent(indx, indy, allM, refM, nSeps, nHeights):
             else:
                 diff = np.abs(xx - xx_ref)/xx_ref
 
-            assert diff < 1e-3, f"Pair mobility does not match reference for component {indx}, {indy}, {xx}, {xx_ref}"
+            assert diff < 1e-6, f"Pair mobility does not match reference for component {indx}, {indy}, {xx}, {xx_ref}"
