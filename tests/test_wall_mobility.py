@@ -68,7 +68,10 @@ def test_self_mobility(Solver, periodicity, ref_file):
     if Solver.__name__ == "DPStokes": # NBody ref only goes down to a height of z=1
         assert np.all(np.diag(allM[0]) == [0,0,0]), "Self mobility is not zero on the wall at z=0"
 
-    assert np.allclose(diags, ref_diags, atol=1e-6), "Self mobility does not match reference"
+    relDiff = np.abs([np.linalg.norm(diag - ref_diag)/np.linalg.norm(ref_diag + 1e-6) for diag, ref_diag in zip(diags, ref_diags)])
+    avgErr = np.mean(relDiff)
+
+    assert avgErr < 1e-10, "Self mobility does not match reference"
 
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "ref_file"),
@@ -127,37 +130,34 @@ def test_pair_mobility(Solver, periodicity, ref_file):
     ## xx component
     indx = 4
     indy = 1
-    checkComponent(indx, indy, allM, refM, nSeps, nHeights)
+    checkComponent(indx, indy, allM, refM, nSeps)
 
     ## yy component
     indx = 5
     indy = 2
-    checkComponent(indx, indy, allM, refM, nSeps, nHeights)
+    checkComponent(indx, indy, allM, refM, nSeps)
 
     ## zz component
     indx = 6
     indy = 3
-    checkComponent(indx, indy, allM, refM, nSeps, nHeights)
+    checkComponent(indx, indy, allM, refM, nSeps)
 
     ## xz component
     indx = 3
     indy = 4
-    checkComponent(indx, indy, allM, refM, nSeps, nHeights)
+    checkComponent(indx, indy, allM, refM, nSeps)
 
 
-def checkComponent(indx, indy, allM, refM, nSeps, nHeights):
+def checkComponent(indx, indy, allM, refM, nSeps):
 
     indx -= 1 # shift from matlab to python indexing
     indy -= 1
-    for i in range(0,nSeps):
-        for k in range(0, nHeights):
+    for i in range(0, nSeps):
 
-            xx = allM[i, k, indx, indy]
-            xx_ref = refM[i, k, indx, indy]
+        xx = allM[i, :, indx, indy]
+        xx_ref = refM[i, :, indx, indy]
 
-            if xx_ref == 0.0:
-                diff = np.abs(xx - xx_ref)
-            else:
-                diff = np.abs(xx - xx_ref)/xx_ref
+        relDiff = np.abs([np.linalg.norm(xx - xx_ref)/np.linalg.norm(xx_ref + 1e-6) for xx, xx_ref in zip(xx, xx_ref)])
+        avgErr = np.mean(relDiff)
 
-            assert diff < 1e-6, f"Pair mobility does not match reference for component {indx}, {indy}, {xx}, {xx_ref}"
+        assert avgErr < 1e-10, f"Pair mobility does not match reference for height {k}, component {indx}, {indy}"
