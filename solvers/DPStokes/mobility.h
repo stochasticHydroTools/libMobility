@@ -77,11 +77,11 @@ public:
 
     // Add a buffer of w*h/2 when there is an open boundary
     if(this->wallmode == "nowall"){
-      this->dppar.zmax += this->dppar.w*h/2;
-      this->dppar.zmin -= this->dppar.w*h/2;
+      this->dppar.zmax += 1.5*this->dppar.w*h/2;
+      this->dppar.zmin -= 1.5*this->dppar.w*h/2;
     }
     if(this->wallmode == "bottom"){
-      this->dppar.zmax += this->dppar.w*h/2;
+      this->dppar.zmax += 1.5*this->dppar.w*h/2;
     }
     real Lz = this->dppar.zmax - this->dppar.zmin;
     real H = Lz/2;
