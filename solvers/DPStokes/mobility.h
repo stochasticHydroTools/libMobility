@@ -56,8 +56,24 @@ public:
     real h = this->dppar.hydrodynamicRadius/1.205;
     this->dppar.alpha = this->dppar.w/2.0;
     this->dppar.tolerance = 1e-6;
-    this->dppar.nx = int(this->dppar.Lx/h + 0.5);
-    this->dppar.ny = int(this->dppar.Ly/h + 0.5);
+
+    // adjust box size to be a multiple of h
+    real N_in = this->dppar.Lx/h;
+    int N_up = ceil(N_in);
+    int N_down = floor(N_in);
+    int N;
+    if(std::abs(N_up - N) < std::abs(N_down - N)){
+      N = N_up;
+    }else{
+      N = N_down;
+    }
+
+    // note: only works for square boxes
+    this->dppar.Lx = N*h;
+    this->dppar.Ly = N*h;
+    this->dppar.nx = N;
+    this->dppar.ny = N;
+
     // Add a buffer of w*h/2 when there is an open boundary
     if(this->wallmode == "nowall"){
       this->dppar.zmax += this->dppar.w*h/2;
@@ -67,7 +83,11 @@ public:
       this->dppar.zmax += this->dppar.w*h/2;
     }
     real Lz = this->dppar.zmax - this->dppar.zmin;
-    this->dppar.nz = M_PI*Lz/(h);
+    real H = Lz/2;
+    // sets chebyshev node spacing at its coarsest (in the middle) to be h
+    real nz_actual = M_PI/(asin(h/H)) + 1;
+    this->dppar.nz = ceil(nz_actual);
+
     dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);
   }
