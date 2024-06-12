@@ -62,7 +62,8 @@ public:
     int N_up = ceil(N_in);
     int N_down = floor(N_in);
     int N;
-    if(std::abs(N_up - N) < std::abs(N_down - N)){
+    // either N_up or N_down will be a multiple of 2. pick the even one for a more FFT friendly grid.
+    if(N_up % 2 == 0){
       N = N_up;
     }else{
       N = N_down;
@@ -86,7 +87,15 @@ public:
     real H = Lz/2;
     // sets chebyshev node spacing at its coarsest (in the middle) to be h
     real nz_actual = M_PI/(asin(h/H)) + 1;
-    this->dppar.nz = ceil(nz_actual);
+
+    // pick nearby N such that 2(Nz-1) is FFT friendly
+    N_up = ceil(nz_actual);
+    N_down = floor(nz_actual);
+    if(N_up % 2 == 1){
+      this->dppar.nz = N_up;
+    } else {
+      this->dppar.nz = N_down;
+    }
 
     dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);
