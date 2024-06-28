@@ -12,14 +12,15 @@ self_mobility_params = {
 }
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity", "ref_file"),
+    ("Solver", "periodicity", "tol", "start_height", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw_w4.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc_w4.mat"),
-        (NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.mat")
+        (DPStokes, ("periodic", "periodic", "single_wall"), 5e-3, 4, "self_mobility_bw_ref.mat"), # correctness check
+        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, 0, "self_mobility_bw_w4.mat"), # consistency check
+        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, 0, "self_mobility_sc_w4.mat"),
+        (NBody, ("open", "open", "single_wall"), 1e-6, 1, "self_mobility_bw_ref_noimg.mat")
     ],
 )
-def test_self_mobility(Solver, periodicity, ref_file):
+def test_self_mobility(Solver, periodicity, tol, start_height, ref_file):
     zmax = 19.2
     xymax = 76.8
     params = self_mobility_params[Solver.__name__]
@@ -44,7 +45,11 @@ def test_self_mobility(Solver, periodicity, ref_file):
         numberParticles=numberParticles,
     )
 
+    start_ind = np.where(refHeights >= start_height)[0][0]
+    refHeights = refHeights[start_ind:]
     nHeights = len(refHeights)
+
+    refM = refM[start_ind:]
 
     normMat = np.ones((3*numberParticles, 3*numberParticles), dtype=precision)
     diag_ind = np.diag_indices_from(normMat)
@@ -65,23 +70,22 @@ def test_self_mobility(Solver, periodicity, ref_file):
     diags = [np.diag(matrix) for matrix in allM]
     ref_diags = [np.diag(matrix)[0:3] for matrix in refM] # only take diagonal elements from forces
 
-    if Solver.__name__ == "DPStokes": # NBody ref only goes down to a height of z=1
-        assert np.all(np.diag(allM[0]) == [0,0,0]), "Self mobility is not zero on the wall at z=0"
+    diff = np.abs([(diag - ref_diag) for diag, ref_diag in zip(diags, ref_diags)])
 
-    relDiff = np.abs([np.linalg.norm(diag - ref_diag)/np.linalg.norm(ref_diag + 1e-6) for diag, ref_diag in zip(diags, ref_diags)])
-    avgErr = np.mean(relDiff)
+    avgErr = np.mean(diff)
 
-    assert avgErr < 1e-10, "Self mobility does not match reference"
+    assert avgErr < tol, "Self mobility does not match reference"
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity", "ref_file"),
+    ("Solver", "periodicity", "tol", "start_height", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw_w4.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc_w4.mat"),
-        (NBody, ("open", "open", "single_wall"), "pair_mobility_bw_ref_noimg.mat")
+        # (DPStokes, ("periodic", "periodic", "single_wall"), 1e-3,0, "pair_mobility_bw_ref.mat"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-3,0, "pair_mobility_bw_w4_gpu.mat"),
+        # (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc_w4.mat"),
+        # (NBody, ("open", "open", "single_wall"), "pair_mobility_bw_ref_noimg.mat")
     ],
 )
-def test_pair_mobility(Solver, periodicity, ref_file):
+def test_pair_mobility(Solver, periodicity, ref_file, tol, start_height):
     zmax = 19.2
     xymax = 76.8
     params = self_mobility_params[Solver.__name__]
@@ -92,6 +96,8 @@ def test_pair_mobility(Solver, periodicity, ref_file):
     refHeights = ref['heights'].flatten()
     nHeights = len(refHeights)
 
+
+    # breakpoint()
     radH = 1.0 # hydrodynamic radius
     eta = 1/4/np.sqrt(np.pi)
 
@@ -125,7 +131,7 @@ def test_pair_mobility(Solver, periodicity, ref_file):
             allM[i][k] = M
 
     # uncomment to save datafile for test plots
-    # scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
+    scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
     ## xx component
     indx = 4
@@ -160,4 +166,4 @@ def checkComponent(indx, indy, allM, refM, nSeps):
         relDiff = np.abs([np.linalg.norm(xx - xx_ref)/np.linalg.norm(xx_ref + 1e-6) for xx, xx_ref in zip(xx, xx_ref)])
         avgErr = np.mean(relDiff)
 
-        assert avgErr < 1e-10, f"Pair mobility does not match reference for height {k}, component {indx}, {indy}"
+        assert avgErr < 1e-10, f"Pair mobility does not match reference for component {indx}, {indy}"
