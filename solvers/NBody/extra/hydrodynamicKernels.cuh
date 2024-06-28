@@ -70,9 +70,9 @@ namespace nbody_rpy{
 	real invZi = real(1.0) / hj;
 	real invZi3 = invZi * invZi * invZi;
 	real invZi5 = invZi3 * invZi * invZi;
-	correction.x += -vj.x*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) / real(12.0);
-	correction.y += -vj.y*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) / real(12.0);
-	correction.z += -vj.z*(real(9.0)*invZi - real(4.0)*invZi3 + invZi5 ) / real(6.0);
+	correction.x += -vj.x*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) / real(16.0);
+	correction.y += -vj.y*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) / real(16.0);
+	correction.z += -vj.z*(real(9.0)*invZi - real(4.0)*invZi3 + invZi5 ) / real(8.0);
       }
       else{
 	real h_hat = hj / rij.z;
@@ -80,11 +80,11 @@ namespace nbody_rpy{
 	real3 e = rij*invR;
 	real invR3 = invR * invR * invR;
 	real invR5 = invR3 * invR * invR;
-	real fact1 = -(real(3.0)*(real(1.0)+real(2.0)*h_hat*(real(1.0)-h_hat)*e.z*e.z) * invR + real(2.0)*(real(1.0)-real(3.0)*e.z*e.z) * invR3 - real(2.0)*(real(1.0)-real(5.0)*e.z*e.z) * invR5)  / real(3.0);
-	real fact2 = -(real(3.0)*(real(1.0)-real(6.0)*h_hat*(real(1.0)-h_hat)*e.z*e.z) * invR - real(6.0)*(real(1.0)-real(5.0)*e.z*e.z) * invR3 + real(10.0)*(real(1.0)-real(7.0)*e.z*e.z) * invR5) / real(3.0);
-	real fact3 =  e.z * (real(3.0)*h_hat*(real(1.0)-real(6.0)*(real(1.0)-h_hat)*e.z*e.z) * invR - real(6.0)*(real(1.0)-real(5.0)*e.z*e.z) * invR3 + real(10.0)*(real(2.0)-real(7.0)*e.z*e.z) * invR5) * real(2.0) / real(3.0);
-	real fact4 =  e.z * (real(3.0)*h_hat*invR - real(10.0)*invR5) * real(2.0) / real(3.0);
-	real fact5 = -(real(3.0)*h_hat*h_hat*e.z*e.z*invR + real(3.0)*e.z*e.z*invR3 + (real(2.0)-real(15.0)*e.z*e.z)*invR5) * real(4.0) / real(3.0);
+	real fact1 = -(real(3.0)*(real(1.0)+real(2.0)*h_hat*(real(1.0)-h_hat)*e.z*e.z) * invR + real(2.0)*(real(1.0)-real(3.0)*e.z*e.z) * invR3 - real(2.0)*(real(1.0)-real(5.0)*e.z*e.z) * invR5)  / real(4.0);
+	real fact2 = -(real(3.0)*(real(1.0)-real(6.0)*h_hat*(real(1.0)-h_hat)*e.z*e.z) * invR - real(6.0)*(real(1.0)-real(5.0)*e.z*e.z) * invR3 + real(10.0)*(real(1.0)-real(7.0)*e.z*e.z) * invR5) / real(4.0);
+	real fact3 =  e.z * (real(3.0)*h_hat*(real(1.0)-real(6.0)*(real(1.0)-h_hat)*e.z*e.z) * invR - real(6.0)*(real(1.0)-real(5.0)*e.z*e.z) * invR3 + real(10.0)*(real(2.0)-real(7.0)*e.z*e.z) * invR5) / real(2.0);
+	real fact4 =  e.z * (real(3.0)*h_hat*invR - real(10.0)*invR5) / real(2.0);
+	real fact5 = -(real(3.0)*h_hat*h_hat*e.z*e.z*invR + real(3.0)*e.z*e.z*invR3 + (real(2.0)-real(15.0)*e.z*e.z)*invR5);
 	correction.x += (fact1 + fact2 * e.x*e.x)*vj.x;
 	correction.x += (fact2 * e.x*e.y)*vj.y;
 	correction.x += (fact2 * e.x*e.z + fact3 * e.x)*vj.z;
