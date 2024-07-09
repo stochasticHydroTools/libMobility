@@ -69,13 +69,13 @@ public:
       N = N_down;
     }
 
-    // note: only works for square boxes
+    // note: only set up for square boxes
     this->dppar.Lx = N*h;
     this->dppar.Ly = N*h;
     this->dppar.nx = N;
     this->dppar.ny = N;
 
-    // Add a buffer of w*h/2 when there is an open boundary
+    // Add a buffer of 1.5*w*h/2 when there is an open boundary
     if(this->wallmode == "nowall"){
       this->dppar.zmax += 1.5*this->dppar.w*h/2;
       this->dppar.zmin -= 1.5*this->dppar.w*h/2;

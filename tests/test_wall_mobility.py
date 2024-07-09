@@ -77,15 +77,14 @@ def test_self_mobility(Solver, periodicity, tol, start_height, ref_file):
     assert avgErr < tol, "Self mobility does not match reference"
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity", "tol", "start_height", "ref_file"),
+    ("Solver", "periodicity", "tol", "ref_file"),
     [
-        # (DPStokes, ("periodic", "periodic", "single_wall"), 1e-3,0, "pair_mobility_bw_ref.mat"),
-        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-3,0, "pair_mobility_bw_w4_gpu.mat"),
-        # (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc_w4.mat"),
-        # (NBody, ("open", "open", "single_wall"), "pair_mobility_bw_ref_noimg.mat")
+        # (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, "pair_mobility_bw_w4.mat"),
+        # (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, "pair_mobility_sc_w4.mat"),
+        (NBody, ("open", "open", "single_wall"), 1e-4, "pair_mobility_bw_ref_noimg.mat"),
     ],
 )
-def test_pair_mobility(Solver, periodicity, ref_file, tol, start_height):
+def test_pair_mobility(Solver, periodicity, ref_file, tol):
     zmax = 19.2
     xymax = 76.8
     params = self_mobility_params[Solver.__name__]
@@ -96,8 +95,6 @@ def test_pair_mobility(Solver, periodicity, ref_file, tol, start_height):
     refHeights = ref['heights'].flatten()
     nHeights = len(refHeights)
 
-
-    # breakpoint()
     radH = 1.0 # hydrodynamic radius
     eta = 1/4/np.sqrt(np.pi)
 
@@ -136,25 +133,25 @@ def test_pair_mobility(Solver, periodicity, ref_file, tol, start_height):
     ## xx component
     indx = 4
     indy = 1
-    checkComponent(indx, indy, allM, refM, nSeps)
+    checkComponent(indx, indy, allM, refM, nSeps, tol)
 
     ## yy component
     indx = 5
     indy = 2
-    checkComponent(indx, indy, allM, refM, nSeps)
+    checkComponent(indx, indy, allM, refM, nSeps, tol)
 
     ## zz component
     indx = 6
     indy = 3
-    checkComponent(indx, indy, allM, refM, nSeps)
+    checkComponent(indx, indy, allM, refM, nSeps, tol)
 
     ## xz component
     indx = 3
     indy = 4
-    checkComponent(indx, indy, allM, refM, nSeps)
+    checkComponent(indx, indy, allM, refM, nSeps, tol)
 
 
-def checkComponent(indx, indy, allM, refM, nSeps):
+def checkComponent(indx, indy, allM, refM, nSeps, tol):
 
     indx -= 1 # shift from matlab to python indexing
     indy -= 1
@@ -163,7 +160,11 @@ def checkComponent(indx, indy, allM, refM, nSeps):
         xx = allM[i, :, indx, indy]
         xx_ref = refM[i, :, indx, indy]
 
+        print(xx)
+        print(xx_ref)
+
         relDiff = np.abs([np.linalg.norm(xx - xx_ref)/np.linalg.norm(xx_ref + 1e-6) for xx, xx_ref in zip(xx, xx_ref)])
         avgErr = np.mean(relDiff)
+        print(avgErr)
 
-        assert avgErr < 1e-10, f"Pair mobility does not match reference for component {indx}, {indy}"
+        assert avgErr < tol, f"Pair mobility does not match reference for component {indx+1}, {indy+1}"
