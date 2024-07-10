@@ -14,3 +14,4 @@ self_mobility_bw_w4, self_mobility_sc_w4: generated from this repository in doub
 
 PAIR:
 pair_mobility_bw_w4, pair_mobility_sc_w4: generated from this repository in double precision with default parameters. 
+pair_mobility_bw_ref_noimg: from the DPStokes repository. NBody kernels with wall corrections in double precision, but without using periodized images.

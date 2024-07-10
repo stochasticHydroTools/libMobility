@@ -79,8 +79,8 @@ def test_self_mobility(Solver, periodicity, tol, start_height, ref_file):
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "tol", "ref_file"),
     [
-        # (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, "pair_mobility_bw_w4.mat"),
-        # (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, "pair_mobility_sc_w4.mat"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, "pair_mobility_bw_w4.mat"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, "pair_mobility_sc_w4.mat"),
         (NBody, ("open", "open", "single_wall"), 1e-4, "pair_mobility_bw_ref_noimg.mat"),
     ],
 )
@@ -128,28 +128,26 @@ def test_pair_mobility(Solver, periodicity, ref_file, tol):
             allM[i][k] = M
 
     # uncomment to save datafile for test plots
-    scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
+    # scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
-    ## xx component
-    indx = 4
-    indy = 1
+
+    indx, indy = 4, 1 ## xx
     checkComponent(indx, indy, allM, refM, nSeps, tol)
 
-    ## yy component
-    indx = 5
-    indy = 2
+    indx, indy = 5, 2 # yy
     checkComponent(indx, indy, allM, refM, nSeps, tol)
 
-    ## zz component
-    indx = 6
-    indy = 3
+    indx, indy = 6, 3 # zz
     checkComponent(indx, indy, allM, refM, nSeps, tol)
 
-    ## xz component
-    indx = 3
-    indy = 4
+    indx, indy = 5, 1 # yx
     checkComponent(indx, indy, allM, refM, nSeps, tol)
 
+    indx, indy = 3, 4 # zx
+    checkComponent(indx, indy, allM, refM, nSeps, tol)
+
+    indx, indy = 3, 5 # zy
+    checkComponent(indx, indy, allM, refM, nSeps, tol)
 
 def checkComponent(indx, indy, allM, refM, nSeps, tol):
 
@@ -160,11 +158,7 @@ def checkComponent(indx, indy, allM, refM, nSeps, tol):
         xx = allM[i, :, indx, indy]
         xx_ref = refM[i, :, indx, indy]
 
-        print(xx)
-        print(xx_ref)
-
         relDiff = np.abs([np.linalg.norm(xx - xx_ref)/np.linalg.norm(xx_ref + 1e-6) for xx, xx_ref in zip(xx, xx_ref)])
         avgErr = np.mean(relDiff)
-        print(avgErr)
 
         assert avgErr < tol, f"Pair mobility does not match reference for component {indx+1}, {indy+1}"
