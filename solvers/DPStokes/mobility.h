@@ -57,10 +57,9 @@ public:
     this->dppar.alpha = this->dppar.w/2.0;
     this->dppar.tolerance = 1e-6;
 
-    // adjust box size to be a multiple of h
-    real N_in = this->dppar.Lx/h;
-    int N_up = ceil(N_in);
-    int N_down = floor(N_in);
+    real N_real = this->dppar.Lx/h; // actual N given L and h
+    int N_up = ceil(N_real);
+    int N_down = floor(N_real);
     int N;
     // either N_up or N_down will be a multiple of 2. pick the even one for a more FFT friendly grid.
     if(N_up % 2 == 0){
@@ -70,10 +69,16 @@ public:
     }
 
     // note: only set up for square boxes
-    this->dppar.Lx = N*h;
-    this->dppar.Ly = N*h;
-    this->dppar.nx = N;
-    this->dppar.ny = N;
+    if(this->dppar.allowChangingBoxSize){ // adjust box size to suit h
+
+      this->dppar.Lx = N*h;
+      this->dppar.Ly = N*h;
+      this->dppar.nx = N;
+      this->dppar.ny = N;
+    } else{ // adjust h so that L/h is an integer
+      h = this->dppar.Lx/N;
+      // TODO need to merge functionality from other branch to finish
+    }
 
     // Add a buffer of 1.5*w*h/2 when there is an open boundary
     if(this->wallmode == "nowall"){
