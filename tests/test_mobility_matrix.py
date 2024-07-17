@@ -42,7 +42,8 @@ def test_mobility_matrix_linear(
 
 
 def test_self_mobility_linear_selfmobility():
-    # Mobility should be just 1/(6\pi\eta R) for a single particle.
+    # linear mobility should be just 1/(6\pi\eta R) for a single particle.
+    # angular mobility should be just 1/(8\pi\eta R^3) for a single particle.
     precision = np.float32 if SelfMobility.precision == "float" else np.float64
     solver = SelfMobility("open", "open", "open")
     parameters = sane_parameters[SelfMobility.__name__]
@@ -58,9 +59,12 @@ def test_self_mobility_linear_selfmobility():
     positions = np.zeros((1, 3), dtype=precision)
     solver.setPositions(positions)
     forces = np.ones(3, dtype=precision)
-    result, _ = solver.Mdot(forces)
+    torques = np.ones(3, dtype=precision)
+    linear, angular = solver.Mdot(forces, torques)
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
-    assert np.allclose(result, m0 * forces, rtol=0, atol=1e-7)
+    t0 = 1.0 / (8 * np.pi * viscosity * hydrodynamicRadius**3)
+    assert np.allclose(linear, m0 * forces, rtol=0, atol=1e-7)
+    assert np.allclose(angular, t0 * torques, rtol=0, atol=1e-7)
 
 
 def test_self_mobility_linear_nbody():
