@@ -9,14 +9,28 @@ sane_parameters = {
 }
 
 
-def compute_M(solver, numberParticles):
+def compute_M(solver, numberParticles, needsTorque):
     precision = np.float32 if solver.precision == "float" else np.float64
-    size = 3 * numberParticles
+    if needsTorque:
+        size = 6 * numberParticles
+    else:
+        size = 3 * numberParticles
     M = np.zeros((size, size), dtype=precision)
     I = np.identity(size, dtype=precision)
     for i in range(0, size):
-        forces = I[:, i].copy()
-        M[:, i] = solver.Mdot(forces)[0].reshape(3 * numberParticles)
+        forces = I[0 : 3 * numberParticles, i].copy()
+        if needsTorque:
+            torques = I[3 * numberParticles :, i].copy()
+            linear, angular = solver.Mdot(forces, torques)
+            M[:, i] = np.concatenate(
+                (
+                    linear.reshape(3 * numberParticles),
+                    angular.reshape(3 * numberParticles),
+                )
+            )
+        else:
+            linear, _ = solver.Mdot(forces)
+            M[:, i] = solver.Mdot(forces)[0].reshape(3 * numberParticles)
     return M
 
 

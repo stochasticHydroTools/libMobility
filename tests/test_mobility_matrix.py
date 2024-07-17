@@ -20,6 +20,7 @@ from libMobility import SelfMobility, PSE, NBody, DPStokes
 def test_mobility_matrix_linear(
     Solver, periodicity, hydrodynamicRadius, numberParticles
 ):
+    needsTorque = False
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
     parameters = sane_parameters[Solver.__name__]
@@ -29,11 +30,52 @@ def test_mobility_matrix_linear(
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
         numberParticles=numberParticles,
+        needsTorque=needsTorque,
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
     solver.setPositions(positions)
-    M = compute_M(solver, numberParticles)
+    M = compute_M(solver, numberParticles, needsTorque)
     assert M.shape == (3 * numberParticles, 3 * numberParticles)
+    assert M.dtype == precision
+    sym = M - M.T
+    assert np.allclose(
+        sym, 0.0, rtol=0, atol=1e-7
+    ), f"Mobility matrix is not symmetric within 1e-6, max diff: {np.max(np.abs(sym))}"
+
+
+@pytest.mark.parametrize(
+    ("Solver", "periodicity"),
+    [
+        (SelfMobility, ("open", "open", "open")),
+        # (PSE, ("periodic", "periodic", "periodic")),
+        # (NBody, ("open", "open", "open")),
+        # (DPStokes, ("periodic", "periodic", "open")),
+        # (DPStokes, ("periodic", "periodic", "single_wall")),
+        # (DPStokes, ("periodic", "periodic", "two_walls")),
+    ],
+)
+@pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
+@pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
+def test_mobility_matrix_angular(
+    Solver, periodicity, hydrodynamicRadius, numberParticles
+):
+    needsTorque = True
+    precision = np.float32 if Solver.precision == "float" else np.float64
+    solver = Solver(*periodicity)
+    parameters = sane_parameters[Solver.__name__]
+    solver.setParameters(**parameters)
+    solver.initialize(
+        temperature=0.0,
+        viscosity=1.0,
+        hydrodynamicRadius=hydrodynamicRadius,
+        numberParticles=numberParticles,
+        needsTorque=needsTorque,
+    )
+    positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
+    solver.setPositions(positions)
+    M = compute_M(solver, numberParticles, needsTorque)
+    size = 6 * numberParticles
+    assert M.shape == (size, size)
     assert M.dtype == precision
     sym = M - M.T
     assert np.allclose(
