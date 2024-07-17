@@ -73,9 +73,11 @@ public:
       real dW = d(rng);
       linear[i] = prefactor*sqrt(2*temperature*linearMobility)*dW;
     }
-    for(int i = 0; i<3*numberParticles; i++){
-      real dW = d(rng);
-      angular[i] = prefactor*sqrt(2*temperature*angularMobility)*dW;
+    if(angular){
+      for(int i = 0; i<3*numberParticles; i++){
+        real dW = d(rng);
+        angular[i] = prefactor*sqrt(2*temperature*angularMobility)*dW;
+      }
     }
   }
 };

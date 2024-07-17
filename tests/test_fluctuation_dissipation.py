@@ -79,7 +79,7 @@ def test_fluctuation_dissipation_linear_displacements(
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
     solver.setPositions(positions)
-    M = compute_M(solver, numberParticles)
+    M = compute_M(solver, numberParticles, needsTorque=False)
 
     def fluctuation_method():
         return solver.sqrtMdotW(prefactor=1.0)[0].flatten()

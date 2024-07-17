@@ -134,6 +134,10 @@ namespace libmobility{
       return this->numberParticles;
     }
 
+    bool getNeedsTorque() const{
+      return this->needsTorque;
+    }
+
     //Clean any memory allocated by the solver
     virtual void clean(){
       lanczos.reset();
