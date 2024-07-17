@@ -4,6 +4,7 @@
 #define MOBILITY_SELFMOBILITY_H
 #include <MobilityInterface/MobilityInterface.h>
 #include"extra/uammd_interface.h"
+#include"extra/poly_fits.h"
 #include<vector>
 #include<cmath>
 #include<type_traits>
@@ -68,16 +69,17 @@ public:
       N = N_down;
     }
 
+    this->dppar.nx = N;
+    this->dppar.ny = N;
+
     // note: only set up for square boxes
     if(this->dppar.allowChangingBoxSize){ // adjust box size to suit h
-
       this->dppar.Lx = N*h;
       this->dppar.Ly = N*h;
-      this->dppar.nx = N;
-      this->dppar.ny = N;
     } else{ // adjust h so that L/h is an integer
       h = this->dppar.Lx/N;
-      // TODO need to merge functionality from other branch to finish
+      double arg = this->dppar.hydrodynamicRadius/(this->dppar.w*h);
+      this->dppar.beta = dpstokes_polys::polyEval(dpstokes_polys::cbetam_inv, arg);
     }
 
     // Add a buffer of 1.5*w*h/2 when there is an open boundary
