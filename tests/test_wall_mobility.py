@@ -14,8 +14,8 @@ self_mobility_params = {
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "tol", "start_height", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), 5e-3, 4, "self_mobility_bw_ref.mat"), # correctness check
-        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, 0, "self_mobility_bw_w4.mat"), # consistency check
+        (DPStokes, ("periodic", "periodic", "single_wall"), 5e-3, 4, "self_mobility_bw_ref.mat"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, 0, "self_mobility_bw_w4.mat"),
         (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, 0, "self_mobility_sc_w4.mat"),
         (NBody, ("open", "open", "single_wall"), 1e-6, 1, "self_mobility_bw_ref_noimg.mat")
     ],
@@ -74,7 +74,7 @@ def test_self_mobility(Solver, periodicity, tol, start_height, ref_file):
 
     avgErr = np.mean(diff)
 
-    assert avgErr < tol, "Self mobility does not match reference"
+    assert avgErr < tol, f"Self mobility does not match reference. Average error: {avgErr}"
 
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "tol", "ref_file"),
@@ -161,4 +161,4 @@ def checkComponent(indx, indy, allM, refM, nSeps, tol):
         relDiff = np.abs([np.linalg.norm(xx - xx_ref)/np.linalg.norm(xx_ref + 1e-6) for xx, xx_ref in zip(xx, xx_ref)])
         avgErr = np.mean(relDiff)
 
-        assert avgErr < tol, f"Pair mobility does not match reference for component {indx+1}, {indy+1}"
+        assert avgErr < tol, f"Pair mobility does not match reference for component {indx+1}, {indy+1}. Average error: {avgErr}"
