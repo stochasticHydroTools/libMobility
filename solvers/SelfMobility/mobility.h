@@ -20,7 +20,8 @@ class SelfMobility: public libmobility::Mobility{
   using real = libmobility::real;
   Parameters par;
   std::vector<real> positions;
-  real selfMobility;
+  real linearMobility;
+  real angularMobility;
   real temperature;
   int numberParticles;
   std::mt19937 rng;
@@ -40,10 +41,9 @@ public:
     this->temperature = ipar.temperature;
     this->numberParticles = ipar.numberParticles;
     real hydrodynamicRadius = ipar.hydrodynamicRadius[0];
-    this->selfMobility = 1.0/(6*M_PI*ipar.viscosity*hydrodynamicRadius);
+    this->linearMobility = 1.0/(6*M_PI*ipar.viscosity*hydrodynamicRadius);
+    this->angularMobility = 1.0/(8*M_PI*ipar.viscosity*hydrodynamicRadius*hydrodynamicRadius*hydrodynamicRadius);
     Mobility::initialize(ipar);
-    if(ipar.needsTorque)
-      throw std::runtime_error("[SelfMobility] Torque is not implemented");
   }
 
   //An example of how to take in extra parameters. This function is supposed to be called BEFORE initialize
@@ -54,14 +54,14 @@ public:
   void setPositions(const real* ipositions) override{ }
 
   void Mdot(const real* forces, const real* torques, real* linear, real* angular) override{
-    if(torques)
-      throw std::runtime_error("[SelfMobility] Torque is not implemented");
-    if(not forces){
-      std::fill(linear, linear+3*numberParticles, 0);
-    }
-    else{
+    if(forces){
       for(int i = 0; i<3*numberParticles; i++){
-	linear[i] = forces[i]*selfMobility;
+        linear[i] = forces[i]*linearMobility;
+      }
+    }
+    if(torques){
+      for(int i = 0; i<3*numberParticles; i++){
+        angular[i] = torques[i]*angularMobility;
       }
     }
   }
@@ -71,9 +71,12 @@ public:
     std::normal_distribution<real> d{0,1};
     for(int i = 0; i<3*numberParticles; i++){
       real dW = d(rng);
-      linear[i] = prefactor*sqrt(2*temperature*selfMobility)*dW;
+      linear[i] = prefactor*sqrt(2*temperature*linearMobility)*dW;
+    }
+    for(int i = 0; i<3*numberParticles; i++){
+      real dW = d(rng);
+      angular[i] = prefactor*sqrt(2*temperature*angularMobility)*dW;
     }
   }
-
 };
 #endif

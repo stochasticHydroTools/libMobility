@@ -40,7 +40,7 @@ def test_mobility_matrix_linear(
     sym = M - M.T
     assert np.allclose(
         sym, 0.0, rtol=0, atol=1e-7
-    ), f"Mobility matrix is not symmetric within 1e-6, max diff: {np.max(np.abs(sym))}"
+    ), f"Mobility matrix is not symmetric within 1e-7, max diff: {np.max(np.abs(sym))}"
 
 
 @pytest.mark.parametrize(
@@ -80,7 +80,7 @@ def test_mobility_matrix_angular(
     sym = M - M.T
     assert np.allclose(
         sym, 0.0, rtol=0, atol=1e-7
-    ), f"Mobility matrix is not symmetric within 1e-6, max diff: {np.max(np.abs(sym))}"
+    ), f"Mobility matrix is not symmetric within 1e-7, max diff: {np.max(np.abs(sym))}"
 
 
 def test_self_mobility_linear_selfmobility():
