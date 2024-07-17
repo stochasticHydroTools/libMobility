@@ -36,7 +36,7 @@ def test_mobility_matrix(Solver, periodicity, hydrodynamicRadius, numberParticle
     sym = M - M.T
     assert np.allclose(
         sym, 0.0, rtol=0, atol=5e-5
-    ), f"Mobility matrix is not symmetric within 1e-5, max diff: {np.max(np.abs(sym))}"
+    ), f"Mobility matrix is not symmetric within 5e-5, max diff: {np.max(np.abs(sym))}"
 
 
 def test_self_mobility_selfmobility():

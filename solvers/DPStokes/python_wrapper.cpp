@@ -20,21 +20,24 @@ zmin : float
 		The minimum value of the z coordinate.
 zmax : float
 		The maximum value of the z coordinate.
+allowChangingBoxSize : bool
+    Whether the periodic extents Lx & Ly can be modified during parameter selection. Default: false.
 )pbdoc";
 
 MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(DPStokes,
                                    solver.def(
                                        "setParameters",
                                        [](DPStokes &self, real dt, real Lx,
-                                          real Ly, real zmin, real zmax) {
+                                          real Ly, real zmin, real zmax, bool allowChangingBoxSize) {
                                          DPStokesParameters params;
                                          params.dt = dt;
                                          params.Lx = Lx;
                                          params.Ly = Ly;
                                          params.zmin = zmin;
                                          params.zmax = zmax;
+                                         params.allowChangingBoxSize = allowChangingBoxSize;
                                          self.setParametersDPStokes(params);
                                        },
                                        "dt"_a, "Lx"_a, "Ly"_a, "zmin"_a,
-                                       "zmax"_a);
+                                       "zmax"_a, "allowChangingBoxSize"_a = false);
                                    , docstring);
