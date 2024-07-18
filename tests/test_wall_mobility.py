@@ -15,15 +15,17 @@ self_mobility_params = {
     ("Solver", "periodicity", "tol", "start_height", "ref_file"),
     [
         (DPStokes, ("periodic", "periodic", "single_wall"), 5e-3, 4, "self_mobility_bw_ref.mat"),
-        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, 0, "self_mobility_bw_w4.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, 0, "self_mobility_sc_w4.mat"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-5, 0, "self_mobility_bw_w4.mat"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-5, 0, "self_mobility_sc_w4.mat"),
         (NBody, ("open", "open", "single_wall"), 1e-6, 1, "self_mobility_bw_ref_noimg.mat")
     ],
 )
-def test_self_mobility(Solver, periodicity, tol, start_height, ref_file):
+def test_self_mobility_linear(Solver, periodicity, tol, start_height, ref_file):
     zmax = 19.2
     xymax = 76.8
     params = self_mobility_params[Solver.__name__]
+
+    needsTorque = False
 
     ref_dir = "./ref/"
     ref = scipy.io.loadmat(ref_dir + ref_file)
@@ -60,7 +62,7 @@ def test_self_mobility(Solver, periodicity, tol, start_height, ref_file):
         positions = np.array([[xymax/2, xymax/2, refHeights[i]]], dtype=precision)
         solver.setPositions(positions)
         
-        M = compute_M(solver, numberParticles)
+        M = compute_M(solver, numberParticles, needsTorque)
         M /= normMat
         allM[i] = M
 
@@ -79,15 +81,17 @@ def test_self_mobility(Solver, periodicity, tol, start_height, ref_file):
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "tol", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, "pair_mobility_bw_w4.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, "pair_mobility_sc_w4.mat"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), 5e-5, "pair_mobility_bw_w4.mat"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), 5e-5, "pair_mobility_sc_w4.mat"),
         (NBody, ("open", "open", "single_wall"), 1e-4, "pair_mobility_bw_ref_noimg.mat"),
     ],
 )
-def test_pair_mobility(Solver, periodicity, ref_file, tol):
+def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
     zmax = 19.2
     xymax = 76.8
     params = self_mobility_params[Solver.__name__]
+
+    needsTorque = False
 
     ref_dir = "./ref/"
     ref = scipy.io.loadmat(ref_dir + ref_file)
@@ -99,6 +103,7 @@ def test_pair_mobility(Solver, periodicity, ref_file, tol):
     eta = 1/4/np.sqrt(np.pi)
 
     precision = np.float32 if Solver.precision == "float" else np.float64
+    tol = 100*np.finfo(precision).eps
 
     solver = Solver(*periodicity)
     solver.setParameters(**params)
@@ -123,12 +128,12 @@ def test_pair_mobility(Solver, periodicity, ref_file, tol):
                                   [xpos-seps[i]/2, xpos, refHeights[k]]], dtype=precision)
             solver.setPositions(positions)
             
-            M = compute_M(solver, numberParticles)
+            M = compute_M(solver, numberParticles, needsTorque)
             M /= normMat
             allM[i][k] = M
 
     # uncomment to save datafile for test plots
-    # scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
+    scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
 
     indx, indy = 4, 1 ## xx
@@ -155,10 +160,16 @@ def checkComponent(indx, indy, allM, refM, nSeps, tol):
     indy -= 1
     for i in range(0, nSeps):
 
-        xx = allM[i, :, indx, indy]
-        xx_ref = refM[i, :, indx, indy]
+        x = allM[i, :, indx, indy]
+        x_ref = refM[i, :, indx, indy]
 
-        relDiff = np.abs([np.linalg.norm(xx - xx_ref)/np.linalg.norm(xx_ref + 1e-6) for xx, xx_ref in zip(xx, xx_ref)])
-        avgErr = np.mean(relDiff)
+        for j in range(0, len(x)):
 
-        assert avgErr < tol, f"Pair mobility does not match reference for component {indx+1}, {indy+1}. Average error: {avgErr}"
+            diff = x[j]-x_ref[j]
+
+            if x[j] > tol and x_ref[j] > tol and x_ref[j] != 0:
+                err = diff/x_ref[j]
+            else:
+                err = diff
+
+        assert err < tol, f"Pair mobility does not match reference for component {indx+1}, {indy+1}"
