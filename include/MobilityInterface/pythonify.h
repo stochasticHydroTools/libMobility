@@ -229,8 +229,10 @@ auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,  pyarray_c &
   auto mt = py::array_t<libmobility::real>();
   mf.resize({3 * N});
   mf.attr("fill")(0);
-  mt.resize({3 * N});
-  mt.attr("fill")(0);
+  if(t){
+    mt.resize({3 * N});
+    mt.attr("fill")(0);
+  }
   auto mf_ptr = mf.size() ? cast_to_real(mf) : nullptr;
   auto mt_ptr = mt.size() ? cast_to_real(mt) : nullptr;
   myself.hydrodynamicVelocities(f, t, mf_ptr, mt_ptr, prefactor);
