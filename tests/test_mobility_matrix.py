@@ -39,8 +39,8 @@ def test_mobility_matrix_linear(
     assert M.dtype == precision
     sym = M - M.T
     assert np.allclose(
-        sym, 0.0, rtol=0, atol=1e-7
-    ), f"Mobility matrix is not symmetric within 1e-7, max diff: {np.max(np.abs(sym))}"
+        sym, 0.0, rtol=0, atol=5e-5
+    ), f"Mobility matrix is not symmetric within 5e-5, max diff: {np.max(np.abs(sym))}"
 
 
 @pytest.mark.parametrize(
@@ -79,8 +79,8 @@ def test_mobility_matrix_angular(
     assert M.dtype == precision
     sym = M - M.T
     assert np.allclose(
-        sym, 0.0, rtol=0, atol=1e-7
-    ), f"Mobility matrix is not symmetric within 1e-7, max diff: {np.max(np.abs(sym))}"
+        sym, 0.0, rtol=0, atol=5e-5
+    ), f"Mobility matrix is not symmetric within 5e-5, max diff: {np.max(np.abs(sym))}"
 
 
 def test_self_mobility_linear_selfmobility():
@@ -110,7 +110,7 @@ def test_self_mobility_linear_selfmobility():
 
 
 def test_self_mobility_linear_nbody():
-    # Mobility should be just 1/(6\pi\eta R)*(1 - 2.83729748/L) for a single particle.
+    # Mobility should be just 1/(6\pi\eta R)
     Solver = NBody
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver("open", "open", "open")

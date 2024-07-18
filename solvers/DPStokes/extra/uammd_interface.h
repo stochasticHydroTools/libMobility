@@ -36,6 +36,7 @@ namespace uammd_dpstokes{
     real alpha_d = -1;
     //Can be either none, bottom, slit or periodic
     std::string mode;
+    bool allowChangingBoxSize = false;
   };
 
   class DPStokesUAMMD;
