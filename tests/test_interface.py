@@ -74,6 +74,46 @@ def test_returns_mf(Solver, periodicity):
     mf, _ = solver.Mdot(forces)
     assert mf.shape == (numberParticles, 3)
 
+@pytest.mark.parametrize(
+    ("Solver", "periodicity"),
+    [
+        (SelfMobility, ("open", "open", "open")),
+        # (PSE, ("periodic", "periodic", "periodic")),
+        (NBody, ("open", "open", "open")),
+        # (DPStokes, ("periodic", "periodic", "open")),
+        # (DPStokes, ("periodic", "periodic", "single_wall")),
+        # (DPStokes, ("periodic", "periodic", "two_walls")),
+    ],
+)
+def test_returns_mf_mt(Solver, periodicity):
+    hydrodynamicRadius = 1.0
+    solver = Solver(*periodicity)
+    parameters = sane_parameters[Solver.__name__]
+    solver.setParameters(**parameters)
+    numberParticles = 1
+    solver.initialize(
+        temperature=1.0,
+        viscosity=1.0,
+        hydrodynamicRadius=hydrodynamicRadius,
+        numberParticles=numberParticles,
+        needsTorque=True
+    )
+
+    # Set precision to be the same as compiled precision
+    precision = np.float32 if Solver.precision == "float" else np.float64
+    positions = np.random.rand(numberParticles, 3).astype(precision)
+    forces = np.random.rand(numberParticles, 3).astype(precision)
+    torques = np.random.rand(numberParticles, 3).astype(precision)
+    solver.setPositions(positions)
+    mf, mt = solver.Mdot(forces, torques)
+    assert mf.shape == (numberParticles, 3)
+    assert mt.shape == (numberParticles, 3)
+    forces = forces.reshape(3 * numberParticles)
+    torques = torques.reshape(3 * numberParticles)
+    mf, mt = solver.Mdot(forces, torques)
+    assert mf.shape == (numberParticles, 3)
+    assert mt.shape == (numberParticles, 3)
+
 
 @pytest.mark.parametrize(
     ("Solver", "periodicity"),
