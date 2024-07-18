@@ -13,7 +13,7 @@ namespace nbody_rpy{
 
 
   //RPY = (1/(6*pi*viscosity*rh))*(f*I + g* r\diadic r/r^2). rh is hydrodynamic radius. This function returns {f, g/r^2}
-  inline  __device__  real2 RPY(real r, real rh){
+  inline  __device__  real2 RPY_UF(real r, real rh){
     const real invrh = real(1.0)/rh;
     r *= invrh;
     if(r >= real(2.0)){
@@ -40,10 +40,10 @@ namespace nbody_rpy{
     OpenBoundary(real m0, real rh):m0(m0), rh(rh){}
 
     //Computes M(ri, rj)*vj
-    __device__ real3 dotProduct(real3 pi, real3 pj, real3 vj){
+    __device__ real3 dotProduct_UF(real3 pi, real3 pj, real3 vj){
       const real3 rij = make_real3(pi)-make_real3(pj);
       const real r = sqrt(dot(rij, rij));
-      const real2 c12 = RPY(r, rh);
+      const real2 c12 = RPY_UF(r, rh);
       const real f = c12.x;
       const real gdivr2 = c12.y;
       const real gv = gdivr2*dot(rij, vj);
@@ -103,10 +103,10 @@ namespace nbody_rpy{
     BottomWall(real m0, real rh):m0(m0), rh(rh){}
 
     //Computes M(ri, rj)*vj
-    __device__ real3 dotProduct(real3 pi, real3 pj, real3 vj){
+    __device__ real3 dotProduct_UF(real3 pi, real3 pj, real3 vj){
       real3 rij = make_real3(pi)-make_real3(pj);
       const real r = sqrt(dot(rij, rij));
-      const real2 c12 = RPY(r, rh);
+      const real2 c12 = RPY_UF(r, rh);
       const real f = c12.x;
       const real gdivr2 = c12.y;
       const real gv = gdivr2*dot(rij, vj);

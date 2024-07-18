@@ -65,8 +65,6 @@ public:
     this->hydrodynamicRadius = ipar.hydrodynamicRadius[0];
     this->selfMobility = 1.0/(6*M_PI*ipar.viscosity*this->hydrodynamicRadius);
     Mobility::initialize(ipar);
-    if(ipar.needsTorque)
-      throw std::runtime_error("[NBody] Torque is not implemented");
   }
 
   virtual void setPositions(const real* ipositions) override{
@@ -75,15 +73,13 @@ public:
   }
 
   virtual void Mdot(const real* forces, const real* torques, real* linear, real* angular) override{
-    if(torques or angular)
-      throw std::runtime_error("[NBody] Torque is not implemented");
     int numberParticles = positions.size()/3;
     // Donev: Why can't there be a single callBatchedNBody routine that does if(kernel == kernel_type::bottom_wall) internally?
     // Example, what if in the future we add manually periodized RPY where one repeats a unit cell a certain number of times in each direction. This is actually easy to do with 3 loops and useful, and only requires adding a parameter nUnitCellsRepeat[3] and removing the error if some direction is periodic and only spitting an error if two walls are asked for.
     auto solver = nbody_rpy::callBatchedNBodyOpenBoundaryRPY;
     if(kernel == kernel_type::bottom_wall)
       solver = nbody_rpy::callBatchedNBodyBottomWallRPY;
-    solver(positions.data(), forces, linear,
+    solver(positions.data(), forces, torques, linear, angular,
 	   Nbatch, NperBatch,
 	   selfMobility, hydrodynamicRadius,
 	   algorithm);
