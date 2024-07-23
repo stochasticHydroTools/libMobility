@@ -59,14 +59,14 @@ def test_self_mobility_selfmobility():
     result = solver.Mdot(forces)
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
     assert np.allclose(result, m0 * forces, rtol=0, atol=1e-7)
-
-
-def test_self_mobility_nbody():
-    # Mobility should be just 1/(6\pi\eta R)*(1 - 2.83729748/L) for a single particle.
+# @pytest.mark.parametrize("algorithm", ["block"])
+@pytest.mark.parametrize("algorithm", ["fast", "naive", "advise", "block"])
+def test_self_mobility_nbody(algorithm):
+    # Mobility should be just 1/(6\pi\eta R)
     Solver = NBody
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver("open", "open", "open")
-    parameters = sane_parameters[Solver.__name__]
+    parameters = {"algorithm": algorithm}
     solver.setParameters(**parameters)
     hydrodynamicRadius = 0.9123
     viscosity = 1.123
