@@ -53,14 +53,17 @@ namespace nbody_rpy{
     extern __shared__ char shMem[];
     vecType *shPos = (vecType*) (shMem);
     vecType *shForce = (vecType*) (shMem+blockDim.x*sizeof(vecType));
+    vecType *shTorque = (vecType*) (shMem+blockDim.x*sizeof(vecType));
     const real3 pi= active?make_real3(pos[id]):real3();
     real3 MF = real3();
+    real3 MT = real3();
     for(int tile = tileOfFirstParticle; tile<=tileOfLastParticle; tile++){
       //Load tile to shared memory
       int i_load = tile*blockDim.x + threadIdx.x;
       if(i_load<N){
 	shPos[threadIdx.x] = make_real3(pos[i_load]);
 	shForce[threadIdx.x] = make_real3(forces[i_load]);
+  shTorque[threadIdx.x] = make_real3(torques[i_load]);
       }
       __syncthreads();
       //Compute interaction with all particles in tile
@@ -72,8 +75,10 @@ namespace nbody_rpy{
 	  if(fiber_id == fiber_j and cur_j<N){
 	    const real3 fj = shForce[counter];
 	    const real3 pj = shPos[counter];
+      const real3 tj = shTorque[counter];
 	    MF += kernel.dotProduct_UF(pi, pj, fj);
-      // TODO update function for torques
+      MT += kernel.dotProduct_WT(pi, pj, tj);
+      // TODO add other dot products here
 	  }
 	}
       }
@@ -81,6 +86,7 @@ namespace nbody_rpy{
     }
     if(active)
       Mv[id] = MF;
+      Mw[id] = MT;
   }
 
   template<class HydrodynamicKernel, class vecType>
