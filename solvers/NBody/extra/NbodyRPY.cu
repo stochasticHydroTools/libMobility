@@ -116,15 +116,19 @@ namespace nbody_rpy{
     if(tid>=Nbatches*NperBatch) return;
     real3 pi = make_real3(pos[tid]);
     real3 MF = real3();
+    real3 MT = real3();
     int fiber_id = tid/NperBatch;
     for(int i= fiber_id*NperBatch; i<(fiber_id+1)*NperBatch; i++){
       if(i>=Nbatches*NperBatch) break;
       real3 pj = make_real3(pos[i]);
       real3 fj = make_real3(forces[i]);
+      real3 tj = make_real3(torques[i]);
       MF += kernel.dotProduct_UF(pi, pj, fj);
-      // TODO add other dot products
+      MT += kernel.dotProduct_WT(pi, pj, tj);
+      // TODO add other dot products and modify above to add torques
     }
     Mv[tid] = MF;
+    Mw[tid] = MT;
   }
 
   template<class HydrodynamicKernel, class vecType>
@@ -150,7 +154,7 @@ namespace nbody_rpy{
   //NaiveBlock N^2 algorithm (looks like x20 times slower than the fast kernel
   __global__ void computeRPYBatchedNaiveBlockGPU(const vecType* pos,
 						 const vecType* forces,
-             const vecType* torques,
+             const vecType* torque,
 						 real3* Mv,
              real3* Mw,
 						 HydrodynamicKernel &kernel,
@@ -161,15 +165,18 @@ namespace nbody_rpy{
     real3 pi = make_real3(pos[tid]);
     extern __shared__ real3 MFshared[];
     real3 MF = real3();
+    // real3 MT = real3();
     int fiber_id = tid/NperBatch;
     int last_id = thrust::min((fiber_id+1)*NperBatch, Nbatches*NperBatch);
     for(int i= fiber_id*NperBatch+threadIdx.x; i<last_id; i+=blockDim.x){
       real3 pj = make_real3(pos[i]);
       real3 fj = make_real3(forces[i]);
+      // real3 tj = make_real3(torque[i]);
       MF += kernel.dotProduct_UF(pi, pj, fj);
-      // TODO add other dot products
+      // MT += kernel.dotProduct_WT(pi, pj, tj);
     }
     MFshared[threadIdx.x] = MF;
+    // MFshared[threadIdx.x + blockDim.x] = MT;
     __syncthreads();
     if(threadIdx.x == 0){
       auto MFTot = real3();
@@ -182,14 +189,15 @@ namespace nbody_rpy{
   }
 
   template<class HydrodynamicKernel, class vecType>
-  void computeRPYBatchedNaiveBlock(vecType* pos, vecType* force, vecType* torque, real3 *Mv, real3 *Mw,
+  void computeRPYBatchedNaiveBlock(vecType* pos, vecType* force, vecType* torque,
+           real3 *Mv, real3 *Mw,
 				   int Nbatches, int NperBatch,
 				   HydrodynamicKernel &hydrodynamicKernel){
     int N = Nbatches*NperBatch;
     int minBlockSize = 128;
     int Nthreads = minBlockSize<N?minBlockSize:N;
     int Nblocks  = N;
-    computeRPYBatchedNaiveBlockGPU<<<Nblocks, Nthreads, 2*Nthreads*sizeof(real3)>>>(pos,
+    computeRPYBatchedNaiveBlockGPU<<<Nblocks, Nthreads, 4*Nthreads*sizeof(real3)>>>(pos,
 										    force,
                         torque,
 										    Mv,
@@ -209,7 +217,7 @@ namespace nbody_rpy{
     const int numberParticles = Nbatches * NperBatch;
     cached_vector<real> pos(h_pos, h_pos + elementsPerValue*numberParticles);
     cached_vector<real> forces(h_forces, h_forces + elementsPerValue*numberParticles);
-    cached_vector<real> torques(h_torques, h_forces + elementsPerValue*numberParticles);
+    cached_vector<real> torques(h_torques, h_torques + elementsPerValue*numberParticles);
     cached_vector<real> Mv(elementsPerValue * numberParticles);
     cached_vector<real> Mw(elementsPerValue * numberParticles);
     auto kernel = computeRPYBatchedFast<HydrodynamicKernel, LayoutType>;
@@ -230,17 +238,17 @@ namespace nbody_rpy{
 // Donev: These two seem identical to me except for the using HydrodynamicKernel = ???; line. Why can't there just be one routine callBatchedNBody that dispatches the right routine based on if(kernel == kernel_type::bottom_wall)? This doubling of code seems redundant
   void callBatchedNBodyOpenBoundaryRPY(const real* h_pos, const real* h_forces, const real* h_torques,
 				       real* h_MF, real* h_MT, int Nbatches, int NperBatch,
-				       real selfMobility, real hydrodynamicRadius, algorithm alg){
+				       real selfMobility, real rotMobility, real hydrodynamicRadius, algorithm alg){
     using HydrodynamicKernel = OpenBoundary;
-    HydrodynamicKernel hydrodynamicKernel(selfMobility, hydrodynamicRadius);
+    HydrodynamicKernel hydrodynamicKernel(selfMobility, rotMobility, hydrodynamicRadius);
     callBatchedNBody(h_pos, h_forces, h_torques, h_MF, h_MT, Nbatches, NperBatch, hydrodynamicKernel, alg);
   }
 
   void callBatchedNBodyBottomWallRPY(const real* h_pos, const real* h_forces, const real* h_torques,
 				       real* h_MF, real* h_MT, int Nbatches, int NperBatch,
-				       real selfMobility, real hydrodynamicRadius, algorithm alg){
+				       real selfMobility, real rotMobility, real hydrodynamicRadius, algorithm alg){
     using HydrodynamicKernel = BottomWall;
-    HydrodynamicKernel hydrodynamicKernel(selfMobility, hydrodynamicRadius);
+    HydrodynamicKernel hydrodynamicKernel(selfMobility, rotMobility, hydrodynamicRadius);
     callBatchedNBody(h_pos, h_forces, h_torques, h_MF, h_MT, Nbatches, NperBatch, hydrodynamicKernel, alg);
   }
 

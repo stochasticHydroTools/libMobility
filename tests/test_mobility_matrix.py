@@ -108,13 +108,14 @@ def test_self_mobility_linear_selfmobility():
     assert np.allclose(linear, m0 * forces, rtol=0, atol=1e-7)
     assert np.allclose(angular, t0 * torques, rtol=0, atol=1e-7)
 
-
-def test_self_mobility_linear_nbody():
+# @pytest.mark.parametrize("algorithm", ["naive", "block", "fast", "advise"])
+@pytest.mark.parametrize("algorithm", ["naive", "fast"])
+def test_self_mobility_linear_nbody(algorithm):
     # Mobility should be just 1/(6\pi\eta R)
     Solver = NBody
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver("open", "open", "open")
-    parameters = sane_parameters[Solver.__name__]
+    parameters = {"algorithm": algorithm}
     solver.setParameters(**parameters)
     hydrodynamicRadius = 0.9123
     viscosity = 1.123
@@ -131,6 +132,33 @@ def test_self_mobility_linear_nbody():
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
     assert np.allclose(result, m0 * forces, rtol=0, atol=1e-7)
 
+# @pytest.mark.parametrize("algorithm", ["naive", "block", "fast", "advise"])
+@pytest.mark.parametrize("algorithm", ["naive", "fast"])
+def test_self_mobility_angular_nbody(algorithm):
+    # Mobility should be just 1/(6\pi\eta R)
+    Solver = NBody
+    precision = np.float32 if Solver.precision == "float" else np.float64
+    solver = Solver("open", "open", "open")
+    parameters = {"algorithm": algorithm}
+    solver.setParameters(**parameters)
+    hydrodynamicRadius = 0.9123
+    viscosity = 1.123
+    solver.initialize(
+        temperature=0.0,
+        viscosity=viscosity,
+        hydrodynamicRadius=hydrodynamicRadius,
+        numberParticles=1,
+        needsTorque=True
+    )
+    positions = np.zeros((1, 3), dtype=precision)
+    solver.setPositions(positions)
+    forces = np.ones(3, dtype=precision)
+    torques = np.ones(3, dtype=precision)
+    linear, angular = solver.Mdot(forces, torques)
+    m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
+    t0 = 1.0 / (8 * np.pi * viscosity * hydrodynamicRadius**3)
+    assert np.allclose(linear, m0 * forces, rtol=0, atol=1e-7)
+    assert np.allclose(angular, t0 * torques, rtol=0, atol=1e-7)
 
 @pytest.mark.parametrize("psi", [0.0, 0.5, 1.0])
 def test_self_mobility_linear_pse_cubic_box(psi):
