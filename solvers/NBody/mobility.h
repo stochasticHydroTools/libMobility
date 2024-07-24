@@ -17,8 +17,9 @@ class NBody: public libmobility::Mobility{
   enum class kernel_type{open_rpy, bottom_wall};
   kernel_type kernel;
   std::vector<real> positions;
-  real selfMobility;
+  real transMobility;
   real rotMobility;
+  real transRotMobility;
   real hydrodynamicRadius;
   int numberParticles;
   nbody_rpy::algorithm algorithm = nbody_rpy::algorithm::advise;
@@ -64,8 +65,9 @@ public:
       throw std::runtime_error("[Mobility] Invalid batch parameters for NBody. If in doubt, use the defaults.");
 
     this->hydrodynamicRadius = ipar.hydrodynamicRadius[0];
-    this->selfMobility = 1.0/(6*M_PI*ipar.viscosity*this->hydrodynamicRadius);
-    this->rotMobility = 1.0/(8*M_PI*ipar.viscosity*this->hydrodynamicRadius*hydrodynamicRadius*hydrodynamicRadius);
+    this->transMobility = 1.0/(6*M_PI*ipar.viscosity*hydrodynamicRadius);
+    this->transRotMobility = 1.0/(8*M_PI*ipar.viscosity*hydrodynamicRadius*hydrodynamicRadius);
+    this->rotMobility = 1.0/(8*M_PI*ipar.viscosity*hydrodynamicRadius*hydrodynamicRadius*hydrodynamicRadius);
     Mobility::initialize(ipar);
   }
 
@@ -93,6 +95,8 @@ public:
 
       torques = tempTorques;
       angular = tempAngular;
+    } else if(torques && kernel == kernel_type::bottom_wall){
+      throw std::runtime_error("[Mobility] Bottom wall kernel not implemented for torques.\n");
     }
 
     auto solver = nbody_rpy::callBatchedNBodyOpenBoundaryRPY;
@@ -100,7 +104,7 @@ public:
       solver = nbody_rpy::callBatchedNBodyBottomWallRPY;
     solver(positions.data(), forces, torques, linear, angular,
 	   Nbatch, NperBatch,
-	   selfMobility, rotMobility, hydrodynamicRadius,
+	   transMobility, rotMobility, transRotMobility, hydrodynamicRadius,
 	   algorithm);
 
     // part 2 of hacky fix

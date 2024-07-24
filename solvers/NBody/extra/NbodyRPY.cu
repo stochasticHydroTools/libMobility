@@ -53,7 +53,7 @@ namespace nbody_rpy{
     extern __shared__ char shMem[];
     vecType *shPos = (vecType*) (shMem);
     vecType *shForce = (vecType*) (shMem+blockDim.x*sizeof(vecType));
-    vecType *shTorque = (vecType*) (shMem+blockDim.x*sizeof(vecType));
+    vecType *shTorque = (vecType*) (shMem+2*blockDim.x*sizeof(vecType));
     const real3 pi= active?make_real3(pos[id]):real3();
     real3 MF = real3();
     real3 MT = real3();
@@ -76,9 +76,10 @@ namespace nbody_rpy{
 	    const real3 fj = shForce[counter];
 	    const real3 pj = shPos[counter];
       const real3 tj = shTorque[counter];
-	    MF += kernel.dotProduct_UF(pi, pj, fj);
+      MF += kernel.dotProduct_UF(pi, pj, fj);
+      MF += kernel.dotProduct_UT(pi, pj, tj);
       MT += kernel.dotProduct_WT(pi, pj, tj);
-      // TODO add other dot products here
+      MT += kernel.dotProduct_WF(pi, pj, fj);
 	  }
 	}
       }
@@ -98,7 +99,7 @@ namespace nbody_rpy{
     int minBlockSize = std::max(nearestWarpMultiple, 32);
     int Nthreads = std::min(std::min(minBlockSize, N), 256);
     int Nblocks  = (N+Nthreads-1)/Nthreads;
-    computeRPYBatchedFastGPU<<<Nblocks, Nthreads, 2*Nthreads*sizeof(real3)>>>(pos,
+    computeRPYBatchedFastGPU<<<Nblocks, Nthreads, 3*Nthreads*sizeof(real3)>>>(pos,
 									      force,
                         torque,
 									      Mv,
@@ -130,8 +131,9 @@ namespace nbody_rpy{
       real3 fj = make_real3(forces[i]);
       real3 tj = make_real3(torques[i]);
       MF += kernel.dotProduct_UF(pi, pj, fj);
+      MF += kernel.dotProduct_UT(pi, pj, tj);
       MT += kernel.dotProduct_WT(pi, pj, tj);
-      // TODO add other dot products and modify above to add torques
+      MT += kernel.dotProduct_WF(pi, pj, fj);
     }
     Mv[tid] = MF;
     Mw[tid] = MT;
@@ -244,17 +246,17 @@ namespace nbody_rpy{
 // Donev: These two seem identical to me except for the using HydrodynamicKernel = ???; line. Why can't there just be one routine callBatchedNBody that dispatches the right routine based on if(kernel == kernel_type::bottom_wall)? This doubling of code seems redundant
   void callBatchedNBodyOpenBoundaryRPY(const real* h_pos, const real* h_forces, const real* h_torques,
 				       real* h_MF, real* h_MT, int Nbatches, int NperBatch,
-				       real selfMobility, real rotMobility, real hydrodynamicRadius, algorithm alg){
+				       real selfMobility, real rotMobility, real transRotMobility, real hydrodynamicRadius, algorithm alg){
     using HydrodynamicKernel = OpenBoundary;
-    HydrodynamicKernel hydrodynamicKernel(selfMobility, rotMobility, hydrodynamicRadius);
+    HydrodynamicKernel hydrodynamicKernel(selfMobility, rotMobility, transRotMobility, hydrodynamicRadius);
     callBatchedNBody(h_pos, h_forces, h_torques, h_MF, h_MT, Nbatches, NperBatch, hydrodynamicKernel, alg);
   }
 
   void callBatchedNBodyBottomWallRPY(const real* h_pos, const real* h_forces, const real* h_torques,
 				       real* h_MF, real* h_MT, int Nbatches, int NperBatch,
-				       real selfMobility, real rotMobility, real hydrodynamicRadius, algorithm alg){
+				       real selfMobility, real rotMobility,real transRotMobility, real hydrodynamicRadius, algorithm alg){
     using HydrodynamicKernel = BottomWall;
-    HydrodynamicKernel hydrodynamicKernel(selfMobility, rotMobility, hydrodynamicRadius);
+    HydrodynamicKernel hydrodynamicKernel(selfMobility, rotMobility,transRotMobility, hydrodynamicRadius);
     callBatchedNBody(h_pos, h_forces, h_torques, h_MF, h_MT, Nbatches, NperBatch, hydrodynamicKernel, alg);
   }
 

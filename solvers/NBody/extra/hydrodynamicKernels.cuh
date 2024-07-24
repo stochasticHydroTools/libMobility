@@ -54,17 +54,51 @@ __device__ real2 RPY_WT(real r, real rh){
     }
 }
 
+// returns (M_xy, M_xz, M_yz)
+__device__ real3 RPY_UT(real3 rij, real rh){
+  const real invrh = real(1.0)/rh;
+  const real r = sqrt(dot(rij, rij))*invrh;
+  rij *= invrh;
+  if(r>=2){
+    const real invr = real(1.0)/r;
+    real invr3 = 1/(invr*invr*invr);
+    rij *= invr3;
+    return {rij.z, -rij.y, rij.x};
+  } 
+  else{
+    real c1 = real(0.5) * (real(1.0) - real(0.375) * r); // 3/8 = 0.375
+    rij *= c1;
+    return {rij.z, -rij.y, rij.x};
+  }
+}
+
+// returns (M_xy, M_xz, M_yz)
+__device__ real3 RPY_WF(real3 rij, real rh){
+  const real invrh = real(1.0)/rh;
+  const real r = sqrt(dot(rij, rij))*invrh;
+  rij *= invrh;
+  if(r>=2){
+    const real invr3 = real(1.0)/(r*r*r);
+    rij *= invr3;
+    return {rij.z, -rij.y, rij.x};
+  }
+  else{
+    real c1 =  real(0.5)*( real(1.0) - real(0.375) * r); // 3/8 = 0.375
+    rij *= c1;
+    return {rij.z, -rij.y, rij.x};
+  }
+}
 
   //Evaluates the RPY tensor with open boundaries
   class OpenBoundary{
     real rh; //Hydrodynamic radius
-    real m0; //trans-trans mobility
+    real t0; //trans-trans mobility
     real r0; //rot-rot mobility
     real rt0; //rot-trans & trans-rot mobility
   public:
 
     //The constructor needs a self mobility and an hydrodynamic radius
-    OpenBoundary(real m0, real r0, real rh):m0(m0), r0(r0), rh(rh){}
+    OpenBoundary(real t0, real r0, real rt0, real rh):t0(t0), r0(r0), rt0(rt0), rh(rh){}
 
     //Computes M(ri, rj)*vj
     __device__ real3 dotProduct_UF(real3 pi, real3 pj, real3 vj){
@@ -75,18 +109,8 @@ __device__ real2 RPY_WT(real r, real rh){
       const real gdivr2 = c12.y;
       const real gv = gdivr2*dot(rij, vj);
       const real3 Mv_t = f*vj + (r>real(0)?gv*rij:real3());
-      return m0*Mv_t;
+      return t0*Mv_t;
     }
-
-  // __global__ void dotProduct_WT(const real *x,
-  //             const real *t,
-  //             real *u,
-  //             int number_of_blobs,
-  //             real eta,
-  //             real a,
-  //             real Lx,
-  //             real Ly,
-  //             real Lz){
 
   __device__ real3 dotProduct_WT(real3 pi, real3 pj, real3 vj){
       const real3 rij = make_real3(pi)-make_real3(pj);
@@ -99,46 +123,32 @@ __device__ real2 RPY_WT(real r, real rh){
       return r0*Mv_t;
   }
 
-  // __device__ real3 dotProduct_WT(real3 pi, real3 pj, real3 tj){
-  //     real Ux=0;
-  //     real Uy=0;
-  //     real Uz=0;
+  __device__ real3 dotProduct_UT(real3 pi, real3 pj, real3 vj){
+      const real3 rij = make_real3(pi)-make_real3(pj);
+      const real3 m = RPY_UT(rij, rh); // (M_xy, M_xz, M_yz)
+      const real3 Mv_t = {m.x*vj.y + m.y*vj.z,
+                         -m.x*vj.x + m.z*vj.z, 
+                         -m.y*vj.x - m.z*vj.y};
+      return rt0*Mv_t;
+  }
 
-  //     real3 rij = make_real3(pi) - make_real3(pj);
-
-  //     real Mxx, Mxy, Mxz;
-  //     real Myx, Myy, Myz;
-  //     real Mzx, Mzy, Mzz;
-
-  //     // 1. Compute mobility for pair i-j
-  //     RPY_WT(rij.x,rij.y,rij.z, Mxx,Mxy,Mxz,Myy,Myz,Mzz);
-  //     Myx = Mxy;
-  //     Mzx = Mxz;
-  //     Mzy = Myz;
-
-  //     //2. Compute product M_ij * T_j
-  //     Ux = Ux + (Mxx * t[joffset] + Mxy * t[joffset + 1] + Mxz * t[joffset + 2]);
-  //     Uy = Uy + (Myx * t[joffset] + Myy * t[joffset + 1] + Myz * t[joffset + 2]);
-  //     Uz = Uz + (Mzx * t[joffset] + Mzy * t[joffset + 1] + Mzz * t[joffset + 2]);
-  //     //LOOP END
-
-  //     //3. Save velocity U_i
-  //     real pi = real(4.0) * atan(real(1.0));
-  //     real norm_fact_t = 8 * pi * eta * a3;
-  //     u[ioffset    ] = Ux / norm_fact_t;
-  //     u[ioffset + 1] = Uy / norm_fact_t;
-  //     u[ioffset + 2] = Uz / norm_fact_t;
-
-  //     return;
-  //   }
-  };
+  __device__ real3 dotProduct_WF(real3 pi, real3 pj, real3 vj){
+      const real3 rij = make_real3(pi)-make_real3(pj);
+      const real3 m = RPY_WF(rij, rh); // (M_xy, M_xz, M_yz)
+      const real3 Mv_t = {m.x*vj.y + m.y*vj.z,
+                         -m.x*vj.x + m.z*vj.z, 
+                         -m.y*vj.x - m.z*vj.y};
+      return rt0*Mv_t;
+  }
+};
 
 
   //Evaluates the RPY tensor with open boundaries in all boundaries except a wall at the bottom in Z=0
   class BottomWall{
     real rh; //Hydrodynamic radius
-    real m0; //Self mobility
+    real t0; //trans-trans mobility
     real r0; //rot-rot mobility
+    real rt0; //rot-trans & trans-rot mobility
 
     //Computes the correction to the open boundary RPY mobility due to a wall located at z=0
     //rij: distance between particles
@@ -182,7 +192,7 @@ __device__ real2 RPY_WT(real r, real rh){
   public:
 
     //The constructor needs a self mobility and an hydrodynamic radius
-    BottomWall(real m0, real r0, real rh):m0(m0), r0(r0), rh(rh){}
+    BottomWall(real t0, real r0, real rt0, real rh):t0(t0), r0(r0), rt0(rt0), rh(rh){}
 
     //Computes M(ri, rj)*vj
     __device__ real3 dotProduct_UF(real3 pi, real3 pj, real3 vj){
@@ -196,19 +206,20 @@ __device__ real2 RPY_WT(real r, real rh){
       const real hj = pj.z;
       rij.z = rij.z +2*pj.z;
       Mv_t += computeWallCorrection(rij/rh,(r==0), hj/rh, vj);
-      return m0*Mv_t;
+      return t0*Mv_t;
     }
 
-    // placeholder, this is wrong
+    // placeholders
     __device__ real3 dotProduct_WT(real3 pi, real3 pj, real3 vj){
-    const real3 rij = make_real3(pi)-make_real3(pj);
-    const real r = sqrt(dot(rij, rij));
-    const real2 c12 = RPY_WT(r, rh);
-    const real f = c12.x;
-    const real gdivr2 = c12.y;
-    const real gv = gdivr2*dot(rij, vj);
-    const real3 Mv_t = f*vj + (r>real(0)?gv*rij:real3());
-    return r0*Mv_t;
+    return make_real3(real(0.0));
+    }
+
+    __device__ real3 dotProduct_UT(real3 pi, real3 pj, real3 vj){
+      return make_real3(real(0.0));
+    }
+
+    __device__ real3 dotProduct_WF(real3 pi, real3 pj, real3 vj){
+      return make_real3(real(0.0));
     }
     
   };

@@ -9,11 +9,11 @@ namespace nbody_rpy{
   enum class algorithm{fast, naive, block, advise};
   void callBatchedNBodyOpenBoundaryRPY(const real* h_pos, const real* h_forces, const real* h_torques,
 				       real* h_MF, real* h_MT, int Nbatches, int NperBatch,
-				       real selfMobility, real rotMobility, real hydrodynamicRadius, algorithm alg);
+				       real transMobility, real rotMobility, real transRotMobility, real hydrodynamicRadius, algorithm alg);
 
   void callBatchedNBodyBottomWallRPY(const real* h_pos, const real* h_forces, const real* h_torques,
              real* h_MF, real* h_MT, int Nbatches, int NperBatch,
-				     real selfMobility, real rotMobility, real hydrodynamicRadius, algorithm alg);
+				     real transMobility, real rotMobility, real transRotMobility, real hydrodynamicRadius, algorithm alg);
 
 
 }
