@@ -160,6 +160,13 @@ def test_self_mobility_angular_nbody(algorithm):
     assert np.allclose(linear, m0 * forces, rtol=0, atol=1e-7)
     assert np.allclose(angular, t0 * torques, rtol=0, atol=1e-7)
 
+    forces = np.zeros(3, dtype=precision)
+    torques = np.ones(3, dtype=precision)
+    linear, angular = solver.Mdot(forces, torques)
+    t0 = 1.0 / (8 * np.pi * viscosity * hydrodynamicRadius**3)
+    assert np.allclose(linear, forces, rtol=0, atol=1e-7)
+    assert np.allclose(angular, t0 * torques, rtol=0, atol=1e-7)
+
 @pytest.mark.parametrize("psi", [0.0, 0.5, 1.0])
 def test_self_mobility_linear_pse_cubic_box(psi):
     # Mobility should be just 1/(6\pi\eta a)*(1 - 2.83729748 a/L) for a single particle.
