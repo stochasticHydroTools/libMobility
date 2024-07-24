@@ -83,7 +83,7 @@ def test_mobility_matrix_angular(
     ), f"Mobility matrix is not symmetric within 5e-5, max diff: {np.max(np.abs(sym))}"
 
 
-def test_self_mobility_linear_selfmobility():
+def test_self_mobility_selfmobility():
     # linear mobility should be just 1/(6\pi\eta R) for a single particle.
     # angular mobility should be just 1/(8\pi\eta R^3) for a single particle.
     precision = np.float32 if SelfMobility.precision == "float" else np.float64
@@ -153,7 +153,7 @@ def test_self_mobility_angular_nbody(algorithm):
     positions = np.zeros((1, 3), dtype=precision)
     solver.setPositions(positions)
     forces = np.ones(3, dtype=precision)
-    torques = np.ones(3, dtype=precision)
+    torques = 2*np.ones(3, dtype=precision)
     linear, angular = solver.Mdot(forces, torques)
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
     t0 = 1.0 / (8 * np.pi * viscosity * hydrodynamicRadius**3)
