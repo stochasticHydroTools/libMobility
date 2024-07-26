@@ -60,8 +60,7 @@ __device__ real3 RPY_UT(real3 rij, real rh){
   const real r = sqrt(dot(rij, rij))*invrh;
   rij *= invrh;
   if(r>=2){
-    const real invr = real(1.0)/r;
-    real invr3 = 1/(invr*invr*invr);
+    real invr3 = real(1.0)/(r*r*r);
     rij *= invr3;
     return {rij.z, -rij.y, rij.x};
   } 
