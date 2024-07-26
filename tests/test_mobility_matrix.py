@@ -1,7 +1,9 @@
 from utils import sane_parameters, compute_M, generate_positions_in_box
 import pytest
 import numpy as np
+import scipy.io
 from libMobility import SelfMobility, PSE, NBody, DPStokes
+from utils import compute_M
 
 
 @pytest.mark.parametrize(
@@ -201,3 +203,36 @@ def test_self_mobility_linear_pse_cubic_box(psi):
         * (1 - 2.83729748 * leff + 4.0 * np.pi / 3.0 * leff**3)
     )
     assert np.allclose(result, m0 * forces, rtol=0, atol=1e-6)
+
+# @pytest.mark.parametrize("algorithm", ["naive", "block", "fast", "advise"])
+@pytest.mark.parametrize("algorithm", ["naive", "fast"])
+def test_pair_mobility_angular_nbody(algorithm):
+    Solver = NBody
+    precision = np.float32 if Solver.precision == "float" else np.float64
+    solver = Solver("open", "open", "open")
+    parameters = {"algorithm": algorithm}
+    solver.setParameters(**parameters)
+
+    ref_file = "./ref/pair_mobility_nbody_freespace.mat"
+    ref = scipy.io.loadmat(ref_file)
+    refM = np.array(ref['M']).astype(precision)
+    r_vecs = np.array(ref['r_vecs']).astype(precision)
+    a = np.array(ref['a']).astype(precision).flatten()
+    eta = np.array(ref['eta']).astype(precision).flatten()
+    N = len(r_vecs)
+
+    for i in range(N):
+        hydrodynamicRadius = a[i]
+        viscosity = eta[i]
+        solver.initialize(
+            temperature=0.0,
+            viscosity=viscosity,
+            hydrodynamicRadius=hydrodynamicRadius,
+            numberParticles=2,
+            needsTorque=True
+        )
+        positions = r_vecs[i]
+        solver.setPositions(positions)
+
+        M = compute_M(solver, 2, True)
+        assert np.allclose(refM[i], M, atol=1e-6)
