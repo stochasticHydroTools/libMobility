@@ -141,7 +141,7 @@ namespace nbody_rpy{
   __global__ void computeRPYBatchedNaiveBlockGPU(const vecType* pos,
 						 const vecType* forces,
 						 real3* Mv,
-						 HydrodynamicKernel &kernel,
+						 HydrodynamicKernel kernel,
 						 int Nbatches,
 						 int NperBatch){
     const int tid = blockIdx.x;
