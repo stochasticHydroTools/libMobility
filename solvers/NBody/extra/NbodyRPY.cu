@@ -171,27 +171,32 @@ namespace nbody_rpy{
     const int tid = blockIdx.x;
     if(tid>=Nbatches*NperBatch) return;
     real3 pi = make_real3(pos[tid]);
-    extern __shared__ real3 MFshared[];
+    extern __shared__ real3 sharedMemory[];
     real3 MF = real3();
-    // real3 MT = real3();
+    real3 MT = real3();
     int fiber_id = tid/NperBatch;
     int last_id = thrust::min((fiber_id+1)*NperBatch, Nbatches*NperBatch);
     for(int i= fiber_id*NperBatch+threadIdx.x; i<last_id; i+=blockDim.x){
       real3 pj = make_real3(pos[i]);
       real3 fj = make_real3(forces[i]);
-      // real3 tj = make_real3(torque[i]);
+      real3 tj = make_real3(torque[i]);
       MF += kernel.dotProduct_UF(pi, pj, fj);
-      // MT += kernel.dotProduct_WT(pi, pj, tj);
+      MF += kernel.dotProduct_UT(pi, pj, tj);
+      MT += kernel.dotProduct_WT(pi, pj, tj);
+      MT += kernel.dotProduct_WF(pi, pj, fj);
     }
-    MFshared[threadIdx.x] = MF;
-    // MFshared[threadIdx.x + blockDim.x] = MT;
+    sharedMemory[threadIdx.x] = MF;
+    sharedMemory[threadIdx.x + blockDim.x] = MT;
     __syncthreads();
     if(threadIdx.x == 0){
       auto MFTot = real3();
+      auto MTTot = real3();
       for(int i =0; i<blockDim.x; i++){
-	MFTot += MFshared[i];
+	MFTot += sharedMemory[i];
+  MTTot += sharedMemory[i+blockDim.x];
       }
       Mv[tid] = MFTot;
+      Mw[tid] = MTTot;
     }
 
   }
@@ -205,7 +210,7 @@ namespace nbody_rpy{
     int minBlockSize = 128;
     int Nthreads = minBlockSize<N?minBlockSize:N;
     int Nblocks  = N;
-    computeRPYBatchedNaiveBlockGPU<<<Nblocks, Nthreads, 4*Nthreads*sizeof(real3)>>>(pos,
+    computeRPYBatchedNaiveBlockGPU<<<Nblocks, Nthreads, 2*Nthreads*sizeof(real3)>>>(pos,
 										    force,
                         torque,
 										    Mv,
