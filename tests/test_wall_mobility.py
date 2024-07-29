@@ -135,24 +135,10 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
     # uncomment to save datafile for test plots
     scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
-
-    indx, indy = 4, 1 ## xx
-    checkPairComponent(indx, indy, allM, refM, nSeps, tol)
-
-    indx, indy = 5, 2 # yy
-    checkPairComponent(indx, indy, allM, refM, nSeps, tol)
-
-    indx, indy = 6, 3 # zz
-    checkPairComponent(indx, indy, allM, refM, nSeps, tol)
-
-    indx, indy = 5, 1 # yx
-    checkPairComponent(indx, indy, allM, refM, nSeps, tol)
-
-    indx, indy = 3, 4 # zx
-    checkPairComponent(indx, indy, allM, refM, nSeps, tol)
-
-    indx, indy = 3, 5 # zy
-    checkPairComponent(indx, indy, allM, refM, nSeps, tol)
+    for i in range(0, nSeps):
+        for k in range(0, nHeights):
+            diff = abs(allM[i,k] - refM[i,k][0:6,0:6])
+            assert np.all(diff < tol)
 
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "tol", "start_height", "ref_file"),
