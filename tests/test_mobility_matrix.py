@@ -111,8 +111,7 @@ def test_self_mobility_selfmobility():
     assert np.allclose(linear, m0 * forces, rtol=0, atol=1e-7)
     assert np.allclose(angular, t0 * torques, rtol=0, atol=1e-7)
 
-# @pytest.mark.parametrize("algorithm", ["naive", "block", "fast", "advise"])
-@pytest.mark.parametrize("algorithm", ["naive", "fast"])
+@pytest.mark.parametrize("algorithm", ["naive", "block", "fast", "advise"])
 def test_self_mobility_linear_nbody(algorithm):
     # Mobility should be just 1/(6\pi\eta R)
     Solver = NBody
@@ -135,8 +134,7 @@ def test_self_mobility_linear_nbody(algorithm):
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
     assert np.allclose(result, m0 * forces, rtol=0, atol=1e-7)
 
-# @pytest.mark.parametrize("algorithm", ["naive", "block", "fast", "advise"])
-@pytest.mark.parametrize("algorithm", ["naive", "fast"])
+@pytest.mark.parametrize("algorithm", ["naive", "block", "fast", "advise"])
 def test_self_mobility_angular_nbody(algorithm):
     # Mobility should be just 1/(6\pi\eta R)
     Solver = NBody
@@ -205,8 +203,7 @@ def test_self_mobility_linear_pse_cubic_box(psi):
     )
     assert np.allclose(result, m0 * forces, rtol=0, atol=1e-6)
 
-# @pytest.mark.parametrize("algorithm", ["naive", "block", "fast", "advise"])
-@pytest.mark.parametrize("algorithm", ["naive", "fast"])
+@pytest.mark.parametrize("algorithm", ["naive", "block", "fast", "advise"])
 def test_pair_mobility_angular_nbody(algorithm):
     Solver = NBody
     precision = np.float32 if Solver.precision == "float" else np.float64

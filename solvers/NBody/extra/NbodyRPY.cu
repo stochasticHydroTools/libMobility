@@ -165,7 +165,7 @@ namespace nbody_rpy{
              const vecType* torque,
 						 real3* Mv,
              real3* Mw,
-						 HydrodynamicKernel &kernel,
+						 HydrodynamicKernel kernel,
 						 int Nbatches,
 						 int NperBatch){
     const int tid = blockIdx.x;
