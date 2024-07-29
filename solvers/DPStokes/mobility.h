@@ -4,6 +4,7 @@
 #define MOBILITY_SELFMOBILITY_H
 #include <MobilityInterface/MobilityInterface.h>
 #include"extra/uammd_interface.h"
+#include"extra/poly_fits.h"
 #include<vector>
 #include<cmath>
 #include<type_traits>
@@ -21,8 +22,6 @@ class DPStokes: public libmobility::Mobility{
   DPStokesParameters dppar;
   real temperature;
   real lanczosTolerance;
-  std::uint64_t lanczosSeed;
-  std::shared_ptr<LanczosStochasticVelocities> lanczos;
   std::string wallmode;
 public:
 
@@ -51,23 +50,69 @@ public:
     this->lanczosTolerance = ipar.tolerance;
     this->dppar.mode = this->wallmode;
     this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
-    this->dppar.w = 6;
-    this->dppar.beta = 1.714*this->dppar.w;
-    real h = this->dppar.hydrodynamicRadius/1.554;
-    this->dppar.alpha = this->dppar.w/2.0;
+
+    real h;
+    if(ipar.needsTorque){
+      this->dppar.w = 6;
+      this->dppar.w_d = 6;
+      this->dppar.beta = 1.327*this->dppar.w;
+      this->dppar.beta_d = 2.217*this->dppar.w;
+      h = this->dppar.hydrodynamicRadius/1.731;
+      this->dppar.alpha_d = this->dppar.w_d*0.5;
+    } else{
+      this->dppar.w = 4;
+      this->dppar.beta = 1.785*this->dppar.w;
+      h = this->dppar.hydrodynamicRadius/1.205;
+    }
+    this->dppar.alpha = this->dppar.w*0.5;
     this->dppar.tolerance = 1e-6;
-    this->dppar.nx = int(this->dppar.Lx/h + 0.5);
-    this->dppar.ny = int(this->dppar.Ly/h + 0.5);
-    // Add a buffer of w*h/2 when there is an open boundary
+
+    real N_real = this->dppar.Lx/h; // actual N given L and h
+    int N_up = ceil(N_real);
+    int N_down = floor(N_real);
+    int N;
+    // either N_up or N_down will be a multiple of 2. pick the even one for a more FFT friendly grid.
+    if(N_up % 2 == 0){
+      N = N_up;
+    }else{
+      N = N_down;
+    }
+
+    this->dppar.nx = N;
+    this->dppar.ny = N;
+
+    // note: only set up for square boxes
+    if(this->dppar.allowChangingBoxSize){ // adjust box size to suit h
+      this->dppar.Lx = N*h;
+      this->dppar.Ly = N*h;
+    } else{ // adjust h so that L/h is an integer
+      h = this->dppar.Lx/N;
+      double arg = this->dppar.hydrodynamicRadius/(this->dppar.w*h);
+      this->dppar.beta = dpstokes_polys::polyEval(dpstokes_polys::cbetam_inv, arg);
+    }
+
+    // Add a buffer of 1.5*w*h/2 when there is an open boundary
     if(this->wallmode == "nowall"){
-      this->dppar.zmax += this->dppar.w*h/2;
-      this->dppar.zmin -= this->dppar.w*h/2;
+      this->dppar.zmax += 1.5*this->dppar.w*h/2;
+      this->dppar.zmin -= 1.5*this->dppar.w*h/2;
     }
     if(this->wallmode == "bottom"){
-      this->dppar.zmin -= this->dppar.w*h/2;
+      this->dppar.zmax += 1.5*this->dppar.w*h/2;
     }
     real Lz = this->dppar.zmax - this->dppar.zmin;
-    this->dppar.nz = M_PI*Lz/(h);
+    real H = Lz/2;
+    // sets chebyshev node spacing at its coarsest (in the middle) to be h
+    real nz_actual = M_PI/(asin(h/H)) + 1;
+
+    // pick nearby N such that 2(Nz-1) is FFT friendly
+    N_up = ceil(nz_actual);
+    N_down = floor(nz_actual);
+    if(N_up % 2 == 1){
+      this->dppar.nz = N_up;
+    } else {
+      this->dppar.nz = N_down;
+    }
+
     dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);
   }
@@ -76,8 +121,8 @@ public:
     dpstokes->setPositions(ipositions);
   }
 
-  void Mdot(const real* forces, real* result) override{
-    dpstokes->Mdot(forces, nullptr, result, nullptr);
+  void Mdot(const real* forces, const real* torques, real* linear, real* angular) override{
+    dpstokes->Mdot(forces, torques, linear, angular);
   }
 
   void clean() override{

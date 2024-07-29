@@ -20,7 +20,8 @@ class SelfMobility: public libmobility::Mobility{
   using real = libmobility::real;
   Parameters par;
   std::vector<real> positions;
-  real selfMobility;
+  real linearMobility;
+  real angularMobility;
   real temperature;
   int numberParticles;
   std::mt19937 rng;
@@ -40,7 +41,8 @@ public:
     this->temperature = ipar.temperature;
     this->numberParticles = ipar.numberParticles;
     real hydrodynamicRadius = ipar.hydrodynamicRadius[0];
-    this->selfMobility = 1.0/(6*M_PI*ipar.viscosity*hydrodynamicRadius);
+    this->linearMobility = 1.0/(6*M_PI*ipar.viscosity*hydrodynamicRadius);
+    this->angularMobility = 1.0/(8*M_PI*ipar.viscosity*hydrodynamicRadius*hydrodynamicRadius*hydrodynamicRadius);
     Mobility::initialize(ipar);
   }
 
@@ -51,23 +53,32 @@ public:
 
   void setPositions(const real* ipositions) override{ }
 
-  void Mdot(const real* forces, real* result) override{
-    if(not forces){
-      std::fill(result, result+3*numberParticles, 0);
+  void Mdot(const real* forces, const real* torques, real* linear, real* angular) override{
+    if(forces){
+      for(int i = 0; i<3*numberParticles; i++){
+        linear[i] = forces[i]*linearMobility;
+      }
     }
-    for(int i = 0; i<3*numberParticles; i++){
-      result[i] = forces[i]*selfMobility;
+    if(torques){
+      for(int i = 0; i<3*numberParticles; i++){
+        angular[i] = torques[i]*angularMobility;
+      }
     }
   }
 
   //If this function is not present the default behavior is invoked, which uses the Lanczos algorithm
-  void sqrtMdotW(real* result, real prefactor) override{
+  void sqrtMdotW(real* linear, real* angular, real prefactor = 1) override{
     std::normal_distribution<real> d{0,1};
     for(int i = 0; i<3*numberParticles; i++){
       real dW = d(rng);
-      result[i] = prefactor*sqrt(2*temperature*selfMobility)*dW;
+      linear[i] = prefactor*sqrt(2*temperature*linearMobility)*dW;
+    }
+    if(angular){
+      for(int i = 0; i<3*numberParticles; i++){
+        real dW = d(rng);
+        angular[i] = prefactor*sqrt(2*temperature*angularMobility)*dW;
+      }
     }
   }
-
 };
 #endif

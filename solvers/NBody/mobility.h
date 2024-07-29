@@ -17,7 +17,9 @@ class NBody: public libmobility::Mobility{
   enum class kernel_type{open_rpy, bottom_wall};
   kernel_type kernel;
   std::vector<real> positions;
-  real selfMobility;
+  real transMobility;
+  real rotMobility;
+  real transRotMobility;
   real hydrodynamicRadius;
   int numberParticles;
   nbody_rpy::algorithm algorithm = nbody_rpy::algorithm::advise;
@@ -59,11 +61,13 @@ public:
     this->numberParticles = ipar.numberParticles;
     if(Nbatch<0) Nbatch = 1;
     if(NperBatch<0) NperBatch = ipar.numberParticles;
-    if(NperBatch*Nbatch != numberParticles) 
+    if(NperBatch*Nbatch != numberParticles)
       throw std::runtime_error("[Mobility] Invalid batch parameters for NBody. If in doubt, use the defaults.");
 
     this->hydrodynamicRadius = ipar.hydrodynamicRadius[0];
-    this->selfMobility = 1.0/(6*M_PI*ipar.viscosity*this->hydrodynamicRadius);
+    this->transMobility = 1.0/(6*M_PI*ipar.viscosity*hydrodynamicRadius);
+    this->transRotMobility = 1.0/(8*M_PI*ipar.viscosity*hydrodynamicRadius*hydrodynamicRadius);
+    this->rotMobility = 1.0/(8*M_PI*ipar.viscosity*hydrodynamicRadius*hydrodynamicRadius*hydrodynamicRadius);
     Mobility::initialize(ipar);
   }
 
@@ -72,17 +76,45 @@ public:
     std::copy(ipositions, ipositions + 3*numberParticles, positions.begin());
   }
 
-  virtual void Mdot(const real* forces, real* result) override{
+  virtual void Mdot(const real* forces, const real* torques, real* linear, real* angular) override{
     int numberParticles = positions.size()/3;
-    // Donev: Why can't there be a single callBatchedNBody routine that does if(kernel == kernel_type::bottom_wall) internally? 
+    // Donev: Why can't there be a single callBatchedNBody routine that does if(kernel == kernel_type::bottom_wall) internally?
     // Example, what if in the future we add manually periodized RPY where one repeats a unit cell a certain number of times in each direction. This is actually easy to do with 3 loops and useful, and only requires adding a parameter nUnitCellsRepeat[3] and removing the error if some direction is periodic and only spitting an error if two walls are asked for.
+
+    real* tempTorques;
+    real* tempAngular;
+    bool torquesPassed = torques;
+    // this is a temporary hacky fix. Mdot passes in nullptr if no torques are given
+    // but NBody currently always computes torques, even if they aren't needed.
+    if(!torques){
+      tempTorques = new real[3*numberParticles];
+      std::fill(tempTorques, tempTorques + 3*numberParticles, 0);
+
+      tempAngular = new real[3*numberParticles];
+      std::fill(tempAngular, tempAngular + 3*numberParticles, 0);
+
+      torques = tempTorques;
+      angular = tempAngular;
+    } else if(torques && kernel == kernel_type::bottom_wall){
+      throw std::runtime_error("[Mobility] Bottom wall kernel not implemented for torques.\n");
+    }
+
     auto solver = nbody_rpy::callBatchedNBodyOpenBoundaryRPY;
     if(kernel == kernel_type::bottom_wall)
       solver = nbody_rpy::callBatchedNBodyBottomWallRPY;
-    solver(positions.data(), forces, result,
+    solver(positions.data(), forces, torques, linear, angular,
 	   Nbatch, NperBatch,
-	   selfMobility, hydrodynamicRadius,
+	   transMobility, rotMobility, transRotMobility, hydrodynamicRadius,
 	   algorithm);
+
+    // part 2 of hacky fix
+    if(!torquesPassed){
+      delete[] tempTorques;
+      delete[] tempAngular;
+      torques = nullptr;
+      angular = nullptr;
+    }
+
   }
 };
 #endif
