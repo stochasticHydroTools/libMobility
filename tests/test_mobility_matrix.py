@@ -12,6 +12,7 @@ from utils import compute_M
         (SelfMobility, ("open", "open", "open")),
         (PSE, ("periodic", "periodic", "periodic")),
         (NBody, ("open", "open", "open")),
+        (NBody, ("open", "open", "single_wall")),
         (DPStokes, ("periodic", "periodic", "open")),
         (DPStokes, ("periodic", "periodic", "single_wall")),
         (DPStokes, ("periodic", "periodic", "two_walls")),
@@ -49,11 +50,11 @@ def test_mobility_matrix_linear(
     ("Solver", "periodicity"),
     [
         (SelfMobility, ("open", "open", "open")),
-        # (PSE, ("periodic", "periodic", "periodic")),
-        # (NBody, ("open", "open", "open")),
-        # (DPStokes, ("periodic", "periodic", "open")),
-        # (DPStokes, ("periodic", "periodic", "single_wall")),
-        # (DPStokes, ("periodic", "periodic", "two_walls")),
+        (NBody, ("open", "open", "open")),
+        (NBody, ("open", "open", "open")),
+        (DPStokes, ("periodic", "periodic", "open")),
+        (DPStokes, ("periodic", "periodic", "single_wall")),
+        (DPStokes, ("periodic", "periodic", "two_walls")),
     ],
 )
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])

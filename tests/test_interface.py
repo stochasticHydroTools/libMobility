@@ -78,11 +78,10 @@ def test_returns_mf(Solver, periodicity):
     ("Solver", "periodicity"),
     [
         (SelfMobility, ("open", "open", "open")),
-        # (PSE, ("periodic", "periodic", "periodic")),
         (NBody, ("open", "open", "open")),
-        # (DPStokes, ("periodic", "periodic", "open")),
-        # (DPStokes, ("periodic", "periodic", "single_wall")),
-        # (DPStokes, ("periodic", "periodic", "two_walls")),
+        (DPStokes, ("periodic", "periodic", "open")),
+        (DPStokes, ("periodic", "periodic", "single_wall")),
+        (DPStokes, ("periodic", "periodic", "two_walls")),
     ],
 )
 def test_returns_mf_mt(Solver, periodicity):
@@ -105,14 +104,14 @@ def test_returns_mf_mt(Solver, periodicity):
     forces = np.random.rand(numberParticles, 3).astype(precision)
     torques = np.random.rand(numberParticles, 3).astype(precision)
     solver.setPositions(positions)
-    mf, mt = solver.Mdot(forces, torques)
-    assert mf.shape == (numberParticles, 3)
-    assert mt.shape == (numberParticles, 3)
+    u, w = solver.Mdot(forces, torques)
+    assert u.shape == (numberParticles, 3)
+    assert w.shape == (numberParticles, 3)
     forces = forces.reshape(3 * numberParticles)
     torques = torques.reshape(3 * numberParticles)
-    mf, mt = solver.Mdot(forces, torques)
-    assert mf.shape == (numberParticles, 3)
-    assert mt.shape == (numberParticles, 3)
+    u, w = solver.Mdot(forces, torques)
+    assert u.shape == (numberParticles, 3)
+    assert w.shape == (numberParticles, 3)
 
 
 @pytest.mark.parametrize(
