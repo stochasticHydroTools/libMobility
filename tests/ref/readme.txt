@@ -11,6 +11,7 @@ SELF:
 self_mobility_bw_ref: from the DPStokes repository. Periodized NBody using kernels with wall corrections in double precision.
 self_mobility_bw_ref_noimg.mat: from the DPStokes repository. NBody kernels with wall corrections in double precision, but without using periodized images.
 self_mobility_bw_w4, self_mobility_sc_w4: generated from this repository in double precision with default parameters. 
+self_mobiliw_*_torques: generated from this repository in double precision with default parameters.
 
 PAIR:
 pair_mobility_bw_w4, pair_mobility_sc_w4: generated from this repository in double precision with default parameters. 

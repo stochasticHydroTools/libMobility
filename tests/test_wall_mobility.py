@@ -137,24 +137,88 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
 
 
     indx, indy = 4, 1 ## xx
-    checkComponent(indx, indy, allM, refM, nSeps, tol)
+    checkPairComponent(indx, indy, allM, refM, nSeps, tol)
 
     indx, indy = 5, 2 # yy
-    checkComponent(indx, indy, allM, refM, nSeps, tol)
+    checkPairComponent(indx, indy, allM, refM, nSeps, tol)
 
     indx, indy = 6, 3 # zz
-    checkComponent(indx, indy, allM, refM, nSeps, tol)
+    checkPairComponent(indx, indy, allM, refM, nSeps, tol)
 
     indx, indy = 5, 1 # yx
-    checkComponent(indx, indy, allM, refM, nSeps, tol)
+    checkPairComponent(indx, indy, allM, refM, nSeps, tol)
 
     indx, indy = 3, 4 # zx
-    checkComponent(indx, indy, allM, refM, nSeps, tol)
+    checkPairComponent(indx, indy, allM, refM, nSeps, tol)
 
     indx, indy = 3, 5 # zy
-    checkComponent(indx, indy, allM, refM, nSeps, tol)
+    checkPairComponent(indx, indy, allM, refM, nSeps, tol)
 
-def checkComponent(indx, indy, allM, refM, nSeps, tol):
+@pytest.mark.parametrize(
+    ("Solver", "periodicity", "tol", "start_height", "ref_file"),
+    [
+        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-5, 0, "self_mobility_bw_torque.mat"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-5, 0, "self_mobility_sc_torque.mat"),
+        # (NBody, ("open", "open", "single_wall"), 1e-6, 1, "self_mobility_bw_ref_noimg.mat")
+    ],
+)
+def test_self_mobility_angular(Solver, periodicity, tol, start_height, ref_file):
+    zmax = 19.2
+    xymax = 76.8
+    params = self_mobility_params[Solver.__name__]
+
+    needsTorque = True
+
+    ref_dir = "./ref/"
+    ref = scipy.io.loadmat(ref_dir + ref_file)
+    refM = ref['M']
+    refHeights = ref['heights'][0]
+
+    hydrodynamicRadius = 1.0
+    eta = 1/4/np.sqrt(np.pi)
+
+    precision = np.float32 if Solver.precision == "float" else np.float64
+
+    solver = Solver(*periodicity)
+    solver.setParameters(**params)
+    numberParticles = 1
+    solver.initialize(
+        temperature=0,
+        viscosity=eta,
+        hydrodynamicRadius=hydrodynamicRadius,
+        numberParticles=numberParticles,
+        needsTorque=needsTorque
+    )
+
+    start_ind = np.where(refHeights >= start_height)[0][0]
+    refHeights = refHeights[start_ind:]
+    nHeights = len(refHeights)
+
+    refM = refM[start_ind:]
+
+    normMat = np.zeros((6*numberParticles, 6*numberParticles), dtype=precision)
+    normMat[0:3,0:3] = 1/(6*np.pi*eta*hydrodynamicRadius) # tt
+    normMat[3:, 3: ] = 1/(8*np.pi*eta*hydrodynamicRadius**3) # rr
+    normMat[3: ,0:3] = 1/(6*np.pi*eta*hydrodynamicRadius**2) # tr
+    normMat[0:3,3: ] = 1/(6*np.pi*eta*hydrodynamicRadius**2) # rt
+
+    allM = np.zeros((nHeights, 6*numberParticles, 6*numberParticles), dtype=precision)
+    for i in range(0,nHeights):
+        positions = np.array([[xymax/2, xymax/2, refHeights[i]]], dtype=precision)
+        solver.setPositions(positions)
+        
+        M = compute_M(solver, numberParticles, needsTorque)
+        M /= normMat
+        allM[i] = M
+
+    # uncomment to save datafile for test plots
+    scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
+
+    for i in range(0, nHeights):
+        diff = abs(allM[i] - refM[i])
+        assert np.all(diff < tol)
+
+def checkPairComponent(indx, indy, allM, refM, nSeps, tol):
 
     indx -= 1 # shift from matlab to python indexing
     indy -= 1
