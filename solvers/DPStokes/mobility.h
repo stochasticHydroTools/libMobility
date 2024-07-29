@@ -50,10 +50,21 @@ public:
     this->lanczosTolerance = ipar.tolerance;
     this->dppar.mode = this->wallmode;
     this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
-    this->dppar.w = 4;
-    this->dppar.beta = 1.785*this->dppar.w;
-    real h = this->dppar.hydrodynamicRadius/1.205;
-    this->dppar.alpha = this->dppar.w/2.0;
+
+    real h;
+    if(ipar.needsTorque){
+      this->dppar.w = 6;
+      this->dppar.w_d = 6;
+      this->dppar.beta = 1.327*this->dppar.w;
+      this->dppar.beta_d = 2.217*this->dppar.w;
+      h = this->dppar.hydrodynamicRadius/1.731;
+      this->dppar.alpha_d = this->dppar.w_d*0.5;
+    } else{
+      this->dppar.w = 4;
+      this->dppar.beta = 1.785*this->dppar.w;
+      h = this->dppar.hydrodynamicRadius/1.205;
+    }
+    this->dppar.alpha = this->dppar.w*0.5;
     this->dppar.tolerance = 1e-6;
 
     real N_real = this->dppar.Lx/h; // actual N given L and h
@@ -104,7 +115,6 @@ public:
 
     dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);
-    if(ipar.needsTorque) throw std::runtime_error("[DPStokes] Torque is not implemented");
   }
 
   void setPositions(const real* ipositions) override{
