@@ -1,4 +1,8 @@
 /*Raul P. Pelaez 2022. libMobility interface for UAMMD's DPStokes module
+
+References:
+[1] Computing hydrodynamic interactions in confined doubly periodic geometries in linear time.
+A. Hashemi et al. J. Chem. Phys. 158, 154101 (2023) https://doi.org/10.1063/5.0141371
  */
 #ifndef MOBILITY_SELFMOBILITY_H
 #define MOBILITY_SELFMOBILITY_H
@@ -52,12 +56,15 @@ public:
     this->lanczosTolerance = ipar.tolerance;
     this->dppar.mode = this->wallmode;
     this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
+
+    // sets up kernel parameters & grid based on optimal parameters from [1]
     this->dppar.w = 4;
     this->dppar.beta = 1.785*this->dppar.w;
     real h = this->dppar.hydrodynamicRadius/1.205;
     this->dppar.alpha = this->dppar.w/2.0;
     this->dppar.tolerance = 1e-6;
 
+    // although this h is optimal for grid invariance, we need to adjust either L or h to get an integer number of points
     real N_real = this->dppar.Lx/h; // actual N given L and h
     int N_up = ceil(N_real);
     int N_down = floor(N_real);
