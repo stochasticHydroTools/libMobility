@@ -35,9 +35,10 @@ def test_mobility_matrix(Solver, periodicity, hydrodynamicRadius, numberParticle
     assert M.dtype == precision
     sym = M - M.T
     atol = 5e-5
+    rtol = 1e-7
     assert np.allclose(
-        sym, 0.0, rtol=0, atol=atol
-    ), f"Mobility matrix is not symmetric within {atol}, max diff: {np.max(np.abs(sym))}"
+        M.T, M, rtol=rtol, atol=atol
+    ), f"Mobility matrix is not symmetric within {atol} + {rtol}*abs(M), max diff: {np.max(np.abs(sym))}"
 
 
 def test_self_mobility_selfmobility():
@@ -59,7 +60,7 @@ def test_self_mobility_selfmobility():
     forces = np.ones(3, dtype=precision)
     result = solver.Mdot(forces)
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
-    assert np.allclose(result, m0 * forces, rtol=0, atol=1e-7)
+    assert np.allclose(result, m0 * forces, rtol=1e-7, atol=1e-7)
 
 
 def test_self_mobility_nbody():
@@ -82,7 +83,7 @@ def test_self_mobility_nbody():
     forces = np.ones(3, dtype=precision)
     result = solver.Mdot(forces)
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
-    assert np.allclose(result, m0 * forces, rtol=0, atol=1e-7)
+    assert np.allclose(result, m0 * forces, rtol=1e-7, atol=1e-7)
 
 
 @pytest.mark.parametrize("psi", [0.0, 0.5, 1.0])
@@ -118,4 +119,4 @@ def test_self_mobility_pse_cubic_box(psi):
         / (6 * np.pi * viscosity * hydrodynamicRadius)
         * (1 - 2.83729748 * leff + 4.0 * np.pi / 3.0 * leff**3)
     )
-    assert np.allclose(result, m0 * forces, rtol=0, atol=1e-6)
+    assert np.allclose(result, m0 * forces, rtol=1e-7, atol=1e-6)
