@@ -65,16 +65,8 @@ public:
     this->dppar.tolerance = 1e-6;
 
     // although this h is optimal for grid invariance, we need to adjust either L or h to get an integer number of points
-    real N_real = this->dppar.Lx/h; // actual N given L and h
-    int N_up = ceil(N_real);
-    int N_down = floor(N_real);
-    int N;
-    // either N_up or N_down will be a multiple of 2. pick the even one for a more FFT friendly grid.
-    if(N_up % 2 == 0){
-      N = N_up;
-    }else{
-      N = N_down;
-    }
+    int N = floor(this->dppar.Lx/h);
+    N += N % 2;
 
     this->dppar.nx = N;
     this->dppar.ny = N;
@@ -102,14 +94,9 @@ public:
     // sets chebyshev node spacing at its coarsest (in the middle) to be h
     real nz_actual = M_PI/(asin(h/H)) + 1;
 
-    // pick nearby N such that 2(Nz-1) is FFT friendly
-    N_up = ceil(nz_actual);
-    N_down = floor(nz_actual);
-    if(N_up % 2 == 1){
-      this->dppar.nz = N_up;
-    } else {
-      this->dppar.nz = N_down;
-    }
+    // pick nearby N such that 2(Nz-1) has two factors of 2 and is FFT friendly
+    this->dppar.nz = floor(nz_actual);
+    this->dppar.nz += (int)ceil(nz_actual) % 2;
 
     dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);
