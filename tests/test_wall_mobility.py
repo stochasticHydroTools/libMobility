@@ -1,7 +1,5 @@
 import pytest
 import numpy as np
-import scipy.interpolate
-import scipy.io
 
 from libMobility import DPStokes, NBody
 from utils import compute_M
@@ -14,10 +12,10 @@ wall_params = {
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "tol", "start_height", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), 5e-3, 4, "self_mobility_bw_ref.mat"),
-        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, 0, "self_mobility_bw_w4.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, 0, "self_mobility_sc_w4.mat"),
-        (NBody, ("open", "open", "single_wall"), 1e-6, 1, "self_mobility_bw_ref_noimg.mat")
+        (DPStokes, ("periodic", "periodic", "single_wall"), 5e-3, 4, "self_mobility_bw_ref.npz"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, 0, "self_mobility_bw_w4.npz"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, 0, "self_mobility_sc_w4.npz"),
+        (NBody, ("open", "open", "single_wall"), 1e-6, 1, "self_mobility_bw_ref_noimg.npz")
     ],
 )
 def test_self_mobility_wall(Solver, periodicity, tol, start_height, ref_file):
@@ -25,9 +23,9 @@ def test_self_mobility_wall(Solver, periodicity, tol, start_height, ref_file):
     params = wall_params[Solver.__name__]
 
     ref_dir = "./ref/"
-    ref = scipy.io.loadmat(ref_dir + ref_file)
+    ref = np.load(ref_dir + ref_file)
     refM = ref['M']
-    refHeights = ref['heights'][0]
+    refHeights = ref['heights']
 
     hydrodynamicRadius = 1.0
     eta = 1/4/np.sqrt(np.pi)
@@ -63,9 +61,6 @@ def test_self_mobility_wall(Solver, periodicity, tol, start_height, ref_file):
         M /= normMat
         allM[i] = M
 
-    # uncomment to save datafile for test plots
-    # scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
-
     diags = [np.diag(matrix) for matrix in allM]
     ref_diags = [np.diag(matrix)[0:3] for matrix in refM] # only take diagonal elements from forces
 
@@ -75,9 +70,9 @@ def test_self_mobility_wall(Solver, periodicity, tol, start_height, ref_file):
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "tol", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, "pair_mobility_bw_w4.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, "pair_mobility_sc_w4.mat"),
-        (NBody, ("open", "open", "single_wall"), 1e-4, "pair_mobility_bw_ref_noimg.mat"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, "pair_mobility_bw_w4.npz"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, "pair_mobility_sc_w4.npz"),
+        (NBody, ("open", "open", "single_wall"), 1e-4, "pair_mobility_bw_ref_noimg.npz"),
     ],
 )
 def test_pair_mobility_wall(Solver, periodicity, ref_file, tol):
@@ -85,9 +80,9 @@ def test_pair_mobility_wall(Solver, periodicity, ref_file, tol):
     params = wall_params[Solver.__name__]
 
     ref_dir = "./ref/"
-    ref = scipy.io.loadmat(ref_dir + ref_file)
+    ref = np.load(ref_dir + ref_file)
     refM = ref['M']
-    refHeights = ref['heights'].flatten()
+    refHeights = ref['heights']
     nHeights = len(refHeights)
 
     radH = 1.0 # hydrodynamic radius
@@ -121,9 +116,6 @@ def test_pair_mobility_wall(Solver, periodicity, ref_file, tol):
             M = compute_M(solver, numberParticles)
             M /= normMat
             allM[i][k] = M
-
-    # uncomment to save datafile for test plots
-    # scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
     for i in range(0, nSeps):
         for k in range(0, nHeights):
