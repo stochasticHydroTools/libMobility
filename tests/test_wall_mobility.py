@@ -6,7 +6,7 @@ import scipy.io
 from libMobility import DPStokes, NBody
 from utils import compute_M
 
-self_mobility_params = {
+wall_params = {
     "DPStokes": {"dt": 1, "Lx": 76.8, "Ly": 76.8, "zmin": 0, "zmax": 19.2},
     "NBody": {"algorithm": "advise"},
 }
@@ -21,9 +21,8 @@ self_mobility_params = {
     ],
 )
 def test_self_mobility_wall(Solver, periodicity, tol, start_height, ref_file):
-    zmax = 19.2
     xymax = 76.8
-    params = self_mobility_params[Solver.__name__]
+    params = wall_params[Solver.__name__]
 
     ref_dir = "./ref/"
     ref = scipy.io.loadmat(ref_dir + ref_file)
@@ -70,11 +69,8 @@ def test_self_mobility_wall(Solver, periodicity, tol, start_height, ref_file):
     diags = [np.diag(matrix) for matrix in allM]
     ref_diags = [np.diag(matrix)[0:3] for matrix in refM] # only take diagonal elements from forces
 
-    diff = np.abs([(diag - ref_diag) for diag, ref_diag in zip(diags, ref_diags)])
-
-    avgErr = np.mean(diff)
-
-    assert avgErr < tol, f"Self mobility does not match reference. Average error: {avgErr}"
+    for diag, ref_diag in zip(diags, ref_diags):
+        assert np.allclose(diag, ref_diag, rtol=tol, atol=tol), f"Self mobility does not match reference"
 
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "tol", "ref_file"),
@@ -85,9 +81,8 @@ def test_self_mobility_wall(Solver, periodicity, tol, start_height, ref_file):
     ],
 )
 def test_pair_mobility_wall(Solver, periodicity, ref_file, tol):
-    zmax = 19.2
     xymax = 76.8
-    params = self_mobility_params[Solver.__name__]
+    params = wall_params[Solver.__name__]
 
     ref_dir = "./ref/"
     ref = scipy.io.loadmat(ref_dir + ref_file)
@@ -130,35 +125,6 @@ def test_pair_mobility_wall(Solver, periodicity, ref_file, tol):
     # uncomment to save datafile for test plots
     # scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
-
-    indx, indy = 4, 1 ## xx
-    checkComponent(indx, indy, allM, refM, nSeps, tol)
-
-    indx, indy = 5, 2 # yy
-    checkComponent(indx, indy, allM, refM, nSeps, tol)
-
-    indx, indy = 6, 3 # zz
-    checkComponent(indx, indy, allM, refM, nSeps, tol)
-
-    indx, indy = 5, 1 # yx
-    checkComponent(indx, indy, allM, refM, nSeps, tol)
-
-    indx, indy = 3, 4 # zx
-    checkComponent(indx, indy, allM, refM, nSeps, tol)
-
-    indx, indy = 3, 5 # zy
-    checkComponent(indx, indy, allM, refM, nSeps, tol)
-
-def checkComponent(indx, indy, allM, refM, nSeps, tol):
-
-    indx -= 1 # shift from matlab to python indexing
-    indy -= 1
     for i in range(0, nSeps):
-
-        xx = allM[i, :, indx, indy]
-        xx_ref = refM[i, :, indx, indy]
-
-        relDiff = np.abs([np.linalg.norm(xx - xx_ref)/np.linalg.norm(xx_ref + 1e-6) for xx, xx_ref in zip(xx, xx_ref)])
-        avgErr = np.mean(relDiff)
-
-        assert avgErr < tol, f"Pair mobility does not match reference for component {indx+1}, {indy+1}. Average error: {avgErr}"
+        for k in range(0, nHeights):
+            assert np.allclose(allM[i,k], refM[i,k][0:6,0:6], rtol=tol, atol=tol), f"Pair mobility does not match reference for separation {i+1}. Height {k+1}"
