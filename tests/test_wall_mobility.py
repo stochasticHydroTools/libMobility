@@ -20,7 +20,7 @@ self_mobility_params = {
         (NBody, ("open", "open", "single_wall"), 1e-6, 1, "self_mobility_bw_ref_noimg.mat")
     ],
 )
-def test_self_mobility(Solver, periodicity, tol, start_height, ref_file):
+def test_self_mobility_wall(Solver, periodicity, tol, start_height, ref_file):
     zmax = 19.2
     xymax = 76.8
     params = self_mobility_params[Solver.__name__]
@@ -84,7 +84,7 @@ def test_self_mobility(Solver, periodicity, tol, start_height, ref_file):
         (NBody, ("open", "open", "single_wall"), 1e-4, "pair_mobility_bw_ref_noimg.mat"),
     ],
 )
-def test_pair_mobility(Solver, periodicity, ref_file, tol):
+def test_pair_mobility_wall(Solver, periodicity, ref_file, tol):
     zmax = 19.2
     xymax = 76.8
     params = self_mobility_params[Solver.__name__]
