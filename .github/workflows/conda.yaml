@@ -4,8 +4,8 @@ on:
   release:
     types: ['released', 'prereleased']
   # lets add on PR for testing
-  pull_request:
-    types: ['opened', 'edited', 'reopened', 'synchronize']
+  # pull_request:
+  #   types: ['opened', 'edited', 'reopened', 'synchronize']
 
 # workflow_dispatch:        # Un comment line if you also want to trigger action manually
 
@@ -34,10 +34,7 @@ jobs:
         with:
           meta_yaml_dir: devtools/conda-build
           python-version: ${{ matrix.python-version }} # Values previously defined in `matrix`
-          # platform_linux-64: true
-          # platform_osx-64: false
-          # platform_win-64: false
           user: stochasticHydroTools
-          label: main
+          label: auto
           overwrite: true
           token: ${{ secrets.ANACONDA_TOKEN }}
