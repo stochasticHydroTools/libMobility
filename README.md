@@ -25,7 +25,7 @@ This repository is organized into the following directories:
 
 - **include/**: Includes the essential C++ base classes and utility files needed to construct the modules.  
 
-- **conda/**: Contains a meta.yaml file to build a conda package for libMobility using conda-build.  
+- **devtools/**: Contains dev specific scripts and files, like a meta.yaml file to build a conda package for libMobility using conda-build.  
 
 - **docs/**: Contains the source files for the documentation.  
 
