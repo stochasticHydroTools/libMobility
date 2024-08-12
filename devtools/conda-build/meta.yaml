@@ -3,7 +3,7 @@ package:
   version: 0.1.0
 
 source:
-  path: ../  # Path to your project's source code
+  path: ../../  # Path to your project's source code
     
 requirements:
 
