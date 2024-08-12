@@ -38,5 +38,5 @@ jobs:
           # platform_osx-64: false
           # platform_win-64: false
           user: stochasticHydroTools
-          label: auto
+          label: dev
           token: ${{ secrets.ANACONDA_TOKEN }}
