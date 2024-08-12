@@ -44,7 +44,7 @@ You can build a conda package with the following command from the root of the re
 
 .. code-block:: shell
 		
-    $ conda build conda
+    $ conda build devtools/conda-build
 
 This will build and test the package, which you can install in any environment with:
 
