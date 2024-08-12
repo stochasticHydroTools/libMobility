@@ -17,7 +17,7 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: recursive
@@ -34,9 +34,6 @@ jobs:
         with:
           meta_yaml_dir: devtools/conda-build
           python-version: ${{ matrix.python-version }} # Values previously defined in `matrix`
-          # platform_linux-64: true
-          # platform_osx-64: false
-          # platform_win-64: false
           user: stochasticHydroTools
           label: auto
           overwrite: true

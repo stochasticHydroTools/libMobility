@@ -1,9 +1,9 @@
 package:
   name: libmobility
-  version: 0.1.0
+  version: {{ GIT_DESCRIBE_TAG }}
 
 source:
-  path: ../../  # Path to your project's source code
+  git_url: ../../  # Path to your project's source code
     
 requirements:
 
