@@ -4,6 +4,16 @@ import subprocess
 import os
 import sys
 
+try:
+    version = (
+        subprocess.check_output(["git", "describe", "--abbrev=0", "--tags"])
+        .strip()
+        .decode("utf-8")
+    )
+except:
+    print("Failed to retrieve the current version, defaulting to 0")
+    version = "0"
+
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=""):
@@ -50,7 +60,7 @@ class CMakeBuild(build_ext):
 
 setup(
     name="libMobility",
-    version="0.1.0",
+    version=version,
     packages=find_packages(),
     ext_modules=[CMakeExtension("libMobility")],
     cmdclass=dict(build_ext=CMakeBuild),
