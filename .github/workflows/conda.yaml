@@ -34,9 +34,9 @@ jobs:
         with:
           meta_yaml_dir: devtools/conda-build
           python-version: ${{ matrix.python-version }} # Values previously defined in `matrix`
-          platform_linux-64: true
-          platform_osx-64: false
-          platform_win-64: false
+          # platform_linux-64: true
+          # platform_osx-64: false
+          # platform_win-64: false
           user: stochasticHydroTools
           label: auto
           token: ${{ secrets.ANACONDA_TOKEN }}
