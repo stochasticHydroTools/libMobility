@@ -46,6 +46,9 @@ public:
 
   void setParametersDPStokes(DPStokesParameters i_dppar){
     this->dppar = i_dppar;
+
+    if(this->dppar.Lx != this->dppar.Ly) throw std::runtime_error("[DPStokes] Only square periodic boxes (Lx = Ly) are currently supported.\n");
+    
     dpstokes = std::make_shared<uammd_dpstokes::DPStokesGlue>();
   }
 
@@ -71,7 +74,7 @@ public:
     this->dppar.nx = N;
     this->dppar.ny = N;
 
-    // note: only set up for square boxes
+    // note: this part is only configured for square boxes
     if(this->dppar.allowChangingBoxSize){ // adjust box size to suit h
       this->dppar.Lx = N*h;
       this->dppar.Ly = N*h;
