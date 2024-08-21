@@ -53,7 +53,7 @@ __device__ real2 RPY_WT(real r, real rh){
       return {f, ginvr2};
     }
 }
-
+  
 // returns (M_xy, M_xz, M_yz)
 __device__ real3 RPY_UT(real3 rij, real rh){
   const real invrh = real(1.0)/rh;
@@ -143,6 +143,8 @@ __device__ real3 RPY_WF(real3 rij, real rh){
 
 
   //Evaluates the RPY tensor with open boundaries in all boundaries except a wall at the bottom in Z=0
+  // References: 
+    // [1] Simulation of hydrodynamically interacting particles near a no-slip boundary, Swan & Brady 2007
   class BottomWall{
     real rh; //Hydrodynamic radius
     real t0; //trans-trans mobility
@@ -155,17 +157,17 @@ __device__ real3 RPY_WF(real3 rij, real rh){
     //self: self interaction
     //hj: height of the particle j
     //vj: quantity (i.e force) of particle j
-    __device__ real3 computeWallCorrection(real3 rij, bool self, real hj, real3 vj){
+    __device__ real3 wallCorrection_UF(real3 rij, bool self, real hj, real3 fj){
       real3 correction = real3();
-      if(self){
+      if(self){ // B1*vj in [1]
 	real invZi = real(1.0) / hj;
 	real invZi3 = invZi * invZi * invZi;
 	real invZi5 = invZi3 * invZi * invZi;
-	correction.x += -vj.x*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) / real(16.0);
-	correction.y += -vj.y*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) / real(16.0);
-	correction.z += -vj.z*(real(9.0)*invZi - real(4.0)*invZi3 + invZi5 ) / real(8.0);
+	correction.x += -fj.x*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) / real(16.0);
+	correction.y += -fj.y*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) / real(16.0);
+	correction.z += -fj.z*(real(9.0)*invZi - real(4.0)*invZi3 + invZi5 ) / real(8.0);
       }
-      else{
+      else{ // C2*vj in [1]
 	real h_hat = hj / rij.z;
 	real invR = rsqrt(dot(rij, rij));
 	real3 e = rij*invR;
@@ -176,21 +178,104 @@ __device__ real3 RPY_WF(real3 rij, real rh){
 	real fact3 =  e.z * (real(3.0)*h_hat*(real(1.0)-real(6.0)*(real(1.0)-h_hat)*e.z*e.z) * invR - real(6.0)*(real(1.0)-real(5.0)*e.z*e.z) * invR3 + real(10.0)*(real(2.0)-real(7.0)*e.z*e.z) * invR5) / real(2.0);
 	real fact4 =  e.z * (real(3.0)*h_hat*invR - real(10.0)*invR5) / real(2.0);
 	real fact5 = -(real(3.0)*h_hat*h_hat*e.z*e.z*invR + real(3.0)*e.z*e.z*invR3 + (real(2.0)-real(15.0)*e.z*e.z)*invR5);
-	correction.x += (fact1 + fact2 * e.x*e.x)*vj.x;
-	correction.x += (fact2 * e.x*e.y)*vj.y;
-	correction.x += (fact2 * e.x*e.z + fact3 * e.x)*vj.z;
-	correction.y += (fact2 * e.y*e.x)*vj.x;
-	correction.y += (fact1 + fact2 * e.y*e.y)*vj.y;
-	correction.y += (fact2 * e.y*e.z + fact3 * e.y)*vj.z;
-	correction.z += (fact2 * e.z*e.x + fact4 * e.x)*vj.x;
-	correction.z += (fact2 * e.z*e.y + fact4 * e.y)*vj.y;
-	correction.z += (fact1 + fact2 * e.z*e.z + fact3 * e.z + fact4 * e.z + fact5)*vj.z;
+	correction.x += (fact1 + fact2 * e.x*e.x)*fj.x;
+	correction.x += (fact2 * e.x*e.y)*fj.y;
+	correction.x += (fact2 * e.x*e.z + fact3 * e.x)*fj.z;
+	correction.y += (fact2 * e.y*e.x)*fj.x;
+	correction.y += (fact1 + fact2 * e.y*e.y)*fj.y;
+	correction.y += (fact2 * e.y*e.z + fact3 * e.y)*fj.z;
+	correction.z += (fact2 * e.z*e.x + fact4 * e.x)*fj.x;
+	correction.z += (fact2 * e.z*e.y + fact4 * e.y)*fj.y;
+	correction.z += (fact1 + fact2 * e.z*e.z + fact3 * e.z + fact4 * e.z + fact5)*fj.z;
       }
       return correction;
     }
+    
+    // NOTE: normalized by 8 pi eta a**3. [1] normalizes by 6 pi et a**3
+    __device__ real3 wallCorrection_WT(real3 rij, bool self, real hj, real3 tj){
+        real3 correction = real3();
+        if(self){ // B3*tj in [1]
+            real invZi = real(1.0) / hj;
+            real invZi3 = invZi * invZi * invZi;
+            correction.x += tj.x*(-invZi3 * real(0.3125)); // 15/48 = 0.3125
+            correction.y += tj.y*(-invZi3 * real(0.3125)); // 15/48 = 0.3125
+            correction.z += tj.z*(-invZi3 * real(0.125)); // 3/24 = 0.125
+        }
+    else{ // C4*tj in [1]. all coeffs should be multiplied by 4/3
+	real h_hat = hj / rij.z;
+	real invR = rsqrt(dot(rij, rij));
+	real3 e = rij*invR;
+    real invR3 = invR * invR * invR;
+    real fact1 =  ((1-6*e.z*e.z) * invR3 ) / real(2.0);
+    real fact2 = -(9 * invR3) / real(6.0);
+    real fact3 =  (3 * invR3 * e.z);
+    real fact4 =  (3 * invR3);
+
+    correction.x += (fact1 + fact2 * e.x*e.x + fact4 * e.y*e.y)*tj.x;
+    correction.x += ((fact2 - fact4)* e.x*e.y)*tj.y;
+    correction.x += (fact2 * e.x*e.z)*tj.z;
+    correction.y += ((fact2 - fact4)* e.x*e.y)*tj.x;
+    correction.y += (fact1 + fact2 * e.y*e.y + fact4 * e.x*e.x)*tj.y;
+    correction.y += (fact2 * e.y*e.z)*tj.z;
+    correction.z += (fact2 * e.z*e.x + fact3 * e.x)*tj.x;
+    correction.z += (fact2 * e.z*e.y + fact3 * e.y)*tj.y;
+    correction.z += (fact1 + fact2 * e.z*e.z + fact3 * e.z)*tj.z;
+    }
+    return correction;
+  }
+
+  __device__ real3 wallCorrection_UT(real3 rij, bool self, real hj, real3 tj){
+        real3 correction = real3();
+        if(self){ // B2^T*tj in [1]. ^T denotes transpose.
+            real invZi = real(1.0) / hj;
+            real invZi4 = invZi * invZi * invZi * invZi;
+            correction.x += (invZi4 * real(0.125))*tj.y; // 3/24 = 0.125
+            correction.y += (-invZi4 * real(0.125))*tj.x; // 3/24 = 0.125
+        }
+  else{
+    // TODO implement
+    // real h_hat = hj / rz;
+    // real invR = rsqrt(rx*rx + ry*ry + rz*rz); // = 1 / r;
+    // real invR2 = invR * invR;
+    // real invR4 = invR2 * invR2;
+    // real ex = rx * invR;
+    // real ey = ry * invR;
+    // real ez = rz * invR;
+
+    // real fact1 =  invR2;
+    // real fact2 = (6*h_hat*ez*ez*invR2 + (1-10*ez*ez)*invR4) * real(2.0);
+    // real fact3 = -ez*(3*h_hat*invR2 - 5*invR4) * real(2.0);
+    // real fact4 = -ez*(h_hat*invR2 - invR4) * real(2.0);
+
+    // Mxx -=                       - fact3*ex*ey        ;
+    // Mxy -= - fact1*ez            + fact3*ex*ex - fact4;
+    // Mxz -=   fact1*ey                                 ;
+    // Myx -=   fact1*ez            - fact3*ey*ey + fact4;
+    // Myy -=                         fact3*ex*ey        ;
+    // Myz -= - fact1*ex                                 ;
+    // Mzx -= - fact1*ey - fact2*ey - fact3*ey*ez        ;
+    // Mzy -=   fact1*ex + fact2*ex + fact3*ex*ez        ;
+  }
+  return correction;
+}
+
+  __device__ real3 wallCorrection_WF(real3 rij, bool self, real hj, real3 fj){
+        real3 correction = real3();
+        if(self){ // B2*tj in [1].
+            real invZi = real(1.0) / hj;
+            real invZi4 = invZi * invZi * invZi * invZi;
+            correction.x += (-invZi4 * real(0.125))*fj.y; // 3/24 = 0.125
+            correction.y += (invZi4 * real(0.125))*fj.x; // 3/24 = 0.125
+        }
+  else{
+    // TODO implement
+  }
+  return correction;
+}
+
   public:
 
-    //The constructor needs a self mobility and an hydrodynamic radius
+    //The constructor needs a mobility coefficient for each block and an hydrodynamic radius
     BottomWall(real t0, real r0, real rt0, real rh):t0(t0), r0(r0), rt0(rt0), rh(rh){}
 
     //Computes M(ri, rj)*vj
@@ -204,21 +289,50 @@ __device__ real3 RPY_WF(real3 rij, real rh){
       real3 Mv_t = f*vj + (r>real(0)?gv*rij:real3());
       const real hj = pj.z;
       rij.z = rij.z +2*pj.z;
-      Mv_t += computeWallCorrection(rij/rh,(r==0), hj/rh, vj);
+      Mv_t += wallCorrection_UF(rij/rh,(r==0), hj/rh, vj);
       return t0*Mv_t;
     }
 
-    // placeholders
-    __device__ real3 dotProduct_WT(real3 pi, real3 pj, real3 vj){
-    return make_real3(real(0.0));
+    __device__ real3 dotProduct_WT(real3 pi, real3 pj, real3 tj){
+      real3 rij = make_real3(pi)-make_real3(pj);
+      const real r = sqrt(dot(rij, rij));
+      const real2 c12 = RPY_WT(r, rh);
+      const real f = c12.x;
+      const real gdivr2 = c12.y;
+      const real gv = gdivr2*dot(rij, tj);
+      real3 Mv_t = f*tj + (r>real(0)?gv*rij:real3());
+      const real hj = pj.z;
+      rij.z = rij.z +2*pj.z;
+    //   const real3 temp = wallCorrection_WT(rij/rh,(r==0), hj/rh, vj);
+    //   printf("temp: %f %f %f\n", temp.x, temp.y, temp.z);
+      Mv_t += wallCorrection_WT(rij/rh,(r==0), hj/rh, tj);
+      return r0*Mv_t;
     }
 
-    __device__ real3 dotProduct_UT(real3 pi, real3 pj, real3 vj){
-      return make_real3(real(0.0));
+    __device__ real3 dotProduct_UT(real3 pi, real3 pj, real3 tj){
+    real3 rij = make_real3(pi)-make_real3(pj);
+    const real r = sqrt(dot(rij, rij));
+    const real3 m = RPY_UT(rij, rh); // (M_xy, M_xz, M_yz)
+    real3 Mv_t = {m.x*tj.y + m.y*tj.z,
+                 -m.x*tj.x + m.z*tj.z, 
+                 -m.y*tj.x - m.z*tj.y};
+    const real hj = pj.z;
+    rij.z = rij.z +2*pj.z;
+    Mv_t += wallCorrection_UT(rij/rh,(r==0), hj/rh, tj);
+    return rt0*Mv_t;
     }
 
-    __device__ real3 dotProduct_WF(real3 pi, real3 pj, real3 vj){
-      return make_real3(real(0.0));
+    __device__ real3 dotProduct_WF(real3 pi, real3 pj, real3 fj){
+    real3 rij = make_real3(pi)-make_real3(pj);
+    const real r = sqrt(dot(rij, rij));
+    const real3 m = RPY_UT(rij, rh); // (M_xy, M_xz, M_yz)
+    real3 Mv_t = {m.x*fj.y + m.y*fj.z,
+                 -m.x*fj.x + m.z*fj.z, 
+                 -m.y*fj.x - m.z*fj.y};
+    const real hj = pj.z;
+    rij.z = rij.z +2*pj.z;
+    Mv_t += wallCorrection_WF(rij/rh,(r==0), hj/rh, fj);
+    return rt0*Mv_t;
     }
     
   };

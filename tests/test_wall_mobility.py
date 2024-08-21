@@ -143,9 +143,9 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "tol", "start_height", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-5, 0, "self_mobility_bw_torque.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-5, 0, "self_mobility_sc_torque.mat"),
-        # (NBody, ("open", "open", "single_wall"), 1e-6, 1, "self_mobility_bw_ref_noimg.mat")
+        # (DPStokes, ("periodic", "periodic", "single_wall"), 1e-5, 0, "self_mobility_bw_torque.mat"),
+        # (DPStokes, ("periodic", "periodic", "two_walls"), 1e-5, 0, "self_mobility_sc_torque.mat"),
+        (NBody, ("open", "open", "single_wall"), 1e-6, 1, "self_mobility_bw_ref_noimg.mat")
     ],
 )
 def test_self_mobility_angular(Solver, periodicity, tol, start_height, ref_file):

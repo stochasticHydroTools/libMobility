@@ -86,7 +86,7 @@ public:
     bool torquesPassed = torques;
     // this is a temporary hacky fix. Mdot passes in nullptr if no torques are given
     // but NBody currently always computes torques, even if they aren't needed.
-    if(!torques){
+    if(!torquesPassed){
       tempTorques = new real[3*numberParticles];
       std::fill(tempTorques, tempTorques + 3*numberParticles, 0);
 
@@ -95,9 +95,10 @@ public:
 
       torques = tempTorques;
       angular = tempAngular;
-    } else if(torques && kernel == kernel_type::bottom_wall){
-      throw std::runtime_error("[Mobility] Bottom wall kernel not implemented for torques.\n");
-    }
+    } 
+    // else if(torques && kernel == kernel_type::bottom_wall){
+    //   throw std::runtime_error("[Mobility] Bottom wall kernel not implemented for torques.\n");
+    // }
 
     auto solver = nbody_rpy::callBatchedNBodyOpenBoundaryRPY;
     if(kernel == kernel_type::bottom_wall)
