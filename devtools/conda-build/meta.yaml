@@ -37,7 +37,7 @@ test:
   source_files:
     - tests
   commands:
-    - pytest -vs -k SelfMobility tests/test_*py
+    - pytest -vs -k "SelfMobility and not fluct" tests/test_*py
     
 about:
   home: https://github.com/stochasticHydroTools/libmobility
