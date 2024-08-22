@@ -4,8 +4,8 @@ on:
   release:
     types: ['released', 'prereleased']
   # lets add on PR for testing
-  # pull_request:
-  #   types: ['opened', 'edited', 'reopened', 'synchronize']
+  pull_request:
+    types: ['opened', 'edited', 'reopened', 'synchronize']
 
   workflow_dispatch:        # Un comment line if you also want to trigger action manually
 
@@ -32,6 +32,9 @@ jobs:
           show-channel-urls: true
       - name: Build and upload the conda packages
         uses: uibcdf/action-build-and-upload-conda-packages@v1.3.0
+        # Export cuda-version as an environment variable
+        env:
+          CUDA_VERSION: ${{ matrix.cuda-version }}
         with:
           meta_yaml_dir: devtools/conda-build
           python-version: ${{ matrix.python-version }} # Values previously defined in `matrix`
