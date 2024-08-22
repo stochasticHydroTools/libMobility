@@ -39,6 +39,6 @@ jobs:
           meta_yaml_dir: devtools/conda-build
           python-version: ${{ matrix.python-version }} # Values previously defined in `matrix`
           user: stochasticHydroTools
-          label: auto
+          label: dev
           overwrite: true
           token: ${{ secrets.ANACONDA_TOKEN }}
