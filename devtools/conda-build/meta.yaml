@@ -23,7 +23,7 @@ requirements:
     - python
   run:
     - python
-    - cuda-version >= {{ CUDA_VERSION }}
+    - cuda-version >={{ CUDA_VERSION }}
     - numpy
     - cuda-libraries
     - mkl
