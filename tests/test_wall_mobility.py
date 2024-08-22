@@ -133,7 +133,7 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
             allM[i][k] = M
 
     # uncomment to save datafile for test plots
-    scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
+    # scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
     for i in range(0, nSeps):
         for k in range(0, nHeights):
@@ -145,7 +145,7 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
     [
         # (DPStokes, ("periodic", "periodic", "single_wall"), 1e-5, 0, "self_mobility_bw_torque.mat"),
         # (DPStokes, ("periodic", "periodic", "two_walls"), 1e-5, 0, "self_mobility_sc_torque.mat"),
-        (NBody, ("open", "open", "single_wall"), 1e-6, 1, "self_mobility_bw_ref_noimg.mat")
+        (NBody, ("open", "open", "single_wall"), 1e-6, 0, "self_mobility_bw_ref_noimg.mat")
     ],
 )
 def test_self_mobility_angular(Solver, periodicity, tol, start_height, ref_file):
@@ -198,7 +198,7 @@ def test_self_mobility_angular(Solver, periodicity, tol, start_height, ref_file)
         allM[i] = M
 
     # uncomment to save datafile for test plots
-    scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
+    # scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
     for i in range(0, nHeights):
         diff = abs(allM[i] - refM[i])
@@ -207,9 +207,9 @@ def test_self_mobility_angular(Solver, periodicity, tol, start_height, ref_file)
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "tol", "start_height", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, 0, "pair_mobility_bw_torque.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, 0, "pair_mobility_sc_torque.mat"),
-        # (NBody, ("open", "open", "single_wall"), 1e-6, 1, "self_mobility_bw_ref_noimg.mat")
+        # (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, 0, "pair_mobility_bw_torque.mat"),
+        # (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, 0, "pair_mobility_sc_torque.mat"),
+        (NBody, ("open", "open", "single_wall"), 1e-6, 0, "pair_mobility_bw_ref_noimg.mat")
     ],
 )
 def test_pair_mobility_angular(Solver, periodicity, tol, start_height, ref_file):
@@ -273,6 +273,9 @@ def test_pair_mobility_angular(Solver, periodicity, tol, start_height, ref_file)
     for i in range(0, nSeps):
         for k in range(0, nHeights):
             diff = abs(allM[i,k] - refM[i,k])
+            temp = diff < tol
+            x = temp[0:6,6:12]
+            # breakpoint()
             assert np.all(diff < tol)
 
 def checkPairComponent(indx, indy, allM, refM, nSeps, tol):

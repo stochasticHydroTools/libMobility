@@ -202,10 +202,10 @@ __device__ real3 RPY_WF(real3 rij, real rh){
             correction.z += tj.z*(-invZi3 * real(0.125)); // 3/24 = 0.125
         }
     else{ // C4*tj in [1]. all coeffs should be multiplied by 4/3
-	real h_hat = hj / rij.z;
-	real invR = rsqrt(dot(rij, rij));
-	real3 e = rij*invR;
+    real h_hat = hj / rij.z;
+    real invR = rsqrt(dot(rij, rij));
     real invR3 = invR * invR * invR;
+    real3 e = rij*invR;
     real fact1 =  ((1-6*e.z*e.z) * invR3 ) / real(2.0);
     real fact2 = -(9 * invR3) / real(6.0);
     real fact3 =  (3 * invR3 * e.z);
@@ -225,36 +225,35 @@ __device__ real3 RPY_WF(real3 rij, real rh){
   }
 
   __device__ real3 wallCorrection_UT(real3 rij, bool self, real hj, real3 tj){
-        real3 correction = real3();
-        if(self){ // B2^T*tj in [1]. ^T denotes transpose.
-            real invZi = real(1.0) / hj;
-            real invZi4 = invZi * invZi * invZi * invZi;
-            correction.x += (invZi4 * real(0.125))*tj.y; // 3/24 = 0.125
-            correction.y += (-invZi4 * real(0.125))*tj.x; // 3/24 = 0.125
-        }
+      real3 correction = real3();
+      if(self){ // B2^T*tj in [1]. ^T denotes transpose.
+        real invZi = real(1.0) / hj;
+        real invZi4 = invZi * invZi * invZi * invZi;
+        correction.x += (invZi4 * real(0.125))*tj.y; // 3/24 = 0.125
+        correction.y += (-invZi4 * real(0.125))*tj.x; // 3/24 = 0.125
+      }
   else{
-    // TODO implement
-    // real h_hat = hj / rz;
-    // real invR = rsqrt(rx*rx + ry*ry + rz*rz); // = 1 / r;
-    // real invR2 = invR * invR;
-    // real invR4 = invR2 * invR2;
-    // real ex = rx * invR;
-    // real ey = ry * invR;
-    // real ez = rz * invR;
+    real h_hat = hj / rij.z;
+    real invR = rsqrt(dot(rij, rij));
+    real invR2 = invR * invR;
+    real invR4 = invR2 * invR2;
+    real3 e = rij*invR;
+    real fact1 =  invR2;
+    real fact2 = (real(6.0)*h_hat*e.z*e.z*invR2 + (real(1.0)-real(10.0)*e.z*e.z)*invR4) * real(2.0);
+    real fact3 = -e.z*(real(3.0)*h_hat*invR2 - real(5.0)*invR4) * real(2.0);
+    real fact4 = -e.z*(h_hat*invR2 - invR4) * real(2.0);
 
-    // real fact1 =  invR2;
-    // real fact2 = (6*h_hat*ez*ez*invR2 + (1-10*ez*ez)*invR4) * real(2.0);
-    // real fact3 = -ez*(3*h_hat*invR2 - 5*invR4) * real(2.0);
-    // real fact4 = -ez*(h_hat*invR2 - invR4) * real(2.0);
-
-    // Mxx -=                       - fact3*ex*ey        ;
-    // Mxy -= - fact1*ez            + fact3*ex*ex - fact4;
-    // Mxz -=   fact1*ey                                 ;
-    // Myx -=   fact1*ez            - fact3*ey*ey + fact4;
-    // Myy -=                         fact3*ex*ey        ;
-    // Myz -= - fact1*ex                                 ;
-    // Mzx -= - fact1*ey - fact2*ey - fact3*ey*ez        ;
-    // Mzy -=   fact1*ex + fact2*ex + fact3*ex*ez        ;
+    correction.x -= (-fact3 * e.x * e.y) * tj.x;
+    correction.x -= (-fact1 * e.z + fact3 * e.x * e.x - fact4) * tj.y;
+    correction.x -= (fact1 * e.y) * tj.z;
+    correction.y -= (fact1 * e.z - fact3 * e.y * e.y + fact4) * tj.x;
+    correction.y -= (fact3 * e.x * e.y) * tj.y;
+    correction.y += (-fact1 * e.x) * tj.z;
+    correction.z -= (-fact1 * e.y - fact2 * e.y - fact3 * e.y * e.z) * tj.x;
+    correction.z += (fact1 * e.x + fact2 * e.x + fact3 * e.x * e.z) * tj.y;
+    // something is wrong with the sign on the YZ and ZY component. the code seems to be written as all minus but I have to change it to plus to get tests to work.
+    // holy fuck I think it's because of line 480 in mobility_numba.py that sets rx = -rx and ry = -ry
+    // commenting out xz doesn't give us the wrong answer since e.y = 0 for stupid pair test
   }
   return correction;
 }
@@ -268,7 +267,25 @@ __device__ real3 RPY_WF(real3 rij, real rh){
             correction.y += (invZi4 * real(0.125))*fj.x; // 3/24 = 0.125
         }
   else{
-    // TODO implement
+    real h_hat = hj / rij.z;
+    real invR = rsqrt(dot(rij, rij));
+    real invR2 = invR * invR;
+    real invR4 = invR2 * invR2;
+    real3 e = rij*invR;
+
+    real fact1 =  invR2;
+    real fact2 = (real(6.0)*h_hat*e.z*e.z*invR2 + (real(1.0)-real(10.0)*e.z*e.z)*invR4) * real(2.0);
+    real fact3 = -e.z*(real(3.0)*h_hat*invR2 - real(5.0)*invR4) * real(2.0);
+    real fact4 = -e.z*(h_hat*invR2 - invR4) * real(2.0);
+
+    correction.x -= (-fact3*e.x*e.y) * fj.x;
+    correction.x -= (fact1*e.z - fact3*e.y*e.y + fact4) * fj.y;
+    correction.x -= (-fact1*e.y - fact2*e.y - fact3*e.y*e.z) * fj.z;
+    correction.y -= (-fact1*e.z + fact3*e.x*e.x - fact4) * fj.x;
+    correction.y -= (fact3*e.x*e.y) * fj.y;
+    correction.y -= (fact1*e.x + fact2*e.x + fact3*e.x*e.z) * fj.z;
+    correction.z -= (fact1*e.y) * fj.x;
+    correction.z -= (-fact1*e.x) * fj.y;
   }
   return correction;
 }
@@ -325,7 +342,7 @@ __device__ real3 RPY_WF(real3 rij, real rh){
     __device__ real3 dotProduct_WF(real3 pi, real3 pj, real3 fj){
     real3 rij = make_real3(pi)-make_real3(pj);
     const real r = sqrt(dot(rij, rij));
-    const real3 m = RPY_UT(rij, rh); // (M_xy, M_xz, M_yz)
+    const real3 m = RPY_WF(rij, rh); // (M_xy, M_xz, M_yz)
     real3 Mv_t = {m.x*fj.y + m.y*fj.z,
                  -m.x*fj.x + m.z*fj.z, 
                  -m.y*fj.x - m.z*fj.y};

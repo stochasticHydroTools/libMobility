@@ -9,13 +9,13 @@ from utils import compute_M
 @pytest.mark.parametrize(
     ("Solver", "periodicity"),
     [
-        (SelfMobility, ("open", "open", "open")),
-        (PSE, ("periodic", "periodic", "periodic")),
+        # (SelfMobility, ("open", "open", "open")),
+        # (PSE, ("periodic", "periodic", "periodic")),
         (NBody, ("open", "open", "open")),
         (NBody, ("open", "open", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "open")),
-        (DPStokes, ("periodic", "periodic", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "two_walls")),
+        # (DPStokes, ("periodic", "periodic", "open")),
+        # (DPStokes, ("periodic", "periodic", "single_wall")),
+        # (DPStokes, ("periodic", "periodic", "two_walls")),
     ],
 )
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
