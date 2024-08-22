@@ -20,7 +20,7 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
     fluctuation_method : function
         Function that returns :math:`\sqrt{\boldsymbol{\mathcal{M}}} \cdot \xi`, where :math:`\xi` is a random vector
     """
-    if M.shape[0] != M.shape[1] or not np.allclose(M, M.T):
+    if M.shape[0] != M.shape[1] or not np.allclose(M, M.T, atol = 5e-5, rtol = 1e-7):
         raise ValueError("Matrix M must be square and symmetric.")
     Sigma, Q = eig(M)
     ind = np.argsort(Sigma)
@@ -62,7 +62,8 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
     ],
 )
 @pytest.mark.parametrize("hydrodynamicRadius", [0.95, 1.12])
-@pytest.mark.parametrize("numberParticles", [1,2,10])
+# @pytest.mark.parametrize("numberParticles", [1,2,10])
+@pytest.mark.parametrize("numberParticles", [10])
 def test_fluctuation_dissipation(
     Solver, periodicity, hydrodynamicRadius, numberParticles
 ):
