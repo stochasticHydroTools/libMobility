@@ -3,7 +3,7 @@ package:
   version: {{ GIT_DESCRIBE_TAG }}
 
 source:
-  git_url: ../../  # Path to your project's source code
+  git_url: ../../
 
 build:
   number: 0
