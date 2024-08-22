@@ -4,12 +4,16 @@ package:
 
 source:
   git_url: ../../  # Path to your project's source code
+
+build:
+  number: 0
+  string: cuda{{ CUDA_VERSION }}py{{ CONDA_PY }}h{{ PKG_HASH }}_{{ PKG_BUILDNUM }}
     
 requirements:
 
   build:
     - cmake >=3.22
-    - cuda-version 12.*
+    - cuda-version {{ CUDA_VERSION }}
     - gxx
     - cuda-libraries-dev
     - cuda-nvcc 
@@ -19,7 +23,7 @@ requirements:
     - python
   run:
     - python
-    - cuda-version 12.*
+    - cuda-version {{ CUDA_VERSION }}
     - numpy
     - cuda-libraries
     - mkl
