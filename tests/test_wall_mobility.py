@@ -4,6 +4,9 @@ import numpy as np
 from libMobility import DPStokes, NBody
 from utils import compute_M
 
+# NOTE: Some of the following tests will only pass if compiled with double precision.
+# This is because the reference data was generated in double precision.
+
 wall_params = {
     "DPStokes": {"dt": 1, "Lx": 76.8, "Ly": 76.8, "zmin": 0, "zmax": 19.2},
     "NBody": {"algorithm": "advise"},
