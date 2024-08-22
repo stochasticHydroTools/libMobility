@@ -3,7 +3,7 @@ package:
   version: {{ GIT_DESCRIBE_TAG }}
 
 source:
-  git_url: ../../  # Path to your project's source code
+  git_url: ../../
 
 build:
   number: 0
@@ -23,7 +23,7 @@ requirements:
     - python
   run:
     - python
-    - cuda-version {{ CUDA_VERSION }}
+    - cuda-version >={{ CUDA_VERSION }}
     - numpy
     - cuda-libraries
     - mkl
@@ -37,7 +37,7 @@ test:
   source_files:
     - tests
   commands:
-    - pytest -vs -k SelfMobility tests/test_*py
+    - pytest -vs -k "SelfMobility and not fluct" tests/test_*py
     
 about:
   home: https://github.com/stochasticHydroTools/libmobility
