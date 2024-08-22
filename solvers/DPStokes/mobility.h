@@ -1,9 +1,14 @@
 /*Raul P. Pelaez 2022. libMobility interface for UAMMD's DPStokes module
+
+References:
+[1] Computing hydrodynamic interactions in confined doubly periodic geometries in linear time.
+A. Hashemi et al. J. Chem. Phys. 158, 154101 (2023) https://doi.org/10.1063/5.0141371
  */
 #ifndef MOBILITY_SELFMOBILITY_H
 #define MOBILITY_SELFMOBILITY_H
 #include <MobilityInterface/MobilityInterface.h>
 #include"extra/uammd_interface.h"
+#include"extra/poly_fits.h"
 #include<vector>
 #include<cmath>
 #include<type_traits>
@@ -41,6 +46,9 @@ public:
 
   void setParametersDPStokes(DPStokesParameters i_dppar){
     this->dppar = i_dppar;
+
+    if(this->dppar.Lx != this->dppar.Ly) throw std::runtime_error("[DPStokes] Only square periodic boxes (Lx = Ly) are currently supported.\n");
+    
     dpstokes = std::make_shared<uammd_dpstokes::DPStokesGlue>();
   }
 
@@ -51,23 +59,48 @@ public:
     this->lanczosTolerance = ipar.tolerance;
     this->dppar.mode = this->wallmode;
     this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
-    this->dppar.w = 6;
-    this->dppar.beta = 1.714*this->dppar.w;
-    real h = this->dppar.hydrodynamicRadius/1.554;
+
+    // sets up kernel parameters & grid based on optimal parameters from [1]
+    this->dppar.w = 4;
+    this->dppar.beta = 1.785*this->dppar.w;
+    real h = this->dppar.hydrodynamicRadius/1.205;
     this->dppar.alpha = this->dppar.w/2.0;
     this->dppar.tolerance = 1e-6;
-    this->dppar.nx = int(this->dppar.Lx/h + 0.5);
-    this->dppar.ny = int(this->dppar.Ly/h + 0.5);
-    // Add a buffer of w*h/2 when there is an open boundary
+
+    // although this h is optimal for grid invariance, we need to adjust either L or h to get an integer number of points
+    int N = floor(this->dppar.Lx/h);
+    N += N % 2;
+
+    this->dppar.nx = N;
+    this->dppar.ny = N;
+
+    // note: this part is only configured for square boxes
+    if(this->dppar.allowChangingBoxSize){ // adjust box size to suit h
+      this->dppar.Lx = N*h;
+      this->dppar.Ly = N*h;
+    } else{ // adjust h so that L/h is an integer
+      h = this->dppar.Lx/N;
+      double arg = this->dppar.hydrodynamicRadius/(this->dppar.w*h);
+      this->dppar.beta = dpstokes_polys::polyEval(dpstokes_polys::cbetam_inv, arg);
+    }
+
+    // Add a buffer of 1.5*w*h/2 when there is an open boundary
     if(this->wallmode == "nowall"){
-      this->dppar.zmax += this->dppar.w*h/2;
-      this->dppar.zmin -= this->dppar.w*h/2;
+      this->dppar.zmax += 1.5*this->dppar.w*h/2;
+      this->dppar.zmin -= 1.5*this->dppar.w*h/2;
     }
     if(this->wallmode == "bottom"){
-      this->dppar.zmin -= this->dppar.w*h/2;
+      this->dppar.zmax += 1.5*this->dppar.w*h/2;
     }
     real Lz = this->dppar.zmax - this->dppar.zmin;
-    this->dppar.nz = M_PI*Lz/(h);
+    real H = Lz/2;
+    // sets chebyshev node spacing at its coarsest (in the middle) to be h
+    real nz_actual = M_PI/(asin(h/H)) + 1;
+
+    // pick nearby N such that 2(Nz-1) has two factors of 2 and is FFT friendly
+    this->dppar.nz = floor(nz_actual);
+    this->dppar.nz += (int)ceil(nz_actual) % 2;
+
     dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);
   }
