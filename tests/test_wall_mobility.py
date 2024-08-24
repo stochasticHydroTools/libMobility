@@ -141,27 +141,28 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
             assert np.all(diff < tol)
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity", "tol", "start_height", "ref_file"),
+    ("Solver", "periodicity", "ref_file"),
     [
-        # (DPStokes, ("periodic", "periodic", "single_wall"), 1e-5, 0, "self_mobility_bw_torque.mat"),
-        # (DPStokes, ("periodic", "periodic", "two_walls"), 1e-5, 0, "self_mobility_sc_torque.mat"),
-        (NBody, ("open", "open", "single_wall"), 1e-6, 0, "self_mobility_bw_ref_noimg.mat")
+        (DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw_torque.mat"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc_torque.mat"),
+        (NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.mat")
     ],
 )
-def test_self_mobility_angular(Solver, periodicity, tol, start_height, ref_file):
+def test_self_mobility_angular(Solver, periodicity, ref_file):
     zmax = 19.2
     xymax = 76.8
     params = self_mobility_params[Solver.__name__]
 
+    hydrodynamicRadius = 1.0
+    eta = 1/4/np.sqrt(np.pi)
+
     needsTorque = True
+    tol = 1e-6
 
     ref_dir = "./ref/"
     ref = scipy.io.loadmat(ref_dir + ref_file)
     refM = ref['M']
     refHeights = ref['heights'][0]
-
-    hydrodynamicRadius = 1.0
-    eta = 1/4/np.sqrt(np.pi)
 
     precision = np.float32 if Solver.precision == "float" else np.float64
 
@@ -176,11 +177,7 @@ def test_self_mobility_angular(Solver, periodicity, tol, start_height, ref_file)
         needsTorque=needsTorque
     )
 
-    start_ind = np.where(refHeights >= start_height)[0][0]
-    refHeights = refHeights[start_ind:]
     nHeights = len(refHeights)
-
-    refM = refM[start_ind:]
 
     normMat = np.zeros((6*numberParticles, 6*numberParticles), dtype=precision)
     normMat[0:3,0:3] = 1/(6*np.pi*eta*hydrodynamicRadius) # tt
@@ -205,27 +202,27 @@ def test_self_mobility_angular(Solver, periodicity, tol, start_height, ref_file)
         assert np.all(diff < tol)
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity", "tol", "start_height", "ref_file"),
+    ("Solver", "periodicity", "ref_file"),
     [
-        # (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, 0, "pair_mobility_bw_torque.mat"),
-        # (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, 0, "pair_mobility_sc_torque.mat"),
-        (NBody, ("open", "open", "single_wall"), 1e-6, 0, "pair_mobility_bw_ref_noimg.mat")
+        (DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw_torque.mat"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc_torque.mat"),
+        (NBody, ("open", "open", "single_wall"), "pair_mobility_bw_ref_noimg.mat")
     ],
 )
-def test_pair_mobility_angular(Solver, periodicity, tol, start_height, ref_file):
+def test_pair_mobility_angular(Solver, periodicity, ref_file):
     zmax = 19.2
     xymax = 76.8
     params = self_mobility_params[Solver.__name__]
-
+    hydrodynamicRadius = 1.0
+    eta = 1/4/np.sqrt(np.pi)
     needsTorque = True
+
+    tol = 1e-6
 
     ref_dir = "./ref/"
     ref = scipy.io.loadmat(ref_dir + ref_file)
     refM = ref['M']
     refHeights = ref['heights'].flatten()
-
-    hydrodynamicRadius = 1.0
-    eta = 1/4/np.sqrt(np.pi)
 
     precision = np.float32 if Solver.precision == "float" else np.float64
 
@@ -240,14 +237,10 @@ def test_pair_mobility_angular(Solver, periodicity, tol, start_height, ref_file)
         needsTorque=needsTorque
     )
 
-    start_ind = np.where(refHeights >= start_height)[0][0]
-    refHeights = refHeights[start_ind:]
     nHeights = len(refHeights)
 
     seps = np.array([3 * hydrodynamicRadius, 4 * hydrodynamicRadius, 8 * hydrodynamicRadius])
     nSeps = len(seps)
-
-    refM = refM[start_ind:]
 
     normMat = np.zeros((6*nP, 6*nP), dtype=precision)
     normMat[0:3*nP,0:3*nP] = 1/(6*np.pi*eta*hydrodynamicRadius) # tt
