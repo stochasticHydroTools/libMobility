@@ -1,4 +1,8 @@
 /*Raul P. Pelaez 2022. libMobility interface for UAMMD's DPStokes module
+
+References:
+[1] Computing hydrodynamic interactions in confined doubly periodic geometries in linear time.
+A. Hashemi et al. J. Chem. Phys. 158, 154101 (2023) https://doi.org/10.1063/5.0141371
  */
 #ifndef MOBILITY_SELFMOBILITY_H
 #define MOBILITY_SELFMOBILITY_H
@@ -40,6 +44,9 @@ public:
 
   void setParametersDPStokes(DPStokesParameters i_dppar){
     this->dppar = i_dppar;
+
+    if(this->dppar.Lx != this->dppar.Ly) throw std::runtime_error("[DPStokes] Only square periodic boxes (Lx = Ly) are currently supported.\n");
+    
     dpstokes = std::make_shared<uammd_dpstokes::DPStokesGlue>();
   }
 
@@ -67,21 +74,13 @@ public:
     this->dppar.alpha = this->dppar.w*0.5;
     this->dppar.tolerance = 1e-6;
 
-    real N_real = this->dppar.Lx/h; // actual N given L and h
-    int N_up = ceil(N_real);
-    int N_down = floor(N_real);
-    int N;
-    // either N_up or N_down will be a multiple of 2. pick the even one for a more FFT friendly grid.
-    if(N_up % 2 == 0){
-      N = N_up;
-    }else{
-      N = N_down;
-    }
+    int N = floor(this->dppar.Lx/h);
+    N += N % 2;
 
     this->dppar.nx = N;
     this->dppar.ny = N;
 
-    // note: only set up for square boxes
+    // note: this part is only configured for square boxes
     if(this->dppar.allowChangingBoxSize){ // adjust box size to suit h
       this->dppar.Lx = N*h;
       this->dppar.Ly = N*h;
@@ -104,14 +103,9 @@ public:
     // sets chebyshev node spacing at its coarsest (in the middle) to be h
     real nz_actual = M_PI/(asin(h/H)) + 1;
 
-    // pick nearby N such that 2(Nz-1) is FFT friendly
-    N_up = ceil(nz_actual);
-    N_down = floor(nz_actual);
-    if(N_up % 2 == 1){
-      this->dppar.nz = N_up;
-    } else {
-      this->dppar.nz = N_down;
-    }
+    // pick nearby N such that 2(Nz-1) has two factors of 2 and is FFT friendly
+    this->dppar.nz = floor(nz_actual);
+    this->dppar.nz += (int)ceil(nz_actual) % 2;
 
     dpstokes->initialize(dppar, this->numberParticles);
     Mobility::initialize(ipar);

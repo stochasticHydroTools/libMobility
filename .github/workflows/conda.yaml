@@ -1,0 +1,44 @@
+name: Build and upload conda packages
+
+on:
+  release:
+    types: ['released', 'prereleased']
+  # lets add on PR for testing
+  # pull_request:
+  #   types: ['opened', 'edited', 'reopened', 'synchronize']
+
+  workflow_dispatch:        # Un comment line if you also want to trigger action manually
+
+jobs:
+  conda_deployment_with_new_tag:
+    name: Conda deployment of package with Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        cuda-version: ["12.1", "12.6"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - name: Conda environment creation and activation
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          environment-file: devtools/conda-envs/build_env.yaml    # Path to the build conda environment
+          auto-update-conda: false
+          auto-activate-base: false
+          show-channel-urls: true
+      - name: Build and upload the conda packages
+        uses: uibcdf/action-build-and-upload-conda-packages@v1.3.0
+        # Export cuda-version as an environment variable
+        env:
+          CUDA_VERSION: ${{ matrix.cuda-version }}
+        with:
+          meta_yaml_dir: devtools/conda-build
+          python-version: ${{ matrix.python-version }} # Values previously defined in `matrix`
+          user: stochasticHydroTools
+          label: auto
+          overwrite: true
+          token: ${{ secrets.ANACONDA_TOKEN }}

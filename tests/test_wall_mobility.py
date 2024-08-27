@@ -1,12 +1,13 @@
 import pytest
 import numpy as np
-import scipy.interpolate
-import scipy.io
 
 from libMobility import DPStokes, NBody
 from utils import compute_M
 
-self_mobility_params = {
+# NOTE: Some of the following tests will only pass if compiled with double precision.
+# This is because the reference data was generated in double precision.
+
+wall_params = {
     "DPStokes": {"dt": 1, "Lx": 76.8, "Ly": 76.8, "zmin": 0, "zmax": 19.2},
     "NBody": {"algorithm": "advise"},
 }
@@ -14,23 +15,21 @@ self_mobility_params = {
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "tol", "start_height", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), 5e-3, 4, "self_mobility_bw_ref.mat"),
-        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-5, 0, "self_mobility_bw_w4.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-5, 0, "self_mobility_sc_w4.mat"),
-        (NBody, ("open", "open", "single_wall"), 1e-6, 1, "self_mobility_bw_ref_noimg.mat")
+        (DPStokes, ("periodic", "periodic", "single_wall"), 5e-3, 4, "self_mobility_bw_ref.npz"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, 0, "self_mobility_bw_w4.npz"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, 0, "self_mobility_sc_w4.npz"),
+        (NBody, ("open", "open", "single_wall"), 1e-6, 1, "self_mobility_bw_ref_noimg.npz")
     ],
 )
 def test_self_mobility_linear(Solver, periodicity, tol, start_height, ref_file):
-    zmax = 19.2
     xymax = 76.8
-    params = self_mobility_params[Solver.__name__]
-
+    params = wall_params[Solver.__name__]
     needsTorque = False
 
     ref_dir = "./ref/"
-    ref = scipy.io.loadmat(ref_dir + ref_file)
+    ref = np.load(ref_dir + ref_file)
     refM = ref['M']
-    refHeights = ref['heights'][0]
+    refHeights = ref['heights'].flatten()
 
     hydrodynamicRadius = 1.0
     eta = 1/4/np.sqrt(np.pi)
@@ -66,37 +65,29 @@ def test_self_mobility_linear(Solver, periodicity, tol, start_height, ref_file):
         M /= normMat
         allM[i] = M
 
-    # uncomment to save datafile for test plots
-    # scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
-
     diags = [np.diag(matrix) for matrix in allM]
     ref_diags = [np.diag(matrix)[0:3] for matrix in refM] # only take diagonal elements from forces
 
-    diff = np.abs([(diag - ref_diag) for diag, ref_diag in zip(diags, ref_diags)])
-
-    avgErr = np.mean(diff)
-
-    assert avgErr < tol, f"Self mobility does not match reference. Average error: {avgErr}"
+    for diag, ref_diag in zip(diags, ref_diags):
+        assert np.allclose(diag, ref_diag, rtol=tol, atol=tol), f"Self mobility does not match reference"
 
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "tol", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), 5e-5, "pair_mobility_bw_w4.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), 5e-5, "pair_mobility_sc_w4.mat"),
-        (NBody, ("open", "open", "single_wall"), 1e-4, "pair_mobility_bw_ref_noimg.mat"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, "pair_mobility_bw_w4.npz"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, "pair_mobility_sc_w4.npz"),
+        (NBody, ("open", "open", "single_wall"), 1e-4, "pair_mobility_bw_ref_noimg.npz"),
     ],
 )
 def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
-    zmax = 19.2
     xymax = 76.8
-    params = self_mobility_params[Solver.__name__]
-
+    params = wall_params[Solver.__name__]
     needsTorque = False
 
     ref_dir = "./ref/"
-    ref = scipy.io.loadmat(ref_dir + ref_file)
+    ref = np.load(ref_dir + ref_file)
     refM = ref['M']
-    refHeights = ref['heights'].flatten()
+    refHeights = ref['heights']
     nHeights = len(refHeights)
 
     radH = 1.0 # hydrodynamic radius
@@ -132,9 +123,6 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
             M /= normMat
             allM[i][k] = M
 
-    # uncomment to save datafile for test plots
-    # scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
-
     for i in range(0, nSeps):
         for k in range(0, nHeights):
             diff = abs(allM[i,k] - refM[i,k][0:6,0:6])
@@ -143,15 +131,15 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw_torque.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc_torque.mat"),
-        (NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.mat")
+        (DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw_torque.npz"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc_torque.npz"),
+        (NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.npz")
     ],
 )
 def test_self_mobility_angular(Solver, periodicity, ref_file):
     zmax = 19.2
     xymax = 76.8
-    params = self_mobility_params[Solver.__name__]
+    params = wall_params[Solver.__name__]
 
     hydrodynamicRadius = 1.0
     eta = 1/4/np.sqrt(np.pi)
@@ -160,9 +148,9 @@ def test_self_mobility_angular(Solver, periodicity, ref_file):
     tol = 1e-6
 
     ref_dir = "./ref/"
-    ref = scipy.io.loadmat(ref_dir + ref_file)
+    ref = np.load(ref_dir + ref_file)
     refM = ref['M']
-    refHeights = ref['heights'][0]
+    refHeights = ref['heights'].flatten()
 
     precision = np.float32 if Solver.precision == "float" else np.float64
 
@@ -187,15 +175,13 @@ def test_self_mobility_angular(Solver, periodicity, ref_file):
 
     allM = np.zeros((nHeights, 6*numberParticles, 6*numberParticles), dtype=precision)
     for i in range(0,nHeights):
+        # breakpoint()
         positions = np.array([[xymax/2, xymax/2, refHeights[i]]], dtype=precision)
         solver.setPositions(positions)
         
         M = compute_M(solver, numberParticles, needsTorque)
         M /= normMat
         allM[i] = M
-
-    # uncomment to save datafile for test plots
-    # scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights})
 
     for i in range(0, nHeights):
         diff = abs(allM[i] - refM[i])
@@ -204,15 +190,15 @@ def test_self_mobility_angular(Solver, periodicity, ref_file):
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw_torque.mat"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc_torque.mat"),
-        (NBody, ("open", "open", "single_wall"), "pair_mobility_bw_ref_noimg.mat")
+        (DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw_torque.npz"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc_torque.npz"),
+        (NBody, ("open", "open", "single_wall"), "pair_mobility_bw_ref_noimg.npz")
     ],
 )
 def test_pair_mobility_angular(Solver, periodicity, ref_file):
     zmax = 19.2
     xymax = 76.8
-    params = self_mobility_params[Solver.__name__]
+    params = wall_params[Solver.__name__]
     hydrodynamicRadius = 1.0
     eta = 1/4/np.sqrt(np.pi)
     needsTorque = True
@@ -220,7 +206,7 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file):
     tol = 1e-6
 
     ref_dir = "./ref/"
-    ref = scipy.io.loadmat(ref_dir + ref_file)
+    ref = np.load(ref_dir + ref_file)
     refM = ref['M']
     refHeights = ref['heights'].flatten()
 
@@ -260,33 +246,9 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file):
             M /= normMat
             allM[i,k] = M
 
-    # uncomment to save datafile for test plots
-    scipy.io.savemat('./temp/test_data/test_' + ref_file, {'M': allM, 'heights': refHeights, 'seps': seps})
-
     for i in range(0, nSeps):
         for k in range(0, nHeights):
             diff = abs(allM[i,k] - refM[i,k])
             temp = diff < tol
             x = temp[0:6,6:12]
-            # breakpoint()
             assert np.all(diff < tol)
-
-def checkPairComponent(indx, indy, allM, refM, nSeps, tol):
-
-    indx -= 1 # shift from matlab to python indexing
-    indy -= 1
-    for i in range(0, nSeps):
-
-        x = allM[i, :, indx, indy]
-        x_ref = refM[i, :, indx, indy]
-
-        for j in range(0, len(x)):
-
-            diff = x[j]-x_ref[j]
-
-            if x[j] > tol and x_ref[j] > tol and x_ref[j] != 0:
-                err = diff/x_ref[j]
-            else:
-                err = diff
-
-        assert err < tol, f"Pair mobility does not match reference for component {indx+1}, {indy+1}"

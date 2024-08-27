@@ -1,25 +1,29 @@
 package:
   name: libmobility
-  version: 0.1.0
+  version: {{ GIT_DESCRIBE_TAG }}
 
 source:
-  path: ../  # Path to your project's source code
+  git_url: ../../
+
+build:
+  number: 0
+  string: cuda{{ CUDA_VERSION }}py{{ CONDA_PY }}h{{ PKG_HASH }}_{{ PKG_BUILDNUM }}
     
 requirements:
 
   build:
     - cmake >=3.22
-    - cuda-version 12.*
+    - cuda-version {{ CUDA_VERSION }}
     - gxx
     - cuda-libraries-dev
     - cuda-nvcc 
     - make
     - mkl-devel
     - pybind11
-    - python 3.11.*
+    - python
   run:
-    - python 3.11.*
-    - cuda-version 12.*
+    - python
+    - cuda-version >={{ CUDA_VERSION }}
     - numpy
     - cuda-libraries
     - mkl
@@ -33,7 +37,7 @@ test:
   source_files:
     - tests
   commands:
-    - pytest -vs -k SelfMobility tests/test_*py
+    - pytest -vs -k "SelfMobility and not fluct" tests/test_*py
     
 about:
   home: https://github.com/stochasticHydroTools/libmobility

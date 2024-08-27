@@ -24,7 +24,7 @@ def test_periodic_initialization(Solver, periodicity):
 def test_pse_torques_unsupported():
     hydrodynamicRadius = 1.0
     solver = PSE("periodic", "periodic", "periodic")
-    parameters = sane_parameters[Solver.__name__]
+    parameters = sane_parameters[PSE.__name__]
     solver.setParameters(**parameters)
     numberParticles = 1
     with pytest.raises(RuntimeError):
@@ -40,6 +40,13 @@ def test_pse_torques_unsupported():
 def test_invalid_throws(Solver):
     with pytest.raises(RuntimeError):
         solver = Solver("periodicasdas", "periodic", "open")
+
+def test_dpstokes_invalid_box():
+    with pytest.raises(RuntimeError):
+        Lx, Ly = 10, 20
+        solver = DPStokes("periodic", "periodic", "single_wall")
+        params = {"dt": 1, "Lx": Lx, "Ly": Ly, "zmin": 0, "zmax": 19.2}
+        solver.setParameters(**params)
 
 @pytest.mark.parametrize(("NBatch", "NperBatch"),
                          [

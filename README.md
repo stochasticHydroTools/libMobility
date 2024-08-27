@@ -25,7 +25,7 @@ This repository is organized into the following directories:
 
 - **include/**: Includes the essential C++ base classes and utility files needed to construct the modules.  
 
-- **conda/**: Contains a meta.yaml file to build a conda package for libMobility using conda-build.  
+- **devtools/**: Contains dev specific scripts and files, like a meta.yaml file to build a conda package for libMobility using conda-build.  
 
 - **docs/**: Contains the source files for the documentation.  
 
@@ -70,11 +70,22 @@ The solvers constructor will check the provided configuration and throw an error
 
 
 ## How to use this repo
+
+### Installation
+
+#### Installing a pre-built binary
+
+You can install libMobility latest release through our conda channel:
+
+```shell
+$ conda install -c conda-forge -c stochasticHydroTools libmobility
+```
+
+#### Compiling from source
+
 Be sure to clone this repository recursively (using ```git clone --recurse```).  
 
 After compilation (see below) you will have all the tools mentioned above available for each solver.
-
-## Compilation
 
 We recommend working with a [conda](https://docs.conda.io/en/latest/) environment. The file environment.yml contains the necessary dependencies to compile and use the library.
 
@@ -108,7 +119,7 @@ The following variables are available to customize the compilation process:
   * DOUBLEPRECISION : If this variable is defined libMobility is compiled in double precision (single by default).  
 
 
-## Python Usage
+### Python Usage
 
 Importing libMobility will make available any module under "solvers".  
 
@@ -119,12 +130,13 @@ Calling
 ```
 will provide more in depth information about the solver.  
 
-## C++ Usage
+### C++ Usage
 
 In order to use a module called SolverName, the header solvers/SolverName/mobility.h must be included.  
 If the module has been compiled correctly the definitions required for the functions in mobility.h will be available at solvers/SolverName/mobility.so.  
 An example is available in cpp/example.cpp.  
-## Adding a new solver
+
+### Adding a new solver
 
 Solvers must be added following the ```libmobility::Mobility``` directives (see include/MobilityInterface). This C++ base class joins every solver under a common interface. When the C++ interface is prepared, the python bindings can be added automagically by using ```pythonify.h``` (a tool under MobilityInterface).  
 

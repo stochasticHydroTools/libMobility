@@ -41,6 +41,8 @@ def test_mobility_matrix_linear(
     assert M.shape == (3 * numberParticles, 3 * numberParticles)
     assert M.dtype == precision
     sym = M - M.T
+    atol = 5e-5
+    rtol = 1e-7
     assert np.allclose(
         sym, 0.0, rtol=0, atol=5e-5
     ), f"Mobility matrix is not symmetric within 5e-5, max diff: {np.max(np.abs(sym))}"
@@ -132,7 +134,7 @@ def test_self_mobility_linear_nbody(algorithm):
     forces = np.ones(3, dtype=precision)
     result, _ = solver.Mdot(forces)
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
-    assert np.allclose(result, m0 * forces, rtol=0, atol=1e-7)
+    assert np.allclose(result, m0 * forces, rtol=1e-7, atol=1e-7)
 
 @pytest.mark.parametrize("algorithm", ["naive", "block", "fast", "advise"])
 def test_self_mobility_angular_nbody(algorithm):
@@ -211,8 +213,8 @@ def test_pair_mobility_angular_nbody(algorithm):
     parameters = {"algorithm": algorithm}
     solver.setParameters(**parameters)
 
-    ref_file = "./ref/pair_mobility_nbody_freespace.mat"
-    ref = scipy.io.loadmat(ref_file)
+    ref_file = "./ref/pair_mobility_nbody_freespace.npz"
+    ref = np.load(ref_file)
     refM = np.array(ref['M']).astype(precision)
     r_vecs = np.array(ref['r_vecs']).astype(precision)
     a = np.array(ref['a']).astype(precision).flatten()

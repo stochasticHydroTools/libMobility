@@ -25,8 +25,9 @@ jobs:
           - name: Linux (CUDA 12)
     steps:
     - name: Check out
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
+        fetch-depth: 0
         submodules: recursive
         
     - name: Show dependency file
@@ -87,7 +88,8 @@ jobs:
         micromamba activate libmobility
         # install conda-build
         micromamba install -c conda-forge conda-build
-        conda build conda
+        export CUDA_VERSION=12
+        conda build devtools/conda-build
       shell: bash -el {0}
 
     - name: Install via pip

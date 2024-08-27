@@ -69,8 +69,7 @@ def fluctuation_dissipation_KS(M, fluctuation_method, needsTorques):
     ],
 )
 @pytest.mark.parametrize("hydrodynamicRadius", [0.95, 1.12])
-# @pytest.mark.parametrize("numberParticles", [1,2,10])
-@pytest.mark.parametrize("numberParticles", [10])
+@pytest.mark.parametrize("numberParticles", [1,2,10])
 def test_fluctuation_dissipation_linear_displacements(
     Solver, periodicity, hydrodynamicRadius, numberParticles
 ):
