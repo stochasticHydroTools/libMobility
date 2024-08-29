@@ -161,15 +161,15 @@ __device__ real3 RPY_WF(real3 rij, real rh){
     //self: self interaction
     //hj: height of the particle j
     //vj: quantity (i.e force) of particle j
-    __device__ real3 wallCorrection_UF(real3 rij, bool self, real hj, real3 fj){
+    __device__ real3 wallCorrection_UF(real3 rij, bool self, real hj, real3 vj){
       real3 correction = real3();
       if(self){ // B1*vj in [1]
 	real invZi = real(1.0) / hj;
 	real invZi3 = invZi * invZi * invZi;
 	real invZi5 = invZi3 * invZi * invZi;
-	correction.x += -fj.x*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) / real(16.0);
-	correction.y += -fj.y*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) / real(16.0);
-	correction.z += -fj.z*(real(9.0)*invZi - real(4.0)*invZi3 + invZi5 ) / real(8.0);
+	correction.x += -vj.x*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) * real(0.0625); // 1/16 = 0.0625
+	correction.y += -vj.y*(real(9.0)*invZi - real(2.0)*invZi3 + invZi5 ) * real(0.0625); // 1/16 = 0.0625
+	correction.z += -vj.z*(real(9.0)*invZi - real(4.0)*invZi3 + invZi5 ) * real(0.125); // 1/8 = 0.125
       }
       else{ // C2*vj in [1]
 	real h_hat = hj / rij.z;
@@ -177,67 +177,67 @@ __device__ real3 RPY_WF(real3 rij, real rh){
 	real3 e = rij*invR;
 	real invR3 = invR * invR * invR;
 	real invR5 = invR3 * invR * invR;
-	real fact1 = -(real(3.0)*(real(1.0)+real(2.0)*h_hat*(real(1.0)-h_hat)*e.z*e.z) * invR + real(2.0)*(real(1.0)-real(3.0)*e.z*e.z) * invR3 - real(2.0)*(real(1.0)-real(5.0)*e.z*e.z) * invR5)  / real(4.0);
-	real fact2 = -(real(3.0)*(real(1.0)-real(6.0)*h_hat*(real(1.0)-h_hat)*e.z*e.z) * invR - real(6.0)*(real(1.0)-real(5.0)*e.z*e.z) * invR3 + real(10.0)*(real(1.0)-real(7.0)*e.z*e.z) * invR5) / real(4.0);
-	real fact3 =  e.z * (real(3.0)*h_hat*(real(1.0)-real(6.0)*(real(1.0)-h_hat)*e.z*e.z) * invR - real(6.0)*(real(1.0)-real(5.0)*e.z*e.z) * invR3 + real(10.0)*(real(2.0)-real(7.0)*e.z*e.z) * invR5) / real(2.0);
-	real fact4 =  e.z * (real(3.0)*h_hat*invR - real(10.0)*invR5) / real(2.0);
+	real fact1 = -(real(3.0)*(real(1.0)+real(2.0)*h_hat*(real(1.0)-h_hat)*e.z*e.z) * invR + real(2.0)*(real(1.0)-real(3.0)*e.z*e.z) * invR3 - real(2.0)*(real(1.0)-real(5.0)*e.z*e.z) * invR5)  * real(0.25); // 1/4 = 0.25
+	real fact2 = -(real(3.0)*(real(1.0)-real(6.0)*h_hat*(real(1.0)-h_hat)*e.z*e.z) * invR - real(6.0)*(real(1.0)-real(5.0)*e.z*e.z) * invR3 + real(10.0)*(real(1.0)-real(7.0)*e.z*e.z) * invR5) * real(0.25); // 1/4 = 0.25
+	real fact3 =  e.z * (real(3.0)*h_hat*(real(1.0)-real(6.0)*(real(1.0)-h_hat)*e.z*e.z) * invR - real(6.0)*(real(1.0)-real(5.0)*e.z*e.z) * invR3 + real(10.0)*(real(2.0)-real(7.0)*e.z*e.z) * invR5) * real(0.5); // 1/2 = 0.5
+	real fact4 =  e.z * (real(3.0)*h_hat*invR - real(10.0)*invR5) * real(0.5); // 1/2 = 0.5
 	real fact5 = -(real(3.0)*h_hat*h_hat*e.z*e.z*invR + real(3.0)*e.z*e.z*invR3 + (real(2.0)-real(15.0)*e.z*e.z)*invR5);
-	correction.x += (fact1 + fact2 * e.x*e.x)*fj.x;
-	correction.x += (fact2 * e.x*e.y)*fj.y;
-	correction.x += (fact2 * e.x*e.z + fact3 * e.x)*fj.z;
-	correction.y += (fact2 * e.y*e.x)*fj.x;
-	correction.y += (fact1 + fact2 * e.y*e.y)*fj.y;
-	correction.y += (fact2 * e.y*e.z + fact3 * e.y)*fj.z;
-	correction.z += (fact2 * e.z*e.x + fact4 * e.x)*fj.x;
-	correction.z += (fact2 * e.z*e.y + fact4 * e.y)*fj.y;
-	correction.z += (fact1 + fact2 * e.z*e.z + fact3 * e.z + fact4 * e.z + fact5)*fj.z;
+	correction.x += (fact1 + fact2 * e.x*e.x)*vj.x;
+	correction.x += (fact2 * e.x*e.y)*vj.y;
+	correction.x += (fact2 * e.x*e.z + fact3 * e.x)*vj.z;
+	correction.y += (fact2 * e.y*e.x)*vj.x;
+	correction.y += (fact1 + fact2 * e.y*e.y)*vj.y;
+	correction.y += (fact2 * e.y*e.z + fact3 * e.y)*vj.z;
+	correction.z += (fact2 * e.z*e.x + fact4 * e.x)*vj.x;
+	correction.z += (fact2 * e.z*e.y + fact4 * e.y)*vj.y;
+	correction.z += (fact1 + fact2 * e.z*e.z + fact3 * e.z + fact4 * e.z + fact5)*vj.z;
       }
       return correction;
     }
     
     // NOTE: normalized by 8 pi eta a**3. [1] normalizes by 6 pi et a**3
     // so, all coeffs are multiplied by 4/3 if compared to [1]
-    __device__ real3 wallCorrection_WT(real3 rij, bool self, real hj, real3 tj){
+    __device__ real3 wallCorrection_WT(real3 rij, bool self, real hj, real3 vj){
         real3 correction = real3();
-        if(self){ // B3*tj in [1]
+        if(self){ // B3*vj in [1]
             real invZi = real(1.0) / hj;
             real invZi3 = invZi * invZi * invZi;
-            correction.x += tj.x*(-invZi3 * real(0.3125)); // 15/48 = 0.3125
-            correction.y += tj.y*(-invZi3 * real(0.3125)); // 15/48 = 0.3125
-            correction.z += tj.z*(-invZi3 * real(0.125)); // 3/24 = 0.125
+            correction.x += vj.x*(-invZi3 * real(0.3125)); // 15/48 = 0.3125
+            correction.y += vj.y*(-invZi3 * real(0.3125)); // 15/48 = 0.3125
+            correction.z += vj.z*(-invZi3 * real(0.125)); // 3/24 = 0.125
         }
-    else{ // C4*tj in [1].
+    else{ // C4*vj in [1].
     real h_hat = hj / rij.z;
     real invR = rsqrt(dot(rij, rij));
     real invR3 = invR * invR * invR;
     real3 e = rij*invR;
-    real fact1 =  ((1-6*e.z*e.z) * invR3 ) / real(2.0);
-    real fact2 = -(9 * invR3) / real(6.0);
+    real fact1 =  ((1-6*e.z*e.z) * invR3 ) * real(0.5); // 1/2 = 0.5
+    real fact2 = -(invR3) * real(1.5); // 9/6 = 1.5
     real fact3 =  (3 * invR3 * e.z);
     real fact4 =  (3 * invR3);
 
-    correction.x += (fact1 + fact2 * e.x*e.x + fact4 * e.y*e.y)*tj.x;
-    correction.x += ((fact2 - fact4)* e.x*e.y)*tj.y;
-    correction.x += (fact2 * e.x*e.z)*tj.z;
-    correction.y += ((fact2 - fact4)* e.x*e.y)*tj.x;
-    correction.y += (fact1 + fact2 * e.y*e.y + fact4 * e.x*e.x)*tj.y;
-    correction.y += (fact2 * e.y*e.z)*tj.z;
-    correction.z += (fact2 * e.z*e.x + fact3 * e.x)*tj.x;
-    correction.z += (fact2 * e.z*e.y + fact3 * e.y)*tj.y;
-    correction.z += (fact1 + fact2 * e.z*e.z + fact3 * e.z)*tj.z;
+    correction.x += (fact1 + fact2 * e.x*e.x + fact4 * e.y*e.y)*vj.x;
+    correction.x += ((fact2 - fact4)* e.x*e.y)*vj.y;
+    correction.x += (fact2 * e.x*e.z)*vj.z;
+    correction.y += ((fact2 - fact4)* e.x*e.y)*vj.x;
+    correction.y += (fact1 + fact2 * e.y*e.y + fact4 * e.x*e.x)*vj.y;
+    correction.y += (fact2 * e.y*e.z)*vj.z;
+    correction.z += (fact2 * e.z*e.x + fact3 * e.x)*vj.x;
+    correction.z += (fact2 * e.z*e.y + fact3 * e.y)*vj.y;
+    correction.z += (fact1 + fact2 * e.z*e.z + fact3 * e.z)*vj.z;
     }
     return correction;
   }
 
-  __device__ real3 wallCorrection_UT(real3 rij, bool self, real h, real3 tj){
+  __device__ real3 wallCorrection_UT(real3 rij, bool self, real h, real3 vj){
       real3 correction = real3();
-      if(self){ // B2^T*tj in [1]. ^T denotes transpose.
+      if(self){ // B2^T*vj in [1]. ^T denotes transpose.
         real invZi = real(1.0) / h;
         real invZi4 = invZi * invZi * invZi * invZi;
-        correction.x += (invZi4 * real(0.125))*tj.y; // 3/24 = 0.125
-        correction.y += (-invZi4 * real(0.125))*tj.x; // 3/24 = 0.125
+        correction.x += (invZi4 * real(0.125))*vj.y; // 3/24 = 0.125
+        correction.y += (-invZi4 * real(0.125))*vj.x; // 3/24 = 0.125
       }
-  else{ // C3^T*tj in [1].
+  else{ // C3^T*vj in [1].
     real h_hat = h / rij.z;
     real invR = rsqrt(dot(rij, rij));
     real invR2 = invR * invR;
@@ -248,25 +248,25 @@ __device__ real3 RPY_WF(real3 rij, real rh){
     real fact3 = -e.z*(real(3.0)*h_hat*invR2 - real(5.0)*invR4) * real(2.0);
     real fact4 = -e.z*(h_hat*invR2 - invR4) * real(2.0);
 
-    correction.x -= (-fact3 * e.x * e.y) * tj.x;
-    correction.x -= (-fact1 * e.z + fact3 * e.x * e.x - fact4) * tj.y;
-    correction.x -= (fact1 * e.y) * tj.z;
-    correction.y -= (fact1 * e.z - fact3 * e.y * e.y + fact4) * tj.x;
-    correction.y -= (fact3 * e.x * e.y) * tj.y;
-    correction.y -= (-fact1 * e.x) * tj.z;
-    correction.z -= (-fact1 * e.y - fact2 * e.y - fact3 * e.y * e.z) * tj.x;
-    correction.z -= (fact1 * e.x + fact2 * e.x + fact3 * e.x * e.z) * tj.y;
+    correction.x -= (-fact3 * e.x * e.y) * vj.x;
+    correction.x -= (-fact1 * e.z + fact3 * e.x * e.x - fact4) * vj.y;
+    correction.x -= (fact1 * e.y) * vj.z;
+    correction.y -= (fact1 * e.z - fact3 * e.y * e.y + fact4) * vj.x;
+    correction.y -= (fact3 * e.x * e.y) * vj.y;
+    correction.y -= (-fact1 * e.x) * vj.z;
+    correction.z -= (-fact1 * e.y - fact2 * e.y - fact3 * e.y * e.z) * vj.x;
+    correction.z -= (fact1 * e.x + fact2 * e.x + fact3 * e.x * e.z) * vj.y;
   }
   return correction;
 }
 
-  __device__ real3 wallCorrection_WF(real3 rij, bool self, real h, real3 fj){
+  __device__ real3 wallCorrection_WF(real3 rij, bool self, real h, real3 vj){
         real3 correction = real3();
         if(self){ // B2*fj in [1].
             real invZi = real(1.0) / h;
             real invZi4 = invZi * invZi * invZi * invZi;
-            correction.x += (-invZi4 * real(0.125))*fj.y; // 3/24 = 0.125
-            correction.y += (invZi4 * real(0.125))*fj.x; // 3/24 = 0.125
+            correction.x += (-invZi4 * real(0.125))*vj.y; // 3/24 = 0.125
+            correction.y += (invZi4 * real(0.125))*vj.x; // 3/24 = 0.125
         }
   else{ // C3*fj in [1].
     real h_hat = h / rij.z;
@@ -280,14 +280,14 @@ __device__ real3 RPY_WF(real3 rij, real rh){
     real fact3 = -e.z*(real(3.0)*h_hat*invR2 - real(5.0)*invR4) * real(2.0);
     real fact4 = -e.z*(h_hat*invR2 - invR4) * real(2.0);
 
-    correction.x -= (-fact3*e.x*e.y) * fj.x;                         // Mxx
-    correction.x -= (fact1*e.z - fact3*e.y*e.y + fact4) * fj.y;      // Mxy
-    correction.x -= (-fact1*e.y - fact2*e.y - fact3*e.y*e.z) * fj.z; // Mxz
-    correction.y -= (-fact1*e.z + fact3*e.x*e.x - fact4) * fj.x;     // Myx
-    correction.y -= (fact3*e.x*e.y) * fj.y;                          // Myy
-    correction.y -= (fact1*e.x + fact2*e.x + fact3*e.x*e.z) * fj.z;  // Myz
-    correction.z -= (fact1*e.y) * fj.x;                              // Mzx
-    correction.z -= (-fact1*e.x) * fj.y;                             // Mzy
+    correction.x -= (-fact3*e.x*e.y) * vj.x;                         // Mxx
+    correction.x -= (fact1*e.z - fact3*e.y*e.y + fact4) * vj.y;      // Mxy
+    correction.x -= (-fact1*e.y - fact2*e.y - fact3*e.y*e.z) * vj.z; // Mxz
+    correction.y -= (-fact1*e.z + fact3*e.x*e.x - fact4) * vj.x;     // Myx
+    correction.y -= (fact3*e.x*e.y) * vj.y;                          // Myy
+    correction.y -= (fact1*e.x + fact2*e.x + fact3*e.x*e.z) * vj.z;  // Myz
+    correction.z -= (fact1*e.y) * vj.x;                              // Mzx
+    correction.z -= (-fact1*e.x) * vj.y;                             // Mzy
   }
   return correction;
 }
@@ -307,22 +307,22 @@ __device__ real3 RPY_WF(real3 rij, real rh){
       const real gv = gdivr2*dot(rij, vj);
       real3 Mv_t = f*vj + (r>real(0)?gv*rij:real3());
       const real hj = pj.z;
-      rij.z = rij.z +2*pj.z;
+      rij.z = rij.z + 2*pj.z;
       Mv_t += wallCorrection_UF(rij/rh,(r==0), hj/rh, vj);
       return t0*Mv_t;
     }
 
-    __device__ real3 dotProduct_WT(real3 pi, real3 pj, real3 tj){
+    __device__ real3 dotProduct_WT(real3 pi, real3 pj, real3 vj){
       real3 rij = make_real3(pi)-make_real3(pj);
       const real r = sqrt(dot(rij, rij));
       const real2 c12 = RPY_WT(r, rh);
       const real f = c12.x;
       const real gdivr2 = c12.y;
-      const real gv = gdivr2*dot(rij, tj);
-      real3 Mv_t = f*tj + (r>real(0)?gv*rij:real3());
+      const real gv = gdivr2*dot(rij, vj);
+      real3 Mv_t = f*vj + (r>real(0)?gv*rij:real3());
       const real hj = pj.z;
-      rij.z = rij.z +2*pj.z;
-      Mv_t += wallCorrection_WT(rij/rh,(r==0), hj/rh, tj);
+      rij.z = rij.z + 2*pj.z;
+      Mv_t += wallCorrection_WT(rij/rh,(r==0), hj/rh, vj);
       return r0*Mv_t;
     }
 
@@ -330,31 +330,31 @@ __device__ real3 RPY_WF(real3 rij, real rh){
   // In the complete mobility matrix, M_{WF, ij}^T = M_{UT, ji}. however, we want to compute M_{UT, ij} on this
   // iteration of the calling loop. so, we call wallCorrection_UT with R = -rih = pj - pi and h = pi.z,
   // i.e. we flip the order of the (ij) arguments so that we get M_{UT, ij}
-    __device__ real3 dotProduct_UT(real3 pi, real3 pj, real3 tj){
+    __device__ real3 dotProduct_UT(real3 pi, real3 pj, real3 vj){
     real3 rij = make_real3(pi)-make_real3(pj);
     const real r = sqrt(dot(rij, rij));
     const real3 m = RPY_UT(rij, rh); // (M_xy, M_xz, M_yz)
-    real3 Mv_t = {m.x*tj.y + m.y*tj.z,
-                 -m.x*tj.x + m.z*tj.z, 
-                 -m.y*tj.x - m.z*tj.y};
+    real3 Mv_t = {m.x*vj.y + m.y*vj.z,
+                 -m.x*vj.x + m.z*vj.z, 
+                 -m.y*vj.x - m.z*vj.y};
     const real hi = pi.z;
-    rij.z = -rij.z +2*pi.z;
+    rij.z = -rij.z + 2*pi.z;
     rij.x = -rij.x;
     rij.y = -rij.y;
-    Mv_t += wallCorrection_UT(rij/rh,(r==0), hi/rh, tj);
+    Mv_t += wallCorrection_UT(rij/rh,(r==0), hi/rh, vj);
     return rt0*Mv_t;
     }
 
-    __device__ real3 dotProduct_WF(real3 pi, real3 pj, real3 fj){
+    __device__ real3 dotProduct_WF(real3 pi, real3 pj, real3 vj){
     real3 rij = make_real3(pi)-make_real3(pj);
     const real r = sqrt(dot(rij, rij));
     const real3 m = RPY_WF(rij, rh); // (M_xy, M_xz, M_yz)
-    real3 Mv_t = {m.x*fj.y + m.y*fj.z,
-                 -m.x*fj.x + m.z*fj.z, 
-                 -m.y*fj.x - m.z*fj.y};
+    real3 Mv_t = {m.x*vj.y + m.y*vj.z,
+                 -m.x*vj.x + m.z*vj.z, 
+                 -m.y*vj.x - m.z*vj.y};
     const real hj = pj.z;
-    rij.z = rij.z +2*pj.z;
-    Mv_t += wallCorrection_WF(rij/rh,(r==0), hj/rh, fj);
+    rij.z = rij.z + 2*pj.z;
+    Mv_t += wallCorrection_WF(rij/rh,(r==0), hj/rh, vj);
     return rt0*Mv_t;
     }
     
