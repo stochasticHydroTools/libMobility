@@ -248,12 +248,9 @@ __device__ real3 RPY_WF(real3 rij, real rh){
     correction.x -= (fact1 * e.y) * tj.z;
     correction.y -= (fact1 * e.z - fact3 * e.y * e.y + fact4) * tj.x;
     correction.y -= (fact3 * e.x * e.y) * tj.y;
-    correction.y += (-fact1 * e.x) * tj.z;
+    correction.y -= (-fact1 * e.x) * tj.z;
     correction.z -= (-fact1 * e.y - fact2 * e.y - fact3 * e.y * e.z) * tj.x;
-    correction.z += (fact1 * e.x + fact2 * e.x + fact3 * e.x * e.z) * tj.y;
-    // something is wrong with the sign on the YZ and ZY component. the code seems to be written as all minus but I have to change it to plus to get tests to work.
-    // holy fuck I think it's because of line 480 in mobility_numba.py that sets rx = -rx and ry = -ry
-    // commenting out xz doesn't give us the wrong answer since e.y = 0 for stupid pair test
+    correction.z -= (fact1 * e.x + fact2 * e.x + fact3 * e.x * e.z) * tj.y;
   }
   return correction;
 }
@@ -320,8 +317,6 @@ __device__ real3 RPY_WF(real3 rij, real rh){
       real3 Mv_t = f*tj + (r>real(0)?gv*rij:real3());
       const real hj = pj.z;
       rij.z = rij.z +2*pj.z;
-    //   const real3 temp = wallCorrection_WT(rij/rh,(r==0), hj/rh, vj);
-    //   printf("temp: %f %f %f\n", temp.x, temp.y, temp.z);
       Mv_t += wallCorrection_WT(rij/rh,(r==0), hj/rh, tj);
       return r0*Mv_t;
     }
@@ -333,8 +328,10 @@ __device__ real3 RPY_WF(real3 rij, real rh){
     real3 Mv_t = {m.x*tj.y + m.y*tj.z,
                  -m.x*tj.x + m.z*tj.z, 
                  -m.y*tj.x - m.z*tj.y};
-    const real hj = pj.z;
+    const real hj = pi.z;
     rij.z = rij.z +2*pj.z;
+    rij.x = -rij.x;
+    rij.y = -rij.y;
     Mv_t += wallCorrection_UT(rij/rh,(r==0), hj/rh, tj);
     return rt0*Mv_t;
     }
