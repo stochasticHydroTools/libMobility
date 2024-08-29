@@ -1,7 +1,6 @@
 from utils import sane_parameters, compute_M, generate_positions_in_box
 import pytest
 import numpy as np
-import scipy.io
 from libMobility import SelfMobility, PSE, NBody, DPStokes
 from utils import compute_M
 
@@ -44,8 +43,8 @@ def test_mobility_matrix_linear(
     atol = 5e-5
     rtol = 1e-7
     assert np.allclose(
-        sym, 0.0, rtol=0, atol=5e-5
-    ), f"Mobility matrix is not symmetric within 5e-5, max diff: {np.max(np.abs(sym))}"
+        sym, 0.0, rtol=rtol, atol=atol
+    ), f"Mobility matrix is not symmetric within {atol}, max diff: {np.max(np.abs(sym))}"
 
 
 @pytest.mark.parametrize(
@@ -83,9 +82,11 @@ def test_mobility_matrix_angular(
     assert M.shape == (size, size)
     assert M.dtype == precision
     sym = M - M.T
+    rtol = 0
+    atol = 5e-5
     assert np.allclose(
-        sym, 0.0, rtol=0, atol=5e-5
-    ), f"Mobility matrix is not symmetric within 5e-5, max diff: {np.max(np.abs(sym))}"
+        sym, 0.0, rtol=rtol, atol=atol
+    ), f"Mobility matrix is not symmetric within {atol}, max diff: {np.max(np.abs(sym))}"
 
 
 def test_self_mobility_selfmobility():

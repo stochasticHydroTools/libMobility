@@ -44,4 +44,10 @@ def generate_positions_in_box(parameters, numberParticles):
         positions[:, 2] *= parameters["Lz"]
     if "zmin" in parameters:
         positions[:, 2] *= parameters["zmax"] - parameters["zmin"]
+
+    # generates positions for NBody
+    if "algorithm" in parameters:
+        positions[:, 2] += 0.5
+        positions *= 10
+
     return positions

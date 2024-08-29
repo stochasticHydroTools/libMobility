@@ -13,15 +13,14 @@ wall_params = {
 }
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity", "tol", "start_height", "ref_file"),
+    ("Solver", "periodicity", "tol", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), 5e-3, 4, "self_mobility_bw_ref.npz"),
-        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, 0, "self_mobility_bw_w4.npz"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, 0, "self_mobility_sc_w4.npz"),
-        (NBody, ("open", "open", "single_wall"), 1e-6, 1, "self_mobility_bw_ref_noimg.npz")
+        (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, "self_mobility_bw_w4.npz"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, "self_mobility_sc_w4.npz"),
+        (NBody, ("open", "open", "single_wall"), 1e-6, "self_mobility_bw_ref_noimg.npz")
     ],
 )
-def test_self_mobility_linear(Solver, periodicity, tol, start_height, ref_file):
+def test_self_mobility_linear(Solver, periodicity, tol, ref_file):
     xymax = 76.8
     params = wall_params[Solver.__name__]
     needsTorque = False
@@ -46,11 +45,7 @@ def test_self_mobility_linear(Solver, periodicity, tol, start_height, ref_file):
         numberParticles=numberParticles,
     )
 
-    start_ind = np.where(refHeights >= start_height)[0][0]
-    refHeights = refHeights[start_ind:]
     nHeights = len(refHeights)
-
-    refM = refM[start_ind:]
 
     normMat = np.ones((3*numberParticles, 3*numberParticles), dtype=precision)
     diag_ind = np.diag_indices_from(normMat)
@@ -76,7 +71,7 @@ def test_self_mobility_linear(Solver, periodicity, tol, start_height, ref_file):
     [
         (DPStokes, ("periodic", "periodic", "single_wall"), 1e-6, "pair_mobility_bw_w4.npz"),
         (DPStokes, ("periodic", "periodic", "two_walls"), 1e-6, "pair_mobility_sc_w4.npz"),
-        (NBody, ("open", "open", "single_wall"), 1e-4, "pair_mobility_bw_ref_noimg.npz"),
+        (NBody, ("open", "open", "single_wall"), 1e-4, "pair_mobility_bw_ref_noimg_offset_x.npz"),
     ],
 )
 def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
@@ -131,8 +126,8 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw_torque.npz"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc_torque.npz"),
+        (DPStokes, ("periodic", "periodic", "single_wall"), "self_mobility_bw_w6.npz"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), "self_mobility_sc_w6.npz"),
         (NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.npz")
     ],
 )
@@ -175,7 +170,6 @@ def test_self_mobility_angular(Solver, periodicity, ref_file):
 
     allM = np.zeros((nHeights, 6*numberParticles, 6*numberParticles), dtype=precision)
     for i in range(0,nHeights):
-        # breakpoint()
         positions = np.array([[xymax/2, xymax/2, refHeights[i]]], dtype=precision)
         solver.setPositions(positions)
         
@@ -190,12 +184,13 @@ def test_self_mobility_angular(Solver, periodicity, ref_file):
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "ref_file"),
     [
-        (DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw_torque.npz"),
-        (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc_torque.npz"),
-        (NBody, ("open", "open", "single_wall"), "pair_mobility_bw_ref_noimg.npz")
+        (DPStokes, ("periodic", "periodic", "single_wall"), "pair_mobility_bw_w6"),
+        (DPStokes, ("periodic", "periodic", "two_walls"), "pair_mobility_sc_w6"),
+        (NBody, ("open", "open", "single_wall"), "pair_mobility_bw_ref_noimg")
     ],
 )
-def test_pair_mobility_angular(Solver, periodicity, ref_file):
+@pytest.mark.parametrize("offset", ["x", "y"])
+def test_pair_mobility_angular(Solver, periodicity, ref_file, offset):
     zmax = 19.2
     xymax = 76.8
     params = wall_params[Solver.__name__]
@@ -206,6 +201,7 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file):
     tol = 1e-6
 
     ref_dir = "./ref/"
+    ref_file += "_offset_" + offset + ".npz"
     ref = np.load(ref_dir + ref_file)
     refM = ref['M']
     refHeights = ref['heights'].flatten()
@@ -234,12 +230,20 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file):
     normMat[3*nP: ,0:3*nP] = 1/(6*np.pi*eta*hydrodynamicRadius**2) # tr
     normMat[0:3*nP,3*nP: ] = 1/(6*np.pi*eta*hydrodynamicRadius**2) # rt
 
+    if offset == "x":
+        offset_vec = np.array([1, 0, 0])
+    elif offset == "y":
+        offset_vec = np.array([0, 1, 0])
+    else:
+        raise ValueError("Test for offset in {} not implemented".format(offset))
+
     xpos = xymax/2
     allM = np.zeros((nSeps, nHeights, 6*nP, 6*nP), dtype=precision)
     for i in range(0, nSeps):
+        seps_vec = (seps[i] * offset_vec)/2
         for k in range(0,nHeights):
-            positions = np.array([[xpos+seps[i]/2, xpos, refHeights[k]],
-                                  [xpos-seps[i]/2, xpos, refHeights[k]]], dtype=precision)
+            positions = np.array([[xpos, xpos, refHeights[k]] + seps_vec,
+                                  [xpos, xpos, refHeights[k]] - seps_vec], dtype=precision)
             solver.setPositions(positions)
             
             M = compute_M(solver, nP, needsTorque)
@@ -250,5 +254,8 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file):
         for k in range(0, nHeights):
             diff = abs(allM[i,k] - refM[i,k])
             temp = diff < tol
-            x = temp[0:6,6:12]
+            if not np.all(temp):
+                print(diff)
+                print(np.where(temp == False))
+                breakpoint()
             assert np.all(diff < tol)
