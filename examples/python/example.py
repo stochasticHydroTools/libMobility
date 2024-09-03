@@ -35,16 +35,17 @@ nb = libMobility.SelfMobility(
 
 # For NBody periodicityZ can also be single_wall
 # nb = libMobility.NBody(periodicityX='open',periodicityY='open',periodicityZ='open')
-# nb.setParametersNBody(algorithm="advise", Nbatch=1, NperBatch=numberParticles)
+# nb.setParameters(algorithm="advise", Nbatch=1, NperBatch=numberParticles)
 
 # nb = libMobility.PSE(periodicityX='periodic',periodicityY='periodic',periodicityZ='periodic')
-# nb.setParametersPSE(psi=1,   Lx=128, Ly=128, Lz=128,shearStrain=1)
+# nb.setParameters(psi=1,   Lx=128, Ly=128, Lz=128,shearStrain=1)
 
 nb.initialize(
     temperature=1.0,
     viscosity=1 / (6 * np.pi),
     hydrodynamicRadius=1.0,
     numberParticles=numberParticles,
+    needsTorque=False,
 )
 nb.setPositions(pos)
 
