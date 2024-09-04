@@ -282,12 +282,11 @@ using Parameters = libmobility::Parameters;
 using Configuration = libmobility::Configuration;
 
 template <typename MODULENAME>
-void define_module_content(
-    py::module &m, const char *documentation,
+auto define_module_content(
+    py::module &m, const char *name, const char *documentation,
     const std::function<void(py::class_<MODULENAME> &)> &extra_code) {
 
-  auto solver =
-      py::class_<MODULENAME>(m, MOBILITYSTR(MODULENAME), documentation);
+  auto solver = py::class_<MODULENAME>(m, name, documentation);
 
   solver
       .def(py::init(&call_construct<MODULENAME>), constructor_docstring,
@@ -313,12 +312,14 @@ void define_module_content(
           R"pbdoc(Compilation precision, a string holding either float or double.)pbdoc");
 
   extra_code(solver);
+  return solver;
 }
 
 #define MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(MODULENAME, EXTRA, documentation)   \
   PYBIND11_MODULE(MODULENAME, m) {                                             \
-    define_module_content<MODULENAME>(                                         \
-        m, documentation, [](py::class_<MODULENAME> &solver) { EXTRA });       \
+    auto solver = define_module_content<MODULENAME>(                           \
+        m, MOBILITYSTR(MODULENAME), documentation,                             \
+        [](py::class_<MODULENAME> &solver) { EXTRA });                         \
   }
 
 #define MOBILITY_PYTHONIFY(MODULENAME, documentation)                          \
