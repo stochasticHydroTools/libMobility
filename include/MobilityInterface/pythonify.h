@@ -106,21 +106,18 @@ tolerance : float, optional
 template <class Solver>
 auto call_sqrtMdotW(Solver &solver, libmobility::real prefactor) {
   int N = solver.getNumberParticles();
-  auto linear =
-      py::array_t<libmobility::real>({N * 3});
-  auto angular =
-    py::array_t<libmobility::real>();
+  auto linear = py::array_t<libmobility::real>({N * 3});
+  auto angular = py::array_t<libmobility::real>();
 
   if (solver.getNeedsTorque()) {
     angular.resize({3 * N});
     angular.attr("fill")(0);
     solver.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
     angular = angular.reshape({N, 3});
-  } else{
+  } else {
     solver.sqrtMdotW(cast_to_real(linear), nullptr, prefactor);
   }
-  return std::make_pair(linear.reshape({N, 3}),
-			angular);
+  return std::make_pair(linear.reshape({N, 3}), angular);
 }
 
 const char *sqrtMdotW_docstring = R"pbdoc(
@@ -144,8 +141,8 @@ array_like
 
 )pbdoc";
 
-template <class Solver> auto call_mdot(Solver &myself, pyarray_c &forces,
-				       pyarray_c &torques) {
+template <class Solver>
+auto call_mdot(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   int N = myself.getNumberParticles();
   if (forces.size() < 3 * N and forces.size() > 0) {
     throw std::runtime_error("The forces array must have size 3*N.");
@@ -157,19 +154,21 @@ template <class Solver> auto call_mdot(Solver &myself, pyarray_c &forces,
   auto t = torques.size() ? cast_to_const_real(torques) : nullptr;
   auto mf = py::array_t<libmobility::real>();
   auto mt = py::array_t<libmobility::real>();
-  if(f){
+  if (f) {
     mf.resize({3 * N});
     mf.attr("fill")(0);
   }
-  if(t){
+  if (t) {
     mt.resize({3 * N});
     mt.attr("fill")(0);
   }
   auto mf_ptr = mf.size() ? cast_to_real(mf) : nullptr;
   auto mt_ptr = mt.size() ? cast_to_real(mt) : nullptr;
   myself.Mdot(f, t, mf_ptr, mt_ptr);
-  if(mf_ptr) mf = mf.reshape({N, 3});
-  if(mt_ptr) mt = mt.reshape({N, 3});
+  if (mf_ptr)
+    mf = mf.reshape({N, 3});
+  if (mt_ptr)
+    mt = mt.reshape({N, 3});
   return std::make_pair(mf, mt);
 }
 
@@ -198,7 +197,8 @@ array_like
 
 template <class Solver>
 void call_initialize(Solver &myself, libmobility::real T, libmobility::real eta,
-                     libmobility::real a, int N, bool needsTorque, libmobility::real tol) {
+                     libmobility::real a, int N, bool needsTorque,
+                     libmobility::real tol) {
   libmobility::Parameters par;
   par.temperature = T;
   par.viscosity = eta;
@@ -214,7 +214,8 @@ template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
 }
 
 template <class Solver>
-auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,  pyarray_c &torques,
+auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,
+                                 pyarray_c &torques,
                                  libmobility::real prefactor) {
   int N = myself.getNumberParticles();
   if (forces.size() < 3 * N and forces.size() > 0) {
@@ -229,15 +230,17 @@ auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,  pyarray_c &
   auto mt = py::array_t<libmobility::real>();
   mf.resize({3 * N});
   mf.attr("fill")(0);
-  if(t){
+  if (t) {
     mt.resize({3 * N});
     mt.attr("fill")(0);
   }
   auto mf_ptr = mf.size() ? cast_to_real(mf) : nullptr;
   auto mt_ptr = mt.size() ? cast_to_real(mt) : nullptr;
   myself.hydrodynamicVelocities(f, t, mf_ptr, mt_ptr, prefactor);
-  if(mf_ptr) mf = mf.reshape({N, 3});
-  if(mt_ptr) mt = mt.reshape({N, 3});
+  if (mf_ptr)
+    mf = mf.reshape({N, 3});
+  if (mt_ptr)
+    mt = mt.reshape({N, 3});
   return std::make_pair(mf, mt);
 }
 
