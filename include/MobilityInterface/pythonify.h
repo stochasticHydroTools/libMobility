@@ -274,41 +274,51 @@ auto call_construct(std::string perx, std::string pery, std::string perz) {
       new Solver(createConfiguration(perx, pery, perz)));
 }
 
-#define xMOBILITY_PYTHONIFY(MODULENAME, EXTRACODE, documentation)                            \
-  PYBIND11_MODULE(MODULENAME, m) {                                                           \
-    using real = libmobility::real;                                                          \
-    using Parameters = libmobility::Parameters;                                              \
-    using Configuration = libmobility::Configuration;                                        \
-    auto solver =                                                                            \
-        py::class_<MODULENAME>(m, MOBILITYSTR(MODULENAME), documentation);                   \
-    solver                                                                                   \
-        .def(py::init(&call_construct<MODULENAME>), constructor_docstring,                   \
-             "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)                           \
-        .def("initialize", call_initialize<MODULENAME>, initialize_docstring,                \
-             "temperature"_a, "viscosity"_a, "hydrodynamicRadius"_a,                         \
-             "numberParticles"_a, "needsTorque"_a=false, "tolerance"_a = 1e-4) \
-        .def("setPositions", call_setPositions<MODULENAME>,                                  \
-             "The module will compute the mobility according to this set of "                \
-             "positions.",                                                                   \
-             "positions"_a)                                                                  \
-        .def("Mdot", call_mdot<MODULENAME>, mdot_docstring,                                  \
-             "forces"_a = pyarray(), "torques"_a = pyarray())				     \
-        .def("sqrtMdotW", call_sqrtMdotW<MODULENAME>, sqrtMdotW_docstring,                   \
-             "prefactor"_a = 1.0)                                                            \
-        .def("hydrodynamicVelocities",                                                       \
-             call_hydrodynamicVelocities<MODULENAME>,                                        \
-             hydrodynamicvelocities_docstring, "forces"_a = pyarray_c(),                     \
-	     "torques"_a = pyarray_c(), "prefactor"_a = 1)                                    \
-        .def("clean", &MODULENAME::clean,                                                    \
-             "Frees any memory allocated by the module.")                                    \
-        .def_property_readonly_static(                                                       \
-            "precision", [](py::object) { return MODULENAME::precision; },                   \
-            R"pbdoc(Compilation precision, a string holding either float or double.)pbdoc"); \
-    EXTRACODE                                                                                \
+using real = libmobility::real;
+using Parameters = libmobility::Parameters;
+using Configuration = libmobility::Configuration;
+
+template <typename MODULENAME>
+void define_module_content(
+    py::module &m, const char *documentation,
+    const std::function<void(py::class_<MODULENAME> &)> &extra_code) {
+
+  auto solver =
+      py::class_<MODULENAME>(m, MOBILITYSTR(MODULENAME), documentation);
+
+  solver
+      .def(py::init(&call_construct<MODULENAME>), constructor_docstring,
+           "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)
+      .def("initialize", call_initialize<MODULENAME>, initialize_docstring,
+           "temperature"_a, "viscosity"_a, "hydrodynamicRadius"_a,
+           "numberParticles"_a, "needsTorque"_a = false, "tolerance"_a = 1e-4)
+      .def("setPositions", call_setPositions<MODULENAME>,
+           "The module will compute the mobility according to this set of "
+           "positions.",
+           "positions"_a)
+      .def("Mdot", call_mdot<MODULENAME>, mdot_docstring,
+           "forces"_a = pyarray(), "torques"_a = pyarray())
+      .def("sqrtMdotW", call_sqrtMdotW<MODULENAME>, sqrtMdotW_docstring,
+           "prefactor"_a = 1.0)
+      .def("hydrodynamicVelocities", call_hydrodynamicVelocities<MODULENAME>,
+           hydrodynamicvelocities_docstring, "forces"_a = pyarray_c(),
+           "torques"_a = pyarray_c(), "prefactor"_a = 1)
+      .def("clean", &MODULENAME::clean,
+           "Frees any memory allocated by the module.")
+      .def_property_readonly_static(
+          "precision", [](py::object) { return MODULENAME::precision; },
+          R"pbdoc(Compilation precision, a string holding either float or double.)pbdoc");
+
+  extra_code(solver);
+}
+
+#define MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(MODULENAME, EXTRA, documentation)   \
+  PYBIND11_MODULE(MODULENAME, m) {                                             \
+    define_module_content<MODULENAME>(                                         \
+        m, documentation, [](py::class_<MODULENAME> &solver) { EXTRA });       \
   }
-#define MOBILITY_PYTHONIFY(MODULENAME, documentationPrelude)                   \
-  xMOBILITY_PYTHONIFY(MODULENAME, ;, documentationPrelude)
-#define MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(MODULENAME, EXTRA,                  \
-                                           documentationPrelude)               \
-  xMOBILITY_PYTHONIFY(MODULENAME, EXTRA, documentationPrelude)
+
+#define MOBILITY_PYTHONIFY(MODULENAME, documentation)                          \
+  MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(MODULENAME, {}, documentation)
+
 #endif
