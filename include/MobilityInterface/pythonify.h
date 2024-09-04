@@ -64,6 +64,32 @@ template <class Array> const libmobility::real *cast_to_const_real(Array &arr) {
   return static_cast<const libmobility::real *>(arr.data());
 }
 
+template <class Solver>
+auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
+  int N = myself.getNumberParticles();
+  if (forces.size() < 3 * N and forces.size() > 0) {
+    throw std::runtime_error("The forces array must have size 3*N.");
+  }
+  if (torques.size() < 3 * N and torques.size() > 0) {
+    throw std::runtime_error("The torques array must have size 3*N.");
+  }
+  auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
+  auto t = torques.size() ? cast_to_const_real(torques) : nullptr;
+  auto mf = py::array_t<libmobility::real>();
+  auto mt = py::array_t<libmobility::real>();
+  mf.resize({3 * N});
+  mf.attr("fill")(0);
+  if (t) {
+    if(!myself.getNeedsTorque()){
+      throw std::runtime_error("The was configured without torques. Set needsTorque to true in the constructor if you want to use torques");
+    }
+    mt.resize({3 * N});
+    mt.attr("fill")(0);
+  }
+
+  return std::make_tuple(f, t, mf, mt);
+}
+
 const char *constructor_docstring = R"pbdoc(
 Initialize the module with a given set of periodicity conditions.
 
@@ -143,25 +169,8 @@ array_like
 
 template <class Solver>
 auto call_mdot(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
+  auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
   int N = myself.getNumberParticles();
-  if (forces.size() < 3 * N and forces.size() > 0) {
-    throw std::runtime_error("The forces array must have size 3*N.");
-  }
-  if (torques.size() < 3 * N and torques.size() > 0) {
-    throw std::runtime_error("The torques array must have size 3*N.");
-  }
-  auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
-  auto t = torques.size() ? cast_to_const_real(torques) : nullptr;
-  auto mf = py::array_t<libmobility::real>();
-  auto mt = py::array_t<libmobility::real>();
-  if (f) {
-    mf.resize({3 * N});
-    mf.attr("fill")(0);
-  }
-  if (t) {
-    mt.resize({3 * N});
-    mt.attr("fill")(0);
-  }
   auto mf_ptr = mf.size() ? cast_to_real(mf) : nullptr;
   auto mt_ptr = mt.size() ? cast_to_real(mt) : nullptr;
   myself.Mdot(f, t, mf_ptr, mt_ptr);
@@ -213,30 +222,16 @@ template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
   myself.setPositions(cast_to_const_real(pos));
 }
 
+
 template <class Solver>
 auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,
                                  pyarray_c &torques,
                                  libmobility::real prefactor) {
-  int N = myself.getNumberParticles();
-  if (forces.size() < 3 * N and forces.size() > 0) {
-    throw std::runtime_error("The forces array must have size 3*N.");
-  }
-  if (torques.size() < 3 * N and torques.size() > 0) {
-    throw std::runtime_error("The torques array must have size 3*N.");
-  }
-  auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
-  auto t = torques.size() ? cast_to_const_real(torques) : nullptr;
-  auto mf = py::array_t<libmobility::real>();
-  auto mt = py::array_t<libmobility::real>();
-  mf.resize({3 * N});
-  mf.attr("fill")(0);
-  if (t) {
-    mt.resize({3 * N});
-    mt.attr("fill")(0);
-  }
+  auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
   auto mf_ptr = mf.size() ? cast_to_real(mf) : nullptr;
   auto mt_ptr = mt.size() ? cast_to_real(mt) : nullptr;
   myself.hydrodynamicVelocities(f, t, mf_ptr, mt_ptr, prefactor);
+  int N = myself.getNumberParticles();
   if (mf_ptr)
     mf = mf.reshape({N, 3});
   if (mt_ptr)
@@ -268,7 +263,7 @@ Returns
 array_like
 		The resulting linear displacements. Shape is (N, 3), where N is the number of particles.
 array_like
-		The resulting angular displacements. Shape is (N, 3), where N is the number of particles.
+		The resulting angular displacements. Shape is (N, 3), where N is the number of particles. This array will be empty if the solver was initialized with needsTorque=False.
 )pbdoc";
 
 template <class Solver>
