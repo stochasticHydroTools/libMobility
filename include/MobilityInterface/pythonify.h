@@ -97,7 +97,7 @@ hydrodynamicRadius : float
 		Hydrodynamic radius of the particles.
 numberParticles : int
 		Number of particles in the system.
-needs_torque : bool, optional
+needsTorque : bool, optional
 		Whether the solver needs torques. Default is false.
 tolerance : float, optional
 		Tolerance, used for approximate methods and also for Lanczos (default fluctuation computation). Default is 1e-4.
