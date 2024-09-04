@@ -93,4 +93,9 @@ install(DIRECTORY include/third_party/uammd/src/ DESTINATION ${CMAKE_INSTALL_PRE
 
 enable_testing()
 install(DIRECTORY tests/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/libMobility/tests/ FILES_MATCHING PATTERN "*.py" PATTERN "*.npz")
-add_test(NAME test_mobility COMMAND ${Python3_EXECUTABLE} -m pytest ${CMAKE_INSTALL_PREFIX}/tests)
+# Add a test for each Python file in the tests directory
+file(GLOB TESTS tests/*.py)
+foreach(TEST ${TESTS})
+	get_filename_component(TEST_NAME ${TEST} NAME_WE)
+	add_test(NAME ${TEST_NAME} COMMAND pytest -vs ${TEST})
+endforeach()
