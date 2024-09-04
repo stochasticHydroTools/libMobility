@@ -58,7 +58,7 @@ else()
 endif()
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-find_package(pybind11 CONFIG)
+find_package(pybind11 REQUIRED CONFIG)
 include_directories(${pybind11_INCLUDE_DIRS})
 include_directories(${Python3_INCLUDE_DIRS})
 include_directories(${UAMMD_INCLUDE} ${BLAS_INCLUDE_DIRS} ${LAPACKE_INCLUDE_DIRS})
