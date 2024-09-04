@@ -89,7 +89,8 @@ def test_mobility_matrix_angular(
     ), f"Mobility matrix is not symmetric within {atol}, max diff: {np.max(np.abs(sym))}"
 
 
-def test_self_mobility_selfmobility():
+@pytest.mark.parametrize("needsTorque", [True, False])
+def test_self_mobility_selfmobility(needsTorque):
     # linear mobility should be just 1/(6\pi\eta R) for a single particle.
     # angular mobility should be just 1/(8\pi\eta R^3) for a single particle.
     precision = np.float32 if SelfMobility.precision == "float" else np.float64
@@ -103,16 +104,22 @@ def test_self_mobility_selfmobility():
         viscosity=viscosity,
         hydrodynamicRadius=hydrodynamicRadius,
         numberParticles=1,
+        needsTorque=needsTorque,
     )
     positions = np.zeros((1, 3), dtype=precision)
     solver.setPositions(positions)
     forces = np.ones(3, dtype=precision)
-    torques = np.ones(3, dtype=precision)
-    linear, angular = solver.Mdot(forces, torques)
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
-    t0 = 1.0 / (8 * np.pi * viscosity * hydrodynamicRadius**3)
+
+    if needsTorque:
+        torques = np.ones(3, dtype=precision)
+        linear, angular = solver.Mdot(forces, torques)
+        t0 = 1.0 / (8 * np.pi * viscosity * hydrodynamicRadius**3)
+        assert np.allclose(angular, t0 * torques, rtol=0, atol=1e-7)
+    else:
+        linear, _ = solver.Mdot(forces)
     assert np.allclose(linear, m0 * forces, rtol=0, atol=1e-7)
-    assert np.allclose(angular, t0 * torques, rtol=0, atol=1e-7)
+
 
 @pytest.mark.parametrize("algorithm", ["naive", "block", "fast", "advise"])
 def test_self_mobility_linear_nbody(algorithm):
@@ -137,6 +144,7 @@ def test_self_mobility_linear_nbody(algorithm):
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
     assert np.allclose(result, m0 * forces, rtol=1e-7, atol=1e-7)
 
+
 @pytest.mark.parametrize("algorithm", ["naive", "block", "fast", "advise"])
 def test_self_mobility_angular_nbody(algorithm):
     # Mobility should be just 1/(6\pi\eta R)
@@ -152,12 +160,12 @@ def test_self_mobility_angular_nbody(algorithm):
         viscosity=viscosity,
         hydrodynamicRadius=hydrodynamicRadius,
         numberParticles=1,
-        needsTorque=True
+        needsTorque=True,
     )
     positions = np.zeros((1, 3), dtype=precision)
     solver.setPositions(positions)
     forces = np.ones(3, dtype=precision)
-    torques = 2*np.ones(3, dtype=precision)
+    torques = 2 * np.ones(3, dtype=precision)
     linear, angular = solver.Mdot(forces, torques)
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
     t0 = 1.0 / (8 * np.pi * viscosity * hydrodynamicRadius**3)
@@ -170,6 +178,7 @@ def test_self_mobility_angular_nbody(algorithm):
     t0 = 1.0 / (8 * np.pi * viscosity * hydrodynamicRadius**3)
     assert np.allclose(linear, forces, rtol=0, atol=1e-7)
     assert np.allclose(angular, t0 * torques, rtol=0, atol=1e-7)
+
 
 @pytest.mark.parametrize("psi", [0.0, 0.5, 1.0])
 def test_self_mobility_linear_pse_cubic_box(psi):
@@ -206,6 +215,7 @@ def test_self_mobility_linear_pse_cubic_box(psi):
     )
     assert np.allclose(result, m0 * forces, rtol=0, atol=1e-6)
 
+
 @pytest.mark.parametrize("algorithm", ["naive", "block", "fast", "advise"])
 def test_pair_mobility_angular_nbody(algorithm):
     Solver = NBody
@@ -216,10 +226,10 @@ def test_pair_mobility_angular_nbody(algorithm):
 
     ref_file = "./ref/pair_mobility_nbody_freespace.npz"
     ref = np.load(ref_file)
-    refM = np.array(ref['M']).astype(precision)
-    r_vecs = np.array(ref['r_vecs']).astype(precision)
-    a = np.array(ref['a']).astype(precision).flatten()
-    eta = np.array(ref['eta']).astype(precision).flatten()
+    refM = np.array(ref["M"]).astype(precision)
+    r_vecs = np.array(ref["r_vecs"]).astype(precision)
+    a = np.array(ref["a"]).astype(precision).flatten()
+    eta = np.array(ref["eta"]).astype(precision).flatten()
     N = len(r_vecs)
 
     for i in range(N):
@@ -230,7 +240,7 @@ def test_pair_mobility_angular_nbody(algorithm):
             viscosity=viscosity,
             hydrodynamicRadius=hydrodynamicRadius,
             numberParticles=2,
-            needsTorque=True
+            needsTorque=True,
         )
         positions = r_vecs[i]
         solver.setPositions(positions)
