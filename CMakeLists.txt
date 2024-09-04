@@ -89,3 +89,8 @@ ENDIF()
 install(DIRECTORY include/MobilityInterface DESTINATION ${CMAKE_INSTALL_PREFIX}/include/)
 install(DIRECTORY include/third_party/LanczosAlgorithm/include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/MobilityInterface/)
 install(DIRECTORY include/third_party/uammd/src/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/uammd/src)
+
+
+enable_testing()
+install(DIRECTORY tests/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/libMobility/tests/ FILES_MATCHING PATTERN "*.py" PATTERN "*.npz")
+add_test(NAME test_mobility COMMAND ${Python3_EXECUTABLE} -m pytest ${CMAKE_INSTALL_PREFIX}/tests)
