@@ -184,14 +184,14 @@ Parameters
 forces : array_like, optional
 		Forces acting on the particles. Must have shape (N, 3), where N is the number of particles.
 torques : array_like, optional
-		Torques acting on the particles. Must have shape (N, 3), where N is the number of particles.
+		Torques acting on the particles. Must have shape (N, 3), where N is the number of particles. The solver must have been initialized with needsTorque=True.
 
 Returns
 -------
 array_like
 		The linear displacements. The result will have the same format as the forces array.
 array_like
-		The angular displacements. The result will have the same format as the torques array.
+		The angular displacements. The result will have the same format as the torques array. This array will be empty if the solver was initialized with needsTorque=False.
 
 )pbdoc";
 
@@ -259,7 +259,7 @@ Parameters
 forces : array_like, optional
 		Forces acting on the particles.
 torques : array_like, optional
-		Torques acting on the particles.
+		Torques acting on the particles. The solver must have been initialized with needsTorque=True.
 prefactor : float, optional
 		Prefactor to multiply the result by. Default is 1.0.
 
