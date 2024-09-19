@@ -9,9 +9,12 @@ sc- slit channel
 -------------- Files --------------
 SELF:
 self_mobility_bw_ref: from the DPStokes repository. Periodized NBody using kernels with wall corrections in double precision.
-self_mobility_bw_ref_noimg.mat: from the DPStokes repository. NBody kernels with wall corrections in double precision, but without using periodized images.
+self_mobility_bw_ref_noimg: from the DPStokes repository. NBody kernels with wall corrections in double precision, but without using periodized images.
 self_mobility_bw_w4, self_mobility_sc_w4: generated from this repository in double precision with default parameters. 
+self_mobility_*_torques: generated from this repository in double precision with default parameters.
 
 PAIR:
 pair_mobility_bw_w4, pair_mobility_sc_w4: generated from this repository in double precision with default parameters. 
 pair_mobility_bw_ref_noimg: from the DPStokes repository. NBody kernels with wall corrections in double precision, but without using periodized images.
+pair_mobility_nbody_freespace: no-wall RPY pair mobility. Generated using mobility matrix numba code from the RigidMultiblob repository.
+pair_mobility_*_torques: generated from this repository in double precision with default parameters.

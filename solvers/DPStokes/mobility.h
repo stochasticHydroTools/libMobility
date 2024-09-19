@@ -26,8 +26,6 @@ class DPStokes: public libmobility::Mobility{
   DPStokesParameters dppar;
   real temperature;
   real lanczosTolerance;
-  std::uint64_t lanczosSeed;
-  std::shared_ptr<LanczosStochasticVelocities> lanczos;
   std::string wallmode;
 public:
 
@@ -60,14 +58,22 @@ public:
     this->dppar.mode = this->wallmode;
     this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
 
-    // sets up kernel parameters & grid based on optimal parameters from [1]
-    this->dppar.w = 4;
-    this->dppar.beta = 1.785*this->dppar.w;
-    real h = this->dppar.hydrodynamicRadius/1.205;
-    this->dppar.alpha = this->dppar.w/2.0;
+    real h;
+    if(ipar.needsTorque){
+      this->dppar.w = 6;
+      this->dppar.w_d = 6;
+      this->dppar.beta = 1.327*this->dppar.w;
+      this->dppar.beta_d = 2.217*this->dppar.w;
+      h = this->dppar.hydrodynamicRadius/1.731;
+      this->dppar.alpha_d = this->dppar.w_d*0.5;
+    } else{
+      this->dppar.w = 4;
+      this->dppar.beta = 1.785*this->dppar.w;
+      h = this->dppar.hydrodynamicRadius/1.205;
+    }
+    this->dppar.alpha = this->dppar.w*0.5;
     this->dppar.tolerance = 1e-6;
 
-    // although this h is optimal for grid invariance, we need to adjust either L or h to get an integer number of points
     int N = floor(this->dppar.Lx/h);
     N += N % 2;
 
@@ -109,8 +115,8 @@ public:
     dpstokes->setPositions(ipositions);
   }
 
-  void Mdot(const real* forces, real* result) override{
-    dpstokes->Mdot(forces, nullptr, result, nullptr);
+  void Mdot(const real* forces, const real* torques, real* linear, real* angular) override{
+    dpstokes->Mdot(forces, torques, linear, angular);
   }
 
   void clean() override{

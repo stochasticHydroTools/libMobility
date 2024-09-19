@@ -9,7 +9,7 @@ from libMobility import SelfMobility, PSE, NBody, DPStokes
 from utils import compute_M, sane_parameters, generate_positions_in_box
 
 
-def fluctuation_dissipation_KS(M, fluctuation_method):
+def fluctuation_dissipation_KS(M, fluctuation_method, needsTorques):
     R"""
     Test the fluctuation-dissipation theorem using the Kolmogorov-Smirnov test.
 
@@ -20,7 +20,7 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
     fluctuation_method : function
         Function that returns :math:`\sqrt{\boldsymbol{\mathcal{M}}} \cdot \xi`, where :math:`\xi` is a random vector
     """
-    if M.shape[0] != M.shape[1] or not np.allclose(M, M.T, atol = 5e-5, rtol = 1e-7):
+    if M.shape[0] != M.shape[1] or not np.allclose(M, M.T, rtol=0, atol=5e-5):
         raise ValueError("Matrix M must be square and symmetric.")
     Sigma, Q = eig(M)
     ind = np.argsort(Sigma)
@@ -36,9 +36,16 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
     Ns = int(round(2 * (norm.ppf(mu_alpha) / mu_a) ** 2))
     ScaledNoise = np.full((N, Ns), np.nan)
     sing_check = Sigma < 1e-6
-    ScaledNoise = (
-        MInvhalf @ np.array([fluctuation_method() for _ in range(Ns)]).T
-    ).squeeze()
+    if needsTorques:
+        # TODO this won't work yet for torques
+        # will also probably need to modify fluctuation_method's return
+        ScaledNoise = (
+            MInvhalf @ np.array([fluctuation_method() for _ in range(Ns)]).T
+        ).squeeze()
+    else:
+        ScaledNoise = (
+            MInvhalf @ np.array([fluctuation_method() for _ in range(Ns)]).T
+        ).squeeze()
     for m in range(N):
         if sing_check[m]:
             logging.info(f"Component {m}: Skipped due to zero singular value")
@@ -63,9 +70,10 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
 )
 @pytest.mark.parametrize("hydrodynamicRadius", [0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1,2,10])
-def test_fluctuation_dissipation(
+def test_fluctuation_dissipation_linear_displacements(
     Solver, periodicity, hydrodynamicRadius, numberParticles
 ):
+    needsTorques = False
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
     parameters = sane_parameters[Solver.__name__]
@@ -79,9 +87,9 @@ def test_fluctuation_dissipation(
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
     solver.setPositions(positions)
-    M = compute_M(solver, numberParticles)
+    M = compute_M(solver, numberParticles, needsTorque=needsTorques)
 
     def fluctuation_method():
-        return solver.sqrtMdotW(prefactor=1.0).flatten()
+        return solver.sqrtMdotW(prefactor=1.0)[0].flatten()
 
-    fluctuation_dissipation_KS(M, fluctuation_method)
+    fluctuation_dissipation_KS(M, fluctuation_method, needsTorques)

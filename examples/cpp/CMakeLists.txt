@@ -9,6 +9,8 @@ set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
 set(UAMMD_INCLUDE include/third_party/uammd/src include/third_party/uammd/src/third_party)
+# enable the line below if libmobility is compiled in double
+# add_compile_definitions(PUBLIC DOUBLE_PRECISION)
 set(BLA_STATIC OFF)
 set(BLA_VENDOR Intel10_64lp)
 find_package(BLAS)

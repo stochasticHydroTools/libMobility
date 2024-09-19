@@ -22,6 +22,7 @@ namespace libmobility{
     real tolerance = 1e-4; //Tolerance for Lanczos fluctuations
     int numberParticles = -1;
     std::uint64_t seed = 0;
+    bool needsTorque = false;
   };
 
   //A list of parameters that cannot be changed by reinitializing a solver and/or are properties of the solver.
@@ -41,7 +42,9 @@ namespace libmobility{
     std::uint64_t lanczosSeed;
     real lanczosTolerance;
     std::shared_ptr<LanczosStochasticVelocities> lanczos;
+    std::vector<real> lanczosOutput;
     real temperature;
+    bool needsTorque = false;
   protected:
     Mobility(){};
   public:
@@ -81,45 +84,64 @@ namespace libmobility{
       this->lanczosSeed = par.seed;
       this->lanczosTolerance = par.tolerance;
       this->temperature = par.temperature;
+      this->needsTorque = par.needsTorque;
     }
 
     //Set the positions to construct the mobility operator from
     virtual void setPositions(const real* positions) = 0;
 
-    //Apply the mobility operator (M) to a series of forces (F) returns M*F
-    virtual void Mdot(const real* forces, real* result) = 0;
+    //Apply the grand mobility operator (\Omega) to a series of forces (F) and torques (T) to get the resulting linear (V) and angular (W) velocities
+    virtual void Mdot(const real* forces, const real* torques, real* linear, real* angular) = 0;
 
-    //Compute the stochastic displacements as result=prefactor*sqrt(M)*dW. Where dW is a vector of Gaussian random numbers
+    //Compute the stochastic displacements as result=prefactor*sqrt(\Omega)*dW. Where dW is a vector of Gaussian random numbers
     //If the solver does not provide a stochastic displacement implementation, the Lanczos algorithm will be used automatically
-    virtual void sqrtMdotW(real* result, real prefactor = 1){
+    virtual void sqrtMdotW(real* linear, real* angular, real prefactor = 1){
       if(this->temperature == 0) return;
+      if(prefactor == 0) return;
       if(not this->initialized)
 	throw std::runtime_error("[libMobility] You must initialize the base class in order to use the default stochastic displacement computation");
       if(not lanczos){
 	if(this->lanczosSeed==0){//If a seed is not provided, get one from random device
 	  this->lanczosSeed = std::random_device()();
 	}
-	lanczos = std::make_shared<LanczosStochasticVelocities>(this->numberParticles,
+	int numberElements = this->needsTorque ? (2*this->numberParticles) : this->numberParticles;
+	lanczos = std::make_shared<LanczosStochasticVelocities>(numberElements,
 								this->lanczosTolerance, this->lanczosSeed);
+	lanczosOutput.resize(3*numberElements);
       }
-      lanczos->sqrtMdotW([this](const real*f, real* mv){Mdot(f, mv);}, result, prefactor);
+      if(this->needsTorque and not angular)
+	throw std::runtime_error("[libMobility] This solver requires angular velocities when configured with torques");
+      std::fill(lanczosOutput.begin(), lanczosOutput.end(), 0);
+      lanczos->sqrtMdotW([this](const real*f, real* mv){
+	const real* t = this->needsTorque ? (f+3*this->numberParticles) : nullptr;
+        real* mt = this->needsTorque ? (mv+3*this->numberParticles) : nullptr;
+	Mdot(f, t, mv, mt);
+      }, lanczosOutput.data(), prefactor);
+      std::copy(lanczosOutput.begin(), lanczosOutput.begin()+3*this->numberParticles, linear);
+      if(this->needsTorque)
+	std::copy(lanczosOutput.begin()+3*this->numberParticles, lanczosOutput.end(), angular);
     }
 
     //Equivalent to calling Mdot and then stochasticDisplacements, can be faster in some solvers
-    virtual void hydrodynamicVelocities(const real* forces, real* result, real prefactor = 1){
-      if(forces){
-	Mdot(forces, result);
+    virtual void hydrodynamicVelocities(const real* forces, const real* torques, real* linear, real* angular, real prefactor = 1){
+      if(forces or torques){
+	Mdot(forces, torques, linear, angular);
       }
-      sqrtMdotW(result, prefactor);
+      sqrtMdotW(linear, angular, prefactor);
     }
 
     int getNumberParticles() const{
       return this->numberParticles;
     }
 
+    bool getNeedsTorque() const{
+      return this->needsTorque;
+    }
+
     //Clean any memory allocated by the solver
     virtual void clean(){
       lanczos.reset();
+      lanczosOutput.clear();
     }
   };
 }

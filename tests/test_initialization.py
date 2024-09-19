@@ -1,6 +1,7 @@
 import pytest
 
 from libMobility import *
+from utils import sane_parameters
 
 # List of classes inside libMobility
 
@@ -20,6 +21,20 @@ solver_list = [PSE, NBody, DPStokes, SelfMobility]
 def test_periodic_initialization(Solver, periodicity):
     solver = Solver(*periodicity)
 
+def test_pse_torques_unsupported():
+    hydrodynamicRadius = 1.0
+    solver = PSE("periodic", "periodic", "periodic")
+    parameters = sane_parameters[PSE.__name__]
+    solver.setParameters(**parameters)
+    numberParticles = 1
+    with pytest.raises(RuntimeError):
+        solver.initialize(
+            temperature=1.0,
+            viscosity=1.0,
+            hydrodynamicRadius=hydrodynamicRadius,
+            numberParticles=numberParticles,
+            needsTorque=True
+        )
 
 @pytest.mark.parametrize("Solver", solver_list)
 def test_invalid_throws(Solver):

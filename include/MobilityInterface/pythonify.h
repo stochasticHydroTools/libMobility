@@ -64,6 +64,32 @@ template <class Array> const libmobility::real *cast_to_const_real(Array &arr) {
   return static_cast<const libmobility::real *>(arr.data());
 }
 
+template <class Solver>
+auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
+  int N = myself.getNumberParticles();
+  if (forces.size() < 3 * N and forces.size() > 0) {
+    throw std::runtime_error("The forces array must have size 3*N.");
+  }
+  if (torques.size() < 3 * N and torques.size() > 0) {
+    throw std::runtime_error("The torques array must have size 3*N.");
+  }
+  auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
+  auto t = torques.size() ? cast_to_const_real(torques) : nullptr;
+  auto mf = py::array_t<libmobility::real>();
+  auto mt = py::array_t<libmobility::real>();
+  mf.resize({3 * N});
+  mf.attr("fill")(0);
+  if (t) {
+    if(!myself.getNeedsTorque()){
+      throw std::runtime_error("The was configured without torques. Set needsTorque to true in the constructor if you want to use torques");
+    }
+    mt.resize({3 * N});
+    mt.attr("fill")(0);
+  }
+
+  return std::make_tuple(f, t, mf, mt);
+}
+
 const char *constructor_docstring = R"pbdoc(
 Initialize the module with a given set of periodicity conditions.
 
@@ -97,20 +123,31 @@ hydrodynamicRadius : float
 		Hydrodynamic radius of the particles.
 numberParticles : int
 		Number of particles in the system.
+needsTorque : bool, optional
+		Whether the solver needs torques. Default is false.
 tolerance : float, optional
 		Tolerance, used for approximate methods and also for Lanczos (default fluctuation computation). Default is 1e-4.
 )pbdoc";
 
 template <class Solver>
 auto call_sqrtMdotW(Solver &solver, libmobility::real prefactor) {
-  auto result =
-      py::array_t<libmobility::real>({solver.getNumberParticles() * 3});
-  solver.sqrtMdotW(cast_to_real(result), prefactor);
-  return result.reshape({solver.getNumberParticles(), 3});
+  int N = solver.getNumberParticles();
+  auto linear = py::array_t<libmobility::real>({N * 3});
+  auto angular = py::array_t<libmobility::real>();
+
+  if (solver.getNeedsTorque()) {
+    angular.resize({3 * N});
+    angular.attr("fill")(0);
+    solver.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
+    angular = angular.reshape({N, 3});
+  } else {
+    solver.sqrtMdotW(cast_to_real(linear), nullptr, prefactor);
+  }
+  return std::make_pair(linear.reshape({N, 3}), angular);
 }
 
 const char *sqrtMdotW_docstring = R"pbdoc(
-Computes the stochastic contribution, :math:`\text{prefactor}\sqrt{2T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}`, where :math:`\boldsymbol{\mathcal{M}}` is the mobility matrix and :math:`d\boldsymbol{W}` is a Wiener process.
+Computes the stochastic contribution, :math:`\text{prefactor}\sqrt{2T\boldsymbol{\mathcal{\Omega}}}d\boldsymbol{W}`, where :math:`\boldsymbol{\mathcal{\Omega}}` is the grand mobility matrix and :math:`d\boldsymbol{W}` is a Wiener process.
 
 It is required that :py:mod:`setPositions` has been called before calling this function.
 
@@ -123,48 +160,61 @@ prefactor : float, optional
 Returns
 -------
 array_like
-		The resulting fluctuations. Shape is (N, 3), where N is the number of particles.
+		The resulting linear fluctuations. Shape is (N, 3), where N is the number of particles.
+array_like
+		The resulting angular fluctuations. Shape is (N, 3), where N is the number of particles.
+
 
 )pbdoc";
 
-template <class Solver> auto call_mdot(Solver &myself, pyarray_c &forces) {
+template <class Solver>
+auto call_mdot(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
+  auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
   int N = myself.getNumberParticles();
-  if (forces.size() < 3 * N and forces.size() > 0) {
-    throw std::runtime_error("The forces array must have size 3*N.");
-  }
-  auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
-  auto result =
-      py::array_t<libmobility::real>(py::array::ShapeContainer({3 * N}));
-  result.attr("fill")(0);
-  myself.Mdot(f, cast_to_real(result));
-  return result.reshape({N, 3});
+  auto mf_ptr = mf.size() ? cast_to_real(mf) : nullptr;
+  auto mt_ptr = mt.size() ? cast_to_real(mt) : nullptr;
+  myself.Mdot(f, t, mf_ptr, mt_ptr);
+  if (mf_ptr)
+    mf = mf.reshape({N, 3});
+  if (mt_ptr)
+    mt = mt.reshape({N, 3});
+  return std::make_pair(mf, mt);
 }
 
 const char *mdot_docstring = R"pbdoc(
-Computes the product of the Mobility matrix with a group of forces, :math:`\boldsymbol{\mathcal{M}}\boldsymbol{F}`.
+Computes the product of the Mobility matrix with a group of forces and/or torques, :math:`\boldsymbol{\mathcal{\Omega}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{\Tau}\end{bmatrix}`.
 
 It is required that :py:mod:`setPositions` has been called before calling this function.
 
+At least one of the forces or torques must be provided.
+
 Parameters
 ----------
-forces : array_like,
+forces : array_like, optional
 		Forces acting on the particles. Must have shape (N, 3), where N is the number of particles.
+torques : array_like, optional
+		Torques acting on the particles. Must have shape (N, 3), where N is the number of particles. The solver must have been initialized with needsTorque=True.
 
 Returns
 -------
 array_like
-		The result of the product. The result will have the same format as the forces array.
+		The linear displacements. The result will have the same format as the forces array.
+array_like
+		The angular displacements. The result will have the same format as the torques array. This array will be empty if the solver was initialized with needsTorque=False.
+
 )pbdoc";
 
 template <class Solver>
 void call_initialize(Solver &myself, libmobility::real T, libmobility::real eta,
-                     libmobility::real a, int N, libmobility::real tol) {
+                     libmobility::real a, int N, bool needsTorque,
+                     libmobility::real tol) {
   libmobility::Parameters par;
   par.temperature = T;
   par.viscosity = eta;
   par.hydrodynamicRadius = {a};
   par.tolerance = tol;
   par.numberParticles = N;
+  par.needsTorque = needsTorque;
   myself.initialize(par);
 }
 
@@ -172,42 +222,48 @@ template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
   myself.setPositions(cast_to_const_real(pos));
 }
 
+
 template <class Solver>
 auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,
+                                 pyarray_c &torques,
                                  libmobility::real prefactor) {
+  auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
+  auto mf_ptr = mf.size() ? cast_to_real(mf) : nullptr;
+  auto mt_ptr = mt.size() ? cast_to_real(mt) : nullptr;
+  myself.hydrodynamicVelocities(f, t, mf_ptr, mt_ptr, prefactor);
   int N = myself.getNumberParticles();
-  if (forces.size() < 3 * N and forces.size() > 0) {
-    throw std::runtime_error("The forces array must have size 3*N.");
-  }
-  auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
-  auto result = py::array_t<libmobility::real>({3 * N});
-  result.attr("fill")(0);
-  myself.hydrodynamicVelocities(f, cast_to_real(result), prefactor);
-  return result.reshape({N, 3});
+  if (mf_ptr)
+    mf = mf.reshape({N, 3});
+  if (mt_ptr)
+    mt = mt.reshape({N, 3});
+  return std::make_pair(mf, mt);
 }
 
 const char *hydrodynamicvelocities_docstring = R"pbdoc(
 Computes the hydrodynamic (deterministic and stochastic) velocities.
 
 .. math::
-        \boldsymbol{\mathcal{M}}\boldsymbol{F} + \text{prefactor}\sqrt{2T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}
+        \boldsymbol{\mathcal{\Omega}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{\Tau}\end{bmatrix} + \text{prefactor}\sqrt{2T\boldsymbol{\mathcal{\Omega}}}d\boldsymbol{W}
 
-If the forces are ommited only the stochastic part is computed.
-If the temperature is zero the stochastic part is ommited.
+If the forces are omitted only the stochastic part is computed.
+If the temperature is zero the stochastic part is omitted.
 Calling this function is equivalent to calling :py:mod:`Mdot` and :py:mod:`sqrtMdotW` in sequence, but in some solvers this can be done more efficiently.
 
 Parameters
 ----------
 forces : array_like, optional
 		Forces acting on the particles.
-
+torques : array_like, optional
+		Torques acting on the particles. The solver must have been initialized with needsTorque=True.
 prefactor : float, optional
 		Prefactor to multiply the result by. Default is 1.0.
 
 Returns
 -------
 array_like
-		The resulting velocities. Shape is (N, 3), where N is the number of particles.
+		The resulting linear displacements. Shape is (N, 3), where N is the number of particles.
+array_like
+		The resulting angular displacements. Shape is (N, 3), where N is the number of particles. This array will be empty if the solver was initialized with needsTorque=False.
 )pbdoc";
 
 template <class Solver>
@@ -216,41 +272,52 @@ auto call_construct(std::string perx, std::string pery, std::string perz) {
       new Solver(createConfiguration(perx, pery, perz)));
 }
 
-#define xMOBILITY_PYTHONIFY(MODULENAME, EXTRACODE, documentation)                            \
-  PYBIND11_MODULE(MODULENAME, m) {                                                           \
-    using real = libmobility::real;                                                          \
-    using Parameters = libmobility::Parameters;                                              \
-    using Configuration = libmobility::Configuration;                                        \
-    auto solver =                                                                            \
-        py::class_<MODULENAME>(m, MOBILITYSTR(MODULENAME), documentation);                   \
-    solver                                                                                   \
-        .def(py::init(&call_construct<MODULENAME>), constructor_docstring,                   \
-             "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)                           \
-        .def("initialize", call_initialize<MODULENAME>, initialize_docstring,                \
-             "temperature"_a, "viscosity"_a, "hydrodynamicRadius"_a,                         \
-             "numberParticles"_a, "tolerance"_a = 1e-4)                                      \
-        .def("setPositions", call_setPositions<MODULENAME>,                                  \
-             "The module will compute the mobility according to this set of "                \
-             "positions.",                                                                   \
-             "positions"_a)                                                                  \
-        .def("Mdot", call_mdot<MODULENAME>, mdot_docstring,                                  \
-             "forces"_a = pyarray())                                                         \
-        .def("sqrtMdotW", call_sqrtMdotW<MODULENAME>, sqrtMdotW_docstring,                   \
-             "prefactor"_a = 1.0)                                                            \
-        .def("hydrodynamicVelocities",                                                       \
-             call_hydrodynamicVelocities<MODULENAME>,                                        \
-             hydrodynamicvelocities_docstring, "forces"_a = pyarray_c(),                     \
-             "prefactor"_a = 1)                                                              \
-        .def("clean", &MODULENAME::clean,                                                    \
-             "Frees any memory allocated by the module.")                                    \
-        .def_property_readonly_static(                                                       \
-            "precision", [](py::object) { return MODULENAME::precision; },                   \
-            R"pbdoc(Compilation precision, a string holding either float or double.)pbdoc"); \
-    EXTRACODE                                                                                \
+using real = libmobility::real;
+using Parameters = libmobility::Parameters;
+using Configuration = libmobility::Configuration;
+
+template <typename MODULENAME>
+auto define_module_content(
+    py::module &m, const char *name, const char *documentation,
+    const std::function<void(py::class_<MODULENAME> &)> &extra_code) {
+
+  auto solver = py::class_<MODULENAME>(m, name, documentation);
+
+  solver
+      .def(py::init(&call_construct<MODULENAME>), constructor_docstring,
+           "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)
+      .def("initialize", call_initialize<MODULENAME>, initialize_docstring,
+           "temperature"_a, "viscosity"_a, "hydrodynamicRadius"_a,
+           "numberParticles"_a, "needsTorque"_a = false, "tolerance"_a = 1e-4)
+      .def("setPositions", call_setPositions<MODULENAME>,
+           "The module will compute the mobility according to this set of "
+           "positions.",
+           "positions"_a)
+      .def("Mdot", call_mdot<MODULENAME>, mdot_docstring,
+           "forces"_a = pyarray(), "torques"_a = pyarray())
+      .def("sqrtMdotW", call_sqrtMdotW<MODULENAME>, sqrtMdotW_docstring,
+           "prefactor"_a = 1.0)
+      .def("hydrodynamicVelocities", call_hydrodynamicVelocities<MODULENAME>,
+           hydrodynamicvelocities_docstring, "forces"_a = pyarray_c(),
+           "torques"_a = pyarray_c(), "prefactor"_a = 1)
+      .def("clean", &MODULENAME::clean,
+           "Frees any memory allocated by the module.")
+      .def_property_readonly_static(
+          "precision", [](py::object) { return MODULENAME::precision; },
+          R"pbdoc(Compilation precision, a string holding either float or double.)pbdoc");
+
+  extra_code(solver);
+  return solver;
+}
+
+#define MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(MODULENAME, EXTRA, documentation)   \
+  PYBIND11_MODULE(MODULENAME, m) {                                             \
+    auto solver = define_module_content<MODULENAME>(                           \
+        m, MOBILITYSTR(MODULENAME), documentation,                             \
+        [](py::class_<MODULENAME> &solver) { EXTRA });                         \
   }
-#define MOBILITY_PYTHONIFY(MODULENAME, documentationPrelude)                   \
-  xMOBILITY_PYTHONIFY(MODULENAME, ;, documentationPrelude)
-#define MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(MODULENAME, EXTRA,                  \
-                                           documentationPrelude)               \
-  xMOBILITY_PYTHONIFY(MODULENAME, EXTRA, documentationPrelude)
+
+#define MOBILITY_PYTHONIFY(MODULENAME, documentation)                          \
+  MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(MODULENAME, {}, documentation)
+
 #endif
