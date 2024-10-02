@@ -1,21 +1,20 @@
-version: "2"
+# .readthedocs.yaml
+# Read the Docs configuration file
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
-submodules:
-  include: all
-  recursive: true
+# Required
+version: 2
 
 build:
   os: "ubuntu-22.04"
   tools:
      python: "mambaforge-22.9"
-  jobs:
-     post_create_environment:
-       - pip install -r docs/requirements.txt
-       - cmake -DCMAKE_INSTALL_PREFIX=$(which pip | rev | cut -d/ -f3- | rev) . && make -j4  all install
-
+  commands:
+    - mkdir build
+    - mamba env create --file environment.yml
+    - cd build && mamba run -n libmobility cmake .. && mamba run -n libmobility make -j4 all    
+    - mkdir -p $READTHEDOCS_OUTPUT/
+    - mv ./build/docs/sphinx/ $READTHEDOCS_OUTPUT/html
+    
 conda:
   environment: environment.yml
-
-    
-sphinx:
-  configuration: docs/source/conf.py

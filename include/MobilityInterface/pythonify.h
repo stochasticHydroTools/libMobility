@@ -182,7 +182,7 @@ auto call_mdot(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
 }
 
 const char *mdot_docstring = R"pbdoc(
-Computes the product of the Mobility matrix with a group of forces and/or torques, :math:`\boldsymbol{\mathcal{\Omega}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{\Tau}\end{bmatrix}`.
+Computes the product of the Mobility matrix with a group of forces and/or torques, :math:`\boldsymbol{\mathcal{\Omega}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{T}\end{bmatrix}`.
 
 It is required that :py:mod:`setPositions` has been called before calling this function.
 
@@ -243,7 +243,7 @@ const char *hydrodynamicvelocities_docstring = R"pbdoc(
 Computes the hydrodynamic (deterministic and stochastic) velocities.
 
 .. math::
-        \boldsymbol{\mathcal{\Omega}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{\Tau}\end{bmatrix} + \text{prefactor}\sqrt{2T\boldsymbol{\mathcal{\Omega}}}d\boldsymbol{W}
+        \boldsymbol{\mathcal{\Omega}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{T}\end{bmatrix} + \text{prefactor}\sqrt{2T\boldsymbol{\mathcal{\Omega}}}d\boldsymbol{W}
 
 If the forces are omitted only the stochastic part is computed.
 If the temperature is zero the stochastic part is omitted.

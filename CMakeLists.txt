@@ -74,6 +74,7 @@ if(NOT Python3_SOABI)
 endif()
 add_subdirectory(solvers)
 
+add_subdirectory(docs)
 
 IF (CMAKE_BUILD_TYPE MATCHES "Debug")
   if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")

@@ -6,18 +6,27 @@ libMobility offers a set of solvers to compute the hydrodynamic displacements of
 In particular, libMobility solvers can compute the different elements on the right hand side of the following stochastic differential equation:
 
 .. math::
-   
-   d\boldsymbol{X} = \boldsymbol{\mathcal{M}}\boldsymbol{F}dt + \text{prefactor}\sqrt{2 k_B T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}
+
+   \begin{bmatrix}\boldsymbol{dX}\\\boldsymbol{d\tau}\end{bmatrix} = \boldsymbol{\mathcal{\Omega}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{T}\end{bmatrix}dt + \text{prefactor}\sqrt{2 k_B T \boldsymbol{\mathcal{\Omega}}}d\boldsymbol{W}
+
+Where:
+
+- :math:`d\boldsymbol{X}` are the linear displacements
+- :math:`\boldsymbol{d\tau}` are the angular displacements
+- :math:`\boldsymbol{\mathcal{\Omega}}` is the grand mobility tensor
+- :math:`\boldsymbol{F}` are the forces
+- :math:`\boldsymbol{T}` are the torques
+- :math:`\text{prefactor}` is a user-provided prefactor
+- :math:`d\boldsymbol{W}` is a collection of i.i.d Weiner processes
+- :math:`T` is the temperature
 
 .. hint:: See the :ref:`solvers` section for a list of available solvers.
 
-Where :math:`d\boldsymbol{X}` are the linear displacements, prefactor is a user-provided prefactor and :math:`d\boldsymbol{W}` is a collection of i.i.d Weinner processes and T is the temperature. Finally :math:`\boldsymbol{M}` represents the mobility tensor. 
-
-.. warning:: libMobility does *not* include the thermal drift :math:`k_B T \nabla_{\boldsymbol{X}} \cdot M` and the user must supply their own implementation in order to maintain detailed balance. The thermal drift can be approximated in libMobility using Random Finite Differences (RFD)  
+.. warning:: lib\Omegaobility does *not* include the thermal drift :math:`k_B T \nabla_{\boldsymbol{X}} \cdot \Omega` and the user must supply their own implementation in order to maintain detailed balance. The thermal drift can be approximated in lib\Omegaobility using Random Finite Differences (RFD)  
 
 .. math::
 
-   \nabla_{\boldsymbol{X}} \cdot \mathcal{M} = \lim_{\delta \to 0} \frac{1}{\delta} \left\langle \mathcal{M}\left(\boldsymbol{X} + \frac{\delta}{2} \boldsymbol{W}  \right) - \mathcal{M}\left(\boldsymbol{X} - \frac{\delta}{2} \boldsymbol{W}  \right) \right\rangle_{\boldsymbol{W}}, \hspace{1cm} \boldsymbol{W} \sim \mathcal{N}\left(0,1 \right)
+   \nabla_{\boldsymbol{X}} \cdot \mathcal{\Omega} = \lim_{\delta \to 0} \frac{1}{\delta} \left\langle \mathcal{\Omega}\left(\boldsymbol{X} + \frac{\delta}{2} \boldsymbol{W}  \right) - \mathcal{\Omega}\left(\boldsymbol{X} - \frac{\delta}{2} \boldsymbol{W}  \right) \right\rangle_{\boldsymbol{W}}, \hspace{1cm} \boldsymbol{W} \sim \mathcal{N}\left(0,1 \right)
 
 Each solver in libMobility allows to compute either the deterministic term, the stochastic term, or both at the same time.  
 
@@ -44,38 +53,28 @@ The following example shows how to use the :py:class:`libMobility.SelfMobility` 
 A libMobility solver is initialized in three steps:
 
 1. Creation of the solver object, specifying the periodicity of the system.
-
-   
 2. Setting the parameters proper to the solver.
-
-   
 3. Initialization of the solver with global the parameters.
 
 .. code:: python
 
 
-          import numpy as np
-          import libMobility
-
-	  numberParticles = 3
-	  Solver = libMobility.SelfMobility
-	  precision = np.float32 if Solver.precision=="float" else np.float64
-	  pos = np.random.rand(3*numberParticles).astype(precision)
-	  force = np.ones(3*numberParticles).astype(precision)
-
-          # The solver will fail if it is not compatible with the provided periodicity
-	  nb = Solver(periodicityX='open',periodicityY='open',periodicityZ='open')
-	  # Other solvers might need an intermediate step here to provide some extra parameters:
-	  # nb.setParameters(parameter1 = 1, ...)
-	  nb.initialize(temperature=1.0, viscosity = 1/(6*np.pi),
-                        hydrodynamicRadius = 1.0,
-                        numberParticles = numberParticles)
-	  nb.setPositions(pos)
-	  result = nb.Mdot(forces = force)
-	  print(f"{numberParticles} particles located at ( X Y Z ): {pos}")
-	  print("Forces:", force)
-	  print("M*F:", result)
-	  # result = prefactor*sqrt(2*temperature*M)*dW
-	  result = nb.sqrtMdotW(prefactor = 1.0)
-	  print("sqrt(2*T*M)*N(0,1):", result)
-	  nb.clean()
+		import numpy as np
+		from libMobility import SelfMobility
+		numberParticles = 100;
+		precision = np.float32 if Solver.precision == "float" else np.float64
+		solver = SelfMobility("open", "open", "open")
+		solver.setParameters(parameter=5) # SelfMobility only exposes an example parameter
+		solver.initialize(
+		  temperature=0.0,
+		  viscosity=1.0,
+		  hydrodynamicRadius=1.0,
+		  numberParticles=numberParticles,
+		  needsTorque=True,
+		)
+		positions = np.random.rand(numberParticles, 3).astype(precision)
+		forces = np.random.rand(numberParticles, 3).astype(precision)
+		torques = np.random.rand(numberParticles, 3).astype(precision)
+		solver.setPositions(positions)
+		linear, angular = solver.Mdot(forces, torques)
+		
