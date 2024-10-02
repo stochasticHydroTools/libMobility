@@ -22,7 +22,7 @@ Where:
 
 .. hint:: See the :ref:`solvers` section for a list of available solvers.
 
-.. warning:: lib\Omegaobility does *not* include the thermal drift :math:`k_B T \nabla_{\boldsymbol{X}} \cdot \Omega` and the user must supply their own implementation in order to maintain detailed balance. The thermal drift can be approximated in lib\Omegaobility using Random Finite Differences (RFD)  
+.. warning:: libMobility does *not* include the thermal drift :math:`k_B T \nabla_{\boldsymbol{X}} \cdot \Omega` and the user must supply their own implementation in order to maintain detailed balance. The thermal drift can be approximated in libMobility using Random Finite Differences (RFD)  
 
 .. math::
 
