@@ -4,7 +4,7 @@ Documentation is available at [libmobility.readthedocs.io](https://libmobility.r
 
 This repository contains several GPU solvers that can compute the action of the hydrodynamic mobility (at the RPY/FCM level) of a group of particles (in different geometries) with forces acting on them.  
 
-In particular, given a group of forces, $\boldsymbol{F}$, and torques, $\boldsymbol{\tau}$, acting on a group of positions, $\boldsymbol{X}$ and directions $\boldsymbol{\tau}, the libMobility solvers can compute:
+In particular, given a group of forces, $\boldsymbol{F}$, and torques, $\boldsymbol{\tau}$, acting on a group of positions, $\boldsymbol{X}$ and directions $\boldsymbol{\tau}$, the libMobility solvers can compute:
 
 $$\begin{bmatrix}d\boldsymbol{X}\\
 d\boldsymbol{\tau}\end{bmatrix} = \boldsymbol{\mathcal{\Omega}}\begin{bmatrix}\boldsymbol{F}\\
