@@ -19,7 +19,7 @@ build:
     - cd build && mamba run -n libmobility cmake .. && mamba run -n libmobility make -j4 all
     - cd docs && mamba run -n libmobility make html
     - mkdir -p $READTHEDOCS_OUTPUT/
-    - mv ./build/html $READTHEDOCS_OUTPUT/html
+    - mv ./docs/build/html $READTHEDOCS_OUTPUT/html
     
 conda:
   environment: environment.yml
