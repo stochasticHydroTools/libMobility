@@ -51,6 +51,12 @@ jobs:
         mkdir build && cd build
         cmake -DCMAKE_VERBOSE_MAKEFILE=yes -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
         make -j3 all install
+      
+    - name: Build Sphinx Documentation
+      run: |
+        cd docs
+        make html
+      shell: bash -el {0}
 
     - name: Compile examples
       run: |
