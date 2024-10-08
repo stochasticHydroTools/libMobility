@@ -24,9 +24,9 @@ Where:
 
 .. warning:: libMobility does *not* include the thermal drift :math:`k_B T \nabla_{\boldsymbol{X}} \cdot \Omega` and the user must supply their own implementation in order to maintain detailed balance. The thermal drift can be approximated in libMobility using Random Finite Differences (RFD)  
 
-.. math::
+	.. math::
 
-   \nabla_{\boldsymbol{X}} \cdot \mathcal{\Omega} = \lim_{\delta \to 0} \frac{1}{\delta} \left\langle \mathcal{\Omega}\left(\boldsymbol{X} + \frac{\delta}{2} \boldsymbol{W}  \right) - \mathcal{\Omega}\left(\boldsymbol{X} - \frac{\delta}{2} \boldsymbol{W}  \right) \right\rangle_{\boldsymbol{W}}, \hspace{1cm} \boldsymbol{W} \sim \mathcal{N}\left(0,1 \right)
+		\nabla_{\boldsymbol{X}} \cdot \mathcal{\Omega} = \lim_{\delta \to 0} \frac{1}{\delta} \left\langle \mathcal{\Omega}\left(\boldsymbol{X} + \frac{\delta}{2} \boldsymbol{W}  \right) - \mathcal{\Omega}\left(\boldsymbol{X} - \frac{\delta}{2} \boldsymbol{W}  \right) \right\rangle_{\boldsymbol{W}}, \hspace{1cm} \boldsymbol{W} \sim \mathcal{N}\left(0,1 \right)
 
 Each solver in libMobility allows to compute either the deterministic term, the stochastic term, or both at the same time.  
 
