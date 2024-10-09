@@ -7,12 +7,12 @@ In particular, libMobility solvers can compute the different elements on the rig
 
 .. math::
 
-   \begin{bmatrix}\boldsymbol{dX}\\\boldsymbol{d\tau}\end{bmatrix} = \boldsymbol{\mathcal{M}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{T}\end{bmatrix}dt + \text{prefactor}\sqrt{2 k_B T \boldsymbol{\mathcal{M}}}d\boldsymbol{W}
+   \begin{bmatrix}d\boldsymbol{X}\\d\boldsymbol{\tau}\end{bmatrix} = \boldsymbol{\mathcal{M}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{T}\end{bmatrix}dt + \text{prefactor}\sqrt{2 k_B T \boldsymbol{\mathcal{M}}}d\boldsymbol{W}
 
 Where:
 
 - :math:`d\boldsymbol{X}` are the linear displacements
-- :math:`\boldsymbol{d\tau}` are the angular displacements
+- :math:`d\boldsymbol{\tau}` are the angular displacements
 - :math:`\boldsymbol{\mathcal{M}}` is the grand mobility tensor
 - :math:`\boldsymbol{F}` are the forces
 - :math:`\boldsymbol{T}` are the torques
