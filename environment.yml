@@ -2,6 +2,7 @@ name: libmobility
 channels:
   - conda-forge
 dependencies:
+  - python <3.13
   - cmake >=3.24
   - cuda-version 12.*
   - gxx
@@ -9,7 +10,16 @@ dependencies:
   - cuda-nvcc 
   - make
   - mkl-devel
+  - mkl-include
+  - mkl
   - pybind11
   - numpy
   - pytest
   - scipy
+  - pip
+  - pip:
+    - sphinx==7.2.6
+    - sphinx-rtd-theme==1.3.0
+    - sphinxcontrib-autoprogram==0.1.8
+    - sphinxcontrib-napoleon==0.7
+    - gitpython
