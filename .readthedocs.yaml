@@ -16,7 +16,7 @@ build:
   commands:
     - mkdir build
     - mamba env create --file environment.yml
-    - cd build && mamba run -n libmobility cmake .. && mamba run -n libmobility make -j4 all
+    - cd build && mamba run -n libmobility cmake .. && mamba run -n libmobility make -j4 all install
     - cd docs && mamba run -n libmobility make html
     - mkdir -p $READTHEDOCS_OUTPUT/
     - mv ./docs/build/html $READTHEDOCS_OUTPUT/html
