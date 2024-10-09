@@ -12,7 +12,7 @@ submodules:
 build:
   os: "ubuntu-22.04"
   tools:
-     python: "mambaforge-22.9"
+     python: "mambaforge-latest"
   commands:
     - mkdir build
     - mamba env create --file environment.yml
