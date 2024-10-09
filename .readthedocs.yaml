@@ -16,9 +16,9 @@ build:
   commands:
     - mkdir build
     - mamba env create --file environment.yml
-    - mamba activate libmobility
-    - cd build && cmake -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX .. &&  make -j4 all install
-    - cd docs && make html
+    - export CONDA_PREFIX=$(mamba info | grep "env location" | cut -d: -f2)
+    - cd build && mamba run -n libmobility cmake -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX .. && mamba run -n libmobility make -j4 all install
+    - cd docs && mamba run -n libmobility make html
     - mkdir -p $READTHEDOCS_OUTPUT/
     - mv ./docs/build/html $READTHEDOCS_OUTPUT/html
     
