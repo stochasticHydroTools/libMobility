@@ -16,7 +16,7 @@ build:
   commands:
     - mkdir build
     - mamba env create --file environment.yml
-    - cd build && mamba run -n libmobility cmake -DCMAKE_INSTALL_PREFIX=$(mamba run -n libmobility mamba info | grep "env location" | cut -d: -f2) .. && mamba run -n libmobility make -j4 all install
+    - cd build && mamba run -n libmobility cmake -DCMAKE_INSTALL_PREFIX=$(mamba run -n libmobility mamba info | grep 'env location' | cut -d: -f2) .. && mamba run -n libmobility make -j4 all install
     - cd docs && mamba run -n libmobility make html
     - mkdir -p $READTHEDOCS_OUTPUT/
     - mv ./docs/build/html $READTHEDOCS_OUTPUT/html
