@@ -10,13 +10,13 @@ Given a group of forces, :math:`\boldsymbol{F}`, and torques, :math:`\boldsymbol
 
 .. math::
 
-   \begin{bmatrix}\boldsymbol{dX}\\\boldsymbol{d\tau}\end{bmatrix} = \boldsymbol{\mathcal{\Omega}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{T}\end{bmatrix}dt + \text{prefactor}\sqrt{2 k_B T \boldsymbol{\mathcal{\Omega}}}d\boldsymbol{W}
+   \begin{bmatrix}d\boldsymbol{X}\\d\boldsymbol{\tau}\end{bmatrix} = \boldsymbol{\mathcal{M}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{T}\end{bmatrix}dt + \text{prefactor}\sqrt{2 k_B T \boldsymbol{\mathcal{M}}}d\boldsymbol{W}
 
 Where:
 
 - :math:`d\boldsymbol{X}` are the linear displacements
-- :math:`\boldsymbol{d\tau}` are the angular displacements
-- :math:`\boldsymbol{\mathcal{\Omega}}` is the grand mobility tensor
+- :math:`d\boldsymbol{\tau}` are the angular displacements
+- :math:`\boldsymbol{\mathcal{M}}` is the grand mobility tensor
 - :math:`\boldsymbol{F}` are the forces
 - :math:`\boldsymbol{T}` are the torques
 - :math:`\text{prefactor}` is a user-provided prefactor
