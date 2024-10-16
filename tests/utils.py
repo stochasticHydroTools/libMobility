@@ -8,6 +8,18 @@ sane_parameters = {
     "SelfMobility": {"parameter": 5.0},
 }
 
+def initialize_solver(Solver, periodicity, numberParticles, needsTorque=False):
+    solver = Solver(*periodicity)
+    solver.setParameters(**sane_parameters[Solver.__name__])
+    solver.initialize(
+        temperature=1.0,
+        viscosity=1.0,
+        hydrodynamicRadius=1.0,
+        numberParticles=numberParticles,
+        needsTorque=needsTorque,
+    )
+    return solver
+
 
 def compute_M(solver, numberParticles, needsTorque):
     precision = np.float32 if solver.precision == "float" else np.float64

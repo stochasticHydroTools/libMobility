@@ -45,6 +45,7 @@ namespace libmobility{
     std::vector<real> lanczosOutput;
     real temperature;
     bool needsTorque = false;
+    bool positionsSet = false;
   protected:
     Mobility(){};
   public:
@@ -85,6 +86,7 @@ namespace libmobility{
       this->lanczosTolerance = par.tolerance;
       this->temperature = par.temperature;
       this->needsTorque = par.needsTorque;
+      this->positionsSet = false;
     }
 
     //Set the positions to construct the mobility operator from
@@ -136,6 +138,14 @@ namespace libmobility{
 
     bool getNeedsTorque() const{
       return this->needsTorque;
+    }
+
+    bool getPositionsSet() const{
+      return this->positionsSet;
+    }
+
+    void confirmPositionsSet(){
+      this->positionsSet = true;
     }
 
     //Clean any memory allocated by the solver
