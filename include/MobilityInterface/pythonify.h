@@ -143,7 +143,8 @@ auto call_sqrtMdotW(Solver &solver, libmobility::real prefactor) {
   } else {
     solver.sqrtMdotW(cast_to_real(linear), nullptr, prefactor);
   }
-  return std::make_pair(linear.reshape({N, 3}), angular);
+  linear = linear.reshape({N, 3});
+  return std::make_pair(linear, angular);
 }
 
 const char *sqrtMdotW_docstring = R"pbdoc(
