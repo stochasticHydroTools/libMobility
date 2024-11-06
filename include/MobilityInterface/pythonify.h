@@ -133,8 +133,8 @@ template <class Solver>
 auto call_sqrtMdotW(Solver &solver, libmobility::real prefactor) {
   int N = solver.getNumberParticles();
   auto linear = py::array_t<libmobility::real>({N * 3});
+  linear.attr("fill")(0);
   auto angular = py::array_t<libmobility::real>();
-
   if (solver.getNeedsTorque()) {
     angular.resize({3 * N});
     angular.attr("fill")(0);
@@ -143,7 +143,8 @@ auto call_sqrtMdotW(Solver &solver, libmobility::real prefactor) {
   } else {
     solver.sqrtMdotW(cast_to_real(linear), nullptr, prefactor);
   }
-  return std::make_pair(linear.reshape({N, 3}), angular);
+  linear = linear.reshape({N, 3});
+  return std::make_pair(linear, angular);
 }
 
 const char *sqrtMdotW_docstring = R"pbdoc(
