@@ -58,6 +58,7 @@ def test_returns_mf(Solver, periodicity):
     mf, _ = solver.Mdot(forces)
     assert mf.shape == (numberParticles, 3)
 
+
 @pytest.mark.parametrize(
     ("Solver", "periodicity"),
     [
@@ -205,3 +206,46 @@ def test_no_positions_error(Solver, periodicity):
 
     # with pytest.raises(RuntimeError, match=r"\[libMobility\]*"):
     #     u, _ = solver.hydrodynamicVelocities()
+    
+@pytest.mark.parametrize(
+    ("Solver", "periodicity"),
+    [
+        (SelfMobility, ("open", "open", "open")),
+        (NBody, ("open", "open", "open")),
+        (NBody, ("open", "open", "single_wall")),
+        (PSE, ("periodic", "periodic", "periodic")),
+        (DPStokes, ("periodic", "periodic", "open")),
+        (DPStokes, ("periodic", "periodic", "single_wall")),
+        (DPStokes, ("periodic", "periodic", "two_walls")),
+    ],
+)
+@pytest.mark.parametrize("needsTorque", [True, False])
+def test_hydrodisp_equivalent(Solver, periodicity, needsTorque):
+    #  Check that calling Mdot is equivalent to calling hydrodynamicVelocities with temperature = 0
+    if needsTorque and Solver.__name__ == "PSE":
+        pytest.skip("PSE does not support torques")
+    hydrodynamicRadius = 1.0
+    solver = Solver(*periodicity)
+    parameters = sane_parameters[Solver.__name__]
+    solver.setParameters(**parameters)
+    numberParticles = 1
+    solver.initialize(
+        temperature=0.0,
+        viscosity=1.0,
+        hydrodynamicRadius=hydrodynamicRadius,
+        numberParticles=numberParticles,
+        needsTorque=needsTorque,
+    )
+
+    # Set precision to be the same as compiled precision
+    precision = np.float32 if Solver.precision == "float" else np.float64
+    positions = np.random.rand(numberParticles, 3).astype(precision)
+    forces = np.random.rand(numberParticles, 3).astype(precision)
+    torques = np.random.rand(numberParticles, 3).astype(precision)
+    solver.setPositions(positions)
+    args = (forces, torques) if needsTorque else (forces,)
+    mf, mt = solver.Mdot(*args)
+    bothmf, bothmt = solver.hydrodynamicVelocities(*args)
+    assert np.allclose(mf, bothmf, atol=1e-6)
+    if needsTorque:
+        assert np.allclose(mt, bothmt, atol=1e-6)

@@ -7,11 +7,9 @@
 #ifndef MOBILITY_SELFMOBILITY_H
 #define MOBILITY_SELFMOBILITY_H
 #include<MobilityInterface/MobilityInterface.h>
-#include <cstdint>
 #include <random>
 #include<vector>
 #include<cmath>
-#include<type_traits>
 
 class SelfMobility: public libmobility::Mobility{
   using periodicity_mode = libmobility::periodicity_mode;
@@ -56,12 +54,12 @@ public:
   void Mdot(const real* forces, const real* torques, real* linear, real* angular) override{
     if(forces){
       for(int i = 0; i<3*numberParticles; i++){
-        linear[i] = forces[i]*linearMobility;
+        linear[i] += forces[i]*linearMobility;
       }
     }
     if(torques){
       for(int i = 0; i<3*numberParticles; i++){
-        angular[i] = torques[i]*angularMobility;
+        angular[i] += torques[i]*angularMobility;
       }
     }
   }
@@ -71,12 +69,12 @@ public:
     std::normal_distribution<real> d{0,1};
     for(int i = 0; i<3*numberParticles; i++){
       real dW = d(rng);
-      linear[i] = prefactor*sqrt(2*temperature*linearMobility)*dW;
+      linear[i] += prefactor*sqrt(2*temperature*linearMobility)*dW;
     }
     if(angular){
       for(int i = 0; i<3*numberParticles; i++){
         real dW = d(rng);
-        angular[i] = prefactor*sqrt(2*temperature*angularMobility)*dW;
+        angular[i] += prefactor*sqrt(2*temperature*angularMobility)*dW;
       }
     }
   }
