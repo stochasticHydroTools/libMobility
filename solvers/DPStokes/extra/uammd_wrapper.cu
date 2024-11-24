@@ -188,6 +188,7 @@ namespace uammd_dpstokes{
   void DPStokesGlue::setPositions(const real* h_pos){
     throwIfInvalid();
     dpstokes->setPositions(h_pos);
+    this->numberParticles = dpstokes->numberParticles;
   }
 
   //Compute the dot product of the mobility matrix with the forces and/or torques acting on the previously provided positions

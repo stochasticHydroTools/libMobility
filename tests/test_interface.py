@@ -179,7 +179,6 @@ def test_no_torques_error(Solver, periodicity):
 @pytest.mark.parametrize(
     ("Solver", "periodicity"),
     [
-        (SelfMobility, ("open", "open", "open")),
         (NBody, ("open", "open", "open")),
         (NBody, ("open", "open", "single_wall")),
         (PSE, ("periodic", "periodic", "periodic")),

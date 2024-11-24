@@ -116,6 +116,7 @@ public:
   }
 
   void Mdot(const real* forces, const real* torques, real* linear, real* angular) override{
+    if(dpstokes->numberParticles != this->numberParticles) throw std::runtime_error("[libMobility] Wrong number of particles in positions. Did you forget to call setPositions?");
     dpstokes->Mdot(forces, torques, linear, angular);
   }
 
