@@ -170,9 +170,6 @@ array_like
 
 template <class Solver>
 auto call_mdot(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
-  if(!myself.getPositionsSet()){
-    throw std::runtime_error("[libMobility] You must call setPositions before calling Mdot");
-  }
   auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
   int N = myself.getNumberParticles();
   auto mf_ptr = mf.size() ? cast_to_real(mf) : nullptr;
@@ -224,7 +221,6 @@ void call_initialize(Solver &myself, libmobility::real T, libmobility::real eta,
 
 template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
   myself.setPositions(cast_to_const_real(pos));
-  myself.confirmPositionsSet();
 }
 
 
@@ -232,10 +228,6 @@ template <class Solver>
 auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,
                                  pyarray_c &torques,
                                  libmobility::real prefactor) {
-  if(!myself.getPositionsSet()){
-    throw std::runtime_error("[libMobility] You must call setPositions before calling hydrodynamicVelocities");
-  }
-
   auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
   auto mf_ptr = mf.size() ? cast_to_real(mf) : nullptr;
   auto mt_ptr = mt.size() ? cast_to_real(mt) : nullptr;
