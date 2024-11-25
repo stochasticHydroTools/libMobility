@@ -74,7 +74,7 @@ public:
 		    real* linear, real* angular) override{
     if(torques)
       throw std::runtime_error("[PSE] Torque is not implemented");
-    if(positions.size() != currentNumberParticles) throw std::runtime_error("[libMobility] Wrong number of particles in positions. Did you forget to call setPositions?");
+    if(positions.size() != 3*currentNumberParticles) throw std::runtime_error("[libMobility] Wrong number of particles in positions. Did you forget to call setPositions?");
     pse->computeHydrodynamicDisplacements(positions.data(), forces, linear, 0, 0);
   }
 
