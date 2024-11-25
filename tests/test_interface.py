@@ -1,19 +1,11 @@
 import pytest
 from libMobility import *
 import numpy as np
-from utils import sane_parameters, initialize_solver
+from utils import sane_parameters, initialize_solver, solver_configs_all, solver_configs_torques
 
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity"),
-    [
-        (SelfMobility, ("open", "open", "open")),
-        (PSE, ("periodic", "periodic", "periodic")),
-        (NBody, ("open", "open", "open")),
-        (DPStokes, ("periodic", "periodic", "open")),
-        (DPStokes, ("periodic", "periodic", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "two_walls")),
-    ],
+    ("Solver", "periodicity"), solver_configs_all
 )
 def test_contiguous(Solver, periodicity):
 
@@ -32,15 +24,7 @@ def test_contiguous(Solver, periodicity):
 
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity"),
-    [
-        (SelfMobility, ("open", "open", "open")),
-        (PSE, ("periodic", "periodic", "periodic")),
-        (NBody, ("open", "open", "open")),
-        (DPStokes, ("periodic", "periodic", "open")),
-        (DPStokes, ("periodic", "periodic", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "two_walls")),
-    ],
+    ("Solver", "periodicity"), solver_configs_all
 )
 def test_returns_mf(Solver, periodicity):
 
@@ -60,14 +44,7 @@ def test_returns_mf(Solver, periodicity):
 
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity"),
-    [
-        (SelfMobility, ("open", "open", "open")),
-        (NBody, ("open", "open", "open")),
-        (DPStokes, ("periodic", "periodic", "open")),
-        (DPStokes, ("periodic", "periodic", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "two_walls")),
-    ],
+    ("Solver", "periodicity"), solver_configs_torques
 )
 def test_returns_mf_mt(Solver, periodicity):
 
@@ -91,15 +68,7 @@ def test_returns_mf_mt(Solver, periodicity):
 
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity"),
-    [
-        (SelfMobility, ("open", "open", "open")),
-        (PSE, ("periodic", "periodic", "periodic")),
-        (NBody, ("open", "open", "open")),
-        (DPStokes, ("periodic", "periodic", "open")),
-        (DPStokes, ("periodic", "periodic", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "two_walls")),
-    ],
+    ("Solver", "periodicity"), solver_configs_all
 )
 def test_returns_sqrtM(Solver, periodicity):
 
@@ -115,15 +84,7 @@ def test_returns_sqrtM(Solver, periodicity):
 
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity"),
-    [
-        (SelfMobility, ("open", "open", "open")),
-        (PSE, ("periodic", "periodic", "periodic")),
-        (NBody, ("open", "open", "open")),
-        (DPStokes, ("periodic", "periodic", "open")),
-        (DPStokes, ("periodic", "periodic", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "two_walls")),
-    ],
+    ("Solver", "periodicity"), solver_configs_all
 )
 def test_returns_hydrodisp(Solver, periodicity):
     hydrodynamicRadius = 1.0
@@ -149,15 +110,7 @@ def test_returns_hydrodisp(Solver, periodicity):
     assert sqrtmw.shape == (numberParticles, 3)
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity"),
-    [
-        (SelfMobility, ("open", "open", "open")),
-        (NBody, ("open", "open", "open")),
-        (NBody, ("open", "open", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "open")),
-        (DPStokes, ("periodic", "periodic", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "two_walls")),
-    ],
+    ("Solver", "periodicity"), solver_configs_torques
 )
 def test_no_torques_error(Solver, periodicity):
     # Test that the solver raises an error if torques are provided but solver was not initialized with needsTorque=True
@@ -200,23 +153,14 @@ def test_no_positions_error(Solver, periodicity):
     with pytest.raises(RuntimeError, match=r"\[libMobility\]*"):
         u, _ = solver.Mdot(forces)
 
-    # with pytest.raises(RuntimeError, match=r"\[libMobility\]*"):
-    #     sqrtmw, _ = solver.sqrtMdotW()
+    with pytest.raises(RuntimeError, match=r"\[libMobility\]*"):
+        sqrtmw, _ = solver.sqrtMdotW()
 
-    # with pytest.raises(RuntimeError, match=r"\[libMobility\]*"):
-    #     u, _ = solver.hydrodynamicVelocities()
+    with pytest.raises(RuntimeError, match=r"\[libMobility\]*"):
+        u, _ = solver.hydrodynamicVelocities()
     
 @pytest.mark.parametrize(
-    ("Solver", "periodicity"),
-    [
-        (SelfMobility, ("open", "open", "open")),
-        (NBody, ("open", "open", "open")),
-        (NBody, ("open", "open", "single_wall")),
-        (PSE, ("periodic", "periodic", "periodic")),
-        (DPStokes, ("periodic", "periodic", "open")),
-        (DPStokes, ("periodic", "periodic", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "two_walls")),
-    ],
+    ("Solver", "periodicity"), solver_configs_all
 )
 @pytest.mark.parametrize("needsTorque", [True, False])
 def test_hydrodisp_equivalent(Solver, periodicity, needsTorque):

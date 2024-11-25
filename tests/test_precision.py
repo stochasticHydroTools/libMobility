@@ -2,17 +2,10 @@ import pytest
 import numpy as np
 
 from libMobility import *
-
-sane_parameters = {
-    "PSE": {"psi": 1.0, "Lx": 32, "Ly": 32, "Lz": 32, "shearStrain": 0.0},
-    "NBody": {"algorithm": "advise"},
-    "SelfMobility": {"parameter": 5.0},
-}
-
+from utils import solver_configs_all, sane_parameters
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity"),
-    [(SelfMobility, ("open", "open", "open"))],
+    ("Solver", "periodicity"), solver_configs_all
 )
 def test_precision(Solver, periodicity):
     # tests that Mdot gives a non-zero result when using the precision that libMobility was compiled in
@@ -46,8 +39,7 @@ def test_precision(Solver, periodicity):
 
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity"),
-    [(SelfMobility, ("open", "open", "open"))],
+    ("Solver", "periodicity"), solver_configs_all
 )
 def test_incorrect_precision(Solver, periodicity):
     # libMobility should work even if the inputs have an unexpected precision

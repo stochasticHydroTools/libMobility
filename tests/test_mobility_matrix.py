@@ -2,20 +2,11 @@ from utils import sane_parameters, compute_M, generate_positions_in_box
 import pytest
 import numpy as np
 from libMobility import SelfMobility, PSE, NBody, DPStokes
-from utils import compute_M
+from utils import compute_M, solver_configs_all, solver_configs_torques
 
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity"),
-    [
-        (SelfMobility, ("open", "open", "open")),
-        (PSE, ("periodic", "periodic", "periodic")),
-        (NBody, ("open", "open", "open")),
-        (NBody, ("open", "open", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "open")),
-        (DPStokes, ("periodic", "periodic", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "two_walls")),
-    ],
+    ("Solver", "periodicity"), solver_configs_torques
 )
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
@@ -48,15 +39,7 @@ def test_mobility_matrix_linear(
 
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity"),
-    [
-        (SelfMobility, ("open", "open", "open")),
-        (NBody, ("open", "open", "open")),
-        (NBody, ("open", "open", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "open")),
-        (DPStokes, ("periodic", "periodic", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "two_walls")),
-    ],
+    ("Solver", "periodicity"), solver_configs_torques
 )
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])

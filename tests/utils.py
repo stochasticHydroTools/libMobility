@@ -1,4 +1,5 @@
 import numpy as np
+from libMobility import SelfMobility, PSE, NBody, DPStokes
 
 
 sane_parameters = {
@@ -7,6 +8,22 @@ sane_parameters = {
     "DPStokes": {"dt": 1, "Lx": 16, "Ly": 16, "zmin": -6, "zmax": 6, "allowChangingBoxSize": False},
     "SelfMobility": {"parameter": 5.0},
 }
+
+solver_configs_all = [
+    (SelfMobility, ("open", "open", "open")),
+    (NBody, ("open", "open", "open")),
+    (NBody, ("open", "open", "single_wall")),
+    (PSE, ("periodic", "periodic", "periodic")),
+    (DPStokes, ("periodic", "periodic", "open")),
+    (DPStokes, ("periodic", "periodic", "single_wall")),
+    (DPStokes, ("periodic", "periodic", "two_walls")),
+]
+
+solver_configs_torques = [
+    (Solver, periodicity)
+    for Solver, periodicity in solver_configs_all
+    if not (Solver == PSE)
+]
 
 def initialize_solver(Solver, periodicity, numberParticles, needsTorque=False):
     solver = Solver(*periodicity)
