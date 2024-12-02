@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 
 from libMobility import DPStokes, NBody
+import libMobility
 from utils import compute_M
 
 # NOTE: Some of the following tests will only pass if compiled with double precision.
@@ -12,6 +13,8 @@ wall_params = {
     "NBody": {"algorithm": "advise"},
 }
 
+precision = np.float32 if NBody.precision == "float" else np.float64
+
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "tol", "ref_file"),
     [
@@ -21,6 +24,9 @@ wall_params = {
     ],
 )
 def test_self_mobility_linear(Solver, periodicity, tol, ref_file):
+    if precision == np.float32 and Solver.__name__ == "DPStokes":
+        pytest.skip("The test is only valid for double precision due to how reference data was generated.")
+
     xymax = 76.8
     params = wall_params[Solver.__name__]
     needsTorque = False
@@ -32,8 +38,6 @@ def test_self_mobility_linear(Solver, periodicity, tol, ref_file):
 
     hydrodynamicRadius = 1.0
     eta = 1/4/np.sqrt(np.pi)
-
-    precision = np.float32 if Solver.precision == "float" else np.float64
 
     solver = Solver(*periodicity)
     solver.setParameters(**params)
@@ -75,6 +79,9 @@ def test_self_mobility_linear(Solver, periodicity, tol, ref_file):
     ],
 )
 def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
+    if precision == np.float32 and Solver.__name__ == "DPStokes":
+        pytest.skip("The test is only valid for double precision due to how reference data was generated.")
+
     xymax = 76.8
     params = wall_params[Solver.__name__]
     needsTorque = False
@@ -88,7 +95,6 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
     radH = 1.0 # hydrodynamic radius
     eta = 1/4/np.sqrt(np.pi)
 
-    precision = np.float32 if Solver.precision == "float" else np.float64
     tol = 100*np.finfo(precision).eps
 
     solver = Solver(*periodicity)
@@ -132,6 +138,9 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
     ],
 )
 def test_self_mobility_angular(Solver, periodicity, ref_file):
+    if precision == np.float32 and Solver.__name__ == "DPStokes":
+        pytest.skip("The test is only valid for double precision due to how reference data was generated.")
+        
     zmax = 19.2
     xymax = 76.8
     params = wall_params[Solver.__name__]
@@ -146,8 +155,6 @@ def test_self_mobility_angular(Solver, periodicity, ref_file):
     ref = np.load(ref_dir + ref_file)
     refM = ref['M']
     refHeights = ref['heights'].flatten()
-
-    precision = np.float32 if Solver.precision == "float" else np.float64
 
     solver = Solver(*periodicity)
     solver.setParameters(**params)
@@ -191,6 +198,9 @@ def test_self_mobility_angular(Solver, periodicity, ref_file):
 )
 @pytest.mark.parametrize("offset", ["x", "y"])
 def test_pair_mobility_angular(Solver, periodicity, ref_file, offset):
+    if precision == np.float32 and Solver.__name__ == "DPStokes":
+        pytest.skip("The test is only valid for double precision due to how reference data was generated.")
+
     zmax = 19.2
     xymax = 76.8
     params = wall_params[Solver.__name__]
@@ -205,8 +215,6 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file, offset):
     ref = np.load(ref_dir + ref_file)
     refM = ref['M']
     refHeights = ref['heights'].flatten()
-
-    precision = np.float32 if Solver.precision == "float" else np.float64
 
     nP = 2
     solver = Solver(*periodicity)
@@ -253,9 +261,4 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file, offset):
     for i in range(0, nSeps):
         for k in range(0, nHeights):
             diff = abs(allM[i,k] - refM[i,k])
-            temp = diff < tol
-            if not np.all(temp):
-                print(diff)
-                print(np.where(temp == False))
-                breakpoint()
             assert np.all(diff < tol)

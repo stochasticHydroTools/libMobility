@@ -43,6 +43,7 @@ namespace uammd_dpstokes{
   class DPStokesGlue{
     std::shared_ptr<DPStokesUAMMD> dpstokes;
   public:
+    int numberParticles;
 
     //Initialize the modules with a certain set of parameters
     //Reinitializes if the module was already initialized

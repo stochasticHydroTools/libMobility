@@ -78,6 +78,7 @@ public:
 
   virtual void Mdot(const real* forces, const real* torques, real* linear, real* angular) override{
     int numberParticles = positions.size()/3;
+    if(numberParticles != this->numberParticles) throw std::runtime_error("[libMobility] Wrong number of particles in positions. Did you forget to call setPositions?");
     // Donev: Why can't there be a single callBatchedNBody routine that does if(kernel == kernel_type::bottom_wall) internally?
     // Example, what if in the future we add manually periodized RPY where one repeats a unit cell a certain number of times in each direction. This is actually easy to do with 3 loops and useful, and only requires adding a parameter nUnitCellsRepeat[3] and removing the error if some direction is periodic and only spitting an error if two walls are asked for.
 

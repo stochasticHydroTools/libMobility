@@ -1,7 +1,7 @@
 import pytest
 
 from libMobility import *
-from utils import sane_parameters
+from utils import sane_parameters, solver_configs_all
 
 # List of classes inside libMobility
 
@@ -9,14 +9,7 @@ solver_list = [PSE, NBody, DPStokes, SelfMobility]
 
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity"),
-    [
-        (PSE, ("periodic", "periodic", "periodic")),
-        (NBody, ("open", "open", "open")),
-        (DPStokes, ("periodic", "periodic", "open")),
-        (DPStokes, ("periodic", "periodic", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "two_walls")),
-    ],
+    ("Solver", "periodicity"), solver_configs_all
 )
 def test_periodic_initialization(Solver, periodicity):
     solver = Solver(*periodicity)

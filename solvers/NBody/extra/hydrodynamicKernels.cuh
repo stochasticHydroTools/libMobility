@@ -229,6 +229,8 @@ __device__ real3 RPY_WF(real3 rij, real rh){
     return correction;
   }
 
+  // note: [1] seemingly uses the left-hand rule for the cross product, so the signs are flipped on expressions
+  // in that paper that use the Levi-Civita symbol
   __device__ real3 wallCorrection_UT(real3 rij, bool self, real h, real3 vj){
       real3 correction = real3();
       if(self){ // B2^T*vj in [1]. ^T denotes transpose.
@@ -260,6 +262,8 @@ __device__ real3 RPY_WF(real3 rij, real rh){
   return correction;
 }
 
+  // note: [1] seemingly uses the left-hand rule for the cross product, so the signs are flipped on expressions
+  // in that paper that use the Levi-Civita symbol
   __device__ real3 wallCorrection_WF(real3 rij, bool self, real h, real3 vj){
         real3 correction = real3();
         if(self){ // B2*fj in [1].

@@ -6,7 +6,7 @@ from numpy.linalg import eig
 import logging
 
 from libMobility import SelfMobility, PSE, NBody, DPStokes
-from utils import compute_M, sane_parameters, generate_positions_in_box
+from utils import compute_M, sane_parameters, generate_positions_in_box, solver_configs_all
 
 
 def fluctuation_dissipation_KS(M, fluctuation_method, needsTorques):
@@ -58,15 +58,7 @@ def fluctuation_dissipation_KS(M, fluctuation_method, needsTorques):
 
 
 @pytest.mark.parametrize(
-    ("Solver", "periodicity"),
-    [
-        (SelfMobility, ("open", "open", "open")),
-        (PSE, ("periodic", "periodic", "periodic")),
-        (NBody, ("open", "open", "open")),
-        (DPStokes, ("periodic", "periodic", "open")),
-        (DPStokes, ("periodic", "periodic", "single_wall")),
-        (DPStokes, ("periodic", "periodic", "two_walls")),
-    ],
+    ("Solver", "periodicity"), solver_configs_all
 )
 @pytest.mark.parametrize("hydrodynamicRadius", [0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1,2,10])
