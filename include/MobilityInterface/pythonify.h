@@ -7,11 +7,11 @@ python (accompanied by the default documentation of the mobility interface.
 #include <stdexcept>
 #ifndef MOBILITY_PYTHONIFY_H
 #include "MobilityInterface.h"
-#include<nanobind/nanobind.h>
-#include<nanobind/ndarray.h>
-#include<nanobind/stl/string.h>
-#include <nanobind/stl/unique_ptr.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/ndarray.h>
 #include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/unique_ptr.h>
 namespace nb = nanobind;
 using namespace nb::literals;
 namespace py = nb;
@@ -54,8 +54,11 @@ const libmobility::real *cast_to_const_real(pyarray_c &arr) {
 }
 
 auto create_array(size_t N = 0) {
-  std::vector<libmobility::real> *v = new std::vector<libmobility::real>(N * 3, 0);
-  nb::capsule deleter(v, [](void *v) noexcept {delete static_cast<std::vector<libmobility::real> *>(v);});
+  std::vector<libmobility::real> *v =
+      new std::vector<libmobility::real>(N * 3, 0);
+  nb::capsule deleter(v, [](void *v) noexcept {
+    delete static_cast<std::vector<libmobility::real> *>(v);
+  });
   return pyarray_c(v->data(), {N, 3}, deleter);
 }
 
@@ -73,8 +76,10 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   auto mf = create_array(N);
   auto mt = create_array();
   if (t) {
-    if(!myself.getNeedsTorque()){
-      throw std::runtime_error("The was configured without torques. Set needsTorque to true in the constructor if you want to use torques");
+    if (!myself.getNeedsTorque()) {
+      throw std::runtime_error(
+          "The was configured without torques. Set needsTorque to true in the "
+          "constructor if you want to use torques");
     }
     mt = create_array(N);
   }
@@ -206,7 +211,6 @@ template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
   myself.setPositions(cast_to_const_real(pos));
 }
 
-
 template <class Solver>
 auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,
                                  pyarray_c &torques,
@@ -247,7 +251,8 @@ array_like
 )pbdoc";
 
 template <class Solver>
-std::unique_ptr<Solver> call_construct(std::string perx, std::string pery, std::string perz) {
+std::unique_ptr<Solver> call_construct(std::string perx, std::string pery,
+                                       std::string perz) {
   return std::make_unique<Solver>(createConfiguration(perx, pery, perz));
 }
 
@@ -263,9 +268,8 @@ auto define_module_content(
   auto solver = py::class_<MODULENAME>(m, name, documentation);
 
   solver
-    .def(nb::new_(&call_construct<MODULENAME>),
-	 constructor_docstring,
-         "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)
+      .def(nb::new_(&call_construct<MODULENAME>), constructor_docstring,
+           "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)
       .def("initialize", call_initialize<MODULENAME>, initialize_docstring,
            "temperature"_a, "viscosity"_a, "hydrodynamicRadius"_a,
            "numberParticles"_a, "needsTorque"_a = false, "tolerance"_a = 1e-4)
@@ -291,7 +295,7 @@ auto define_module_content(
 }
 
 #define MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(MODULENAME, EXTRA, documentation)   \
-  NB_MODULE(MODULENAME, m) {                                             \
+  NB_MODULE(MODULENAME, m) {                                                   \
     auto solver = define_module_content<MODULENAME>(                           \
         m, MOBILITYSTR(MODULENAME), documentation,                             \
         [](py::class_<MODULENAME> &solver) { EXTRA });                         \
