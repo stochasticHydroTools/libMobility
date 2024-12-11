@@ -5,8 +5,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/" "$ENV{CO
 set(CMAKE_BUILD_TYPE Release)
 add_compile_definitions(PUBLIC MAXLOGLEVEL=3)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
 # Set CUDA archs so all supported GPUs are covered
@@ -43,6 +43,15 @@ if(BLAS_FOUND AND LAPACK_FOUND)
   if(MKL_DETECTED)
     message(STATUS "Intel MKL environment detected")
     add_compile_definitions(PUBLIC USE_MKL)
+    find_path(MKL_INCLUDE_DIR NAMES mkl.h PATHS
+      $ENV{CONDA_PREFIX}/include
+      $ENV{PREFIX}/include
+      $ENV{MKLROOT}/include
+      $ENV{BLAS_HOME}/include
+      /usr/include
+      /usr/local/include
+    )
+    include_directories(${MKL_INCLUDE_DIR})
   else()
     find_path(BLAS_INCLUDE_DIR NAMES lapacke.h PATHS
       $ENV{CONDA_PREFIX}/include
@@ -68,22 +77,16 @@ if(BLAS_FOUND AND LAPACK_FOUND)
 else()
   message(FATAL_ERROR "BLAS and LAPACK not found. Please install them.")
 endif()
-
 link_libraries(BLAS::BLAS LAPACK::LAPACK)
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-find_package(pybind11 REQUIRED CONFIG)
-include_directories(${pybind11_INCLUDE_DIRS})
-include_directories(${Python3_INCLUDE_DIRS})
+find_package(Python 3
+  REQUIRED COMPONENTS Interpreter Development.Module
+  OPTIONAL_COMPONENTS Development.SABIModule)
+find_package(nanobind CONFIG REQUIRED)
 include_directories(${UAMMD_INCLUDE} ${BLAS_INCLUDE_DIRS} ${LAPACKE_INCLUDE_DIRS})
 include_directories(${THIRD_PARTY_DIR}/LanczosAlgorithm/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr -extended-lambda")
-endif()
-
-# Ensure ${Python3_SOABI} is not empty
-if(NOT Python3_SOABI)
-  message(FATAL_ERROR "Python3_SOABI is empty. Set it to the output of 'python3-config --extension-suffix'")
 endif()
 add_subdirectory(solvers)
 
