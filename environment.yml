@@ -12,7 +12,7 @@ dependencies:
   - mkl-devel
   - mkl-include
   - mkl
-  - pybind11
+  - nanobind
   - numpy
   - pytest
   - scipy
