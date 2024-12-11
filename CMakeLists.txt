@@ -81,7 +81,13 @@ link_libraries(BLAS::BLAS LAPACK::LAPACK)
 find_package(Python 3
   REQUIRED COMPONENTS Interpreter Development.Module
   OPTIONAL_COMPONENTS Development.SABIModule)
-find_package(nanobind CONFIG REQUIRED)
+include(FetchContent)
+FetchContent_Declare(
+  nanobind
+  GIT_REPOSITORY https://github.com/wjakob/nanobind/
+  GIT_TAG        v2.4.0
+)
+FetchContent_MakeAvailable(nanobind)
 include_directories(${UAMMD_INCLUDE} ${BLAS_INCLUDE_DIRS} ${LAPACKE_INCLUDE_DIRS})
 include_directories(${THIRD_PARTY_DIR}/LanczosAlgorithm/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
