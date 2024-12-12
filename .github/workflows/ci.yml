@@ -74,7 +74,7 @@ jobs:
     - name: Run pytest
       run: |
         micromamba activate libmobility
-        pytest -sv tests/test_initialization.py tests/test_precision.py
+        pytest -sv -k SelfMobility tests/test_initialization.py tests/test_precision.py
         #Only SelfMobility tests can run in the CPU
         pytest -sv -k SelfMobility tests/test*py
     - name: Run optional tests with extra dependencies
