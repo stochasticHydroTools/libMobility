@@ -1,11 +1,13 @@
-add_library(libMobility_SelfMobility SHARED selfmobility.cpp)
-add_library(SelfMobility.${Python3_SOABI} SHARED python_wrapper.cpp)
-# Remove the "lib" prefix from the shared library
-set_target_properties(SelfMobility.${Python3_SOABI} PROPERTIES PREFIX "")
-target_include_directories(libMobility_SelfMobility PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-set_target_properties(libMobility_SelfMobility PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-set_target_properties(SelfMobility.${Python3_SOABI} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python")
-target_link_libraries(SelfMobility.${Python3_SOABI} libMobility_SelfMobility)
-install(TARGETS SelfMobility.${Python3_SOABI} DESTINATION ${Python3_SITEARCH}/libMobility)
-install(TARGETS libMobility_SelfMobility DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/mobility.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libMobility/solvers/SelfMobility)
+set(NAME SelfMobility)
+add_library(libMobility_${NAME} SHARED selfmobility.cpp)
+target_include_directories(libMobility_${NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+set_target_properties(libMobility_${NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+install(TARGETS libMobility_${NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/mobility.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libMobility/solvers/${NAME})
+nanobind_add_module(
+  ${NAME}
+  STABLE_ABI
+  python_wrapper.cpp
+)
+target_link_libraries(${NAME} PRIVATE libMobility_${NAME})
+install(TARGETS ${NAME} LIBRARY DESTINATION ${Python_SITEARCH}/libMobility)

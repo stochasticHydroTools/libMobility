@@ -1,14 +1,16 @@
-add_library(libMobility_PSE SHARED extra/uammd_wrapper.cu)
-add_library(PSE.${Python3_SOABI} SHARED python_wrapper.cpp)
-# Remove the "lib" prefix from the shared library
-set_target_properties(PSE.${Python3_SOABI} PROPERTIES PREFIX "")
-target_include_directories(libMobility_PSE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(libMobility_PSE cufft cublas)
-set_target_properties(libMobility_PSE PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-set_target_properties(PSE.${Python3_SOABI} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/python")
-target_link_libraries(PSE.${Python3_SOABI} libMobility_PSE)
-install(TARGETS PSE.${Python3_SOABI} DESTINATION ${Python3_SITEARCH}/libMobility)
-install(TARGETS libMobility_PSE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/mobility.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libMobility/solvers/PSE)
+set(NAME PSE)
+add_library(libMobility_${NAME} SHARED extra/uammd_wrapper.cu)
+target_include_directories(libMobility_${NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+set_target_properties(libMobility_${NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+install(TARGETS libMobility_${NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/mobility.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libMobility/solvers/${NAME})
+nanobind_add_module(
+  ${NAME}
+  STABLE_ABI
+  python_wrapper.cpp
+)
+target_link_libraries(${NAME} PRIVATE libMobility_${NAME})
+install(TARGETS ${NAME} LIBRARY DESTINATION ${Python_SITEARCH}/libMobility)
+target_link_libraries(libMobility_${NAME} cufft cublas)
 file(GLOB EXTRA_HEADERS extra/*.h)
-install(FILES ${EXTRA_HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libMobility/solvers/PSE/extra)
+install(FILES ${EXTRA_HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libMobility/solvers/${NAME}/extra)
