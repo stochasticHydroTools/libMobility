@@ -77,7 +77,7 @@ if(BLAS_FOUND AND LAPACK_FOUND)
 else()
   message(FATAL_ERROR "BLAS and LAPACK not found. Please install them.")
 endif()
-link_libraries(BLAS::BLAS LAPACK::LAPACK)
+link_libraries(BLAS::BLAS LAPACK::LAPACK cudart)
 find_package(Python 3
   REQUIRED COMPONENTS Interpreter Development.Module
   OPTIONAL_COMPONENTS Development.SABIModule)

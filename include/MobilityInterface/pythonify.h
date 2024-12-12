@@ -4,21 +4,27 @@ from a class (called className) that inherits from libmobility::Mobility.
 "description" is a string that will be printed when calling help(className) from
 python (accompanied by the default documentation of the mobility interface.
  */
-#include <stdexcept>
 #ifndef MOBILITY_PYTHONIFY_H
 #include "MobilityInterface.h"
+#include "tensor.h"
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/unique_ptr.h>
+#include <nanobind/stl/vector.h>
+#include <stdexcept>
 namespace nb = nanobind;
 using namespace nb::literals;
 namespace py = nb;
 using pyarray = nb::ndarray<nb::c_contig>;
-using pyarray_c = nb::ndarray<nb::numpy, libmobility::real, nb::c_contig>;
+using pyarray_c = nb::ndarray<libmobility::real, nb::c_contig>;
 #define MOBILITYSTR(s) xMOBILITYSTR(s)
 #define xMOBILITYSTR(s) #s
+
+static libmobility::tensor::framework last_framework =
+    libmobility::tensor::framework::numpy;
+static int last_device = nb::device::cpu::value;
 
 inline auto string2Periodicity(std::string per) {
   using libmobility::periodicity_mode;
@@ -45,21 +51,12 @@ inline auto createConfiguration(std::string perx, std::string pery,
   return conf;
 }
 
-libmobility::real *cast_to_real(pyarray_c &arr) {
+inline libmobility::real *cast_to_real(pyarray_c &arr) {
   return static_cast<libmobility::real *>(arr.data());
 }
 
-const libmobility::real *cast_to_const_real(pyarray_c &arr) {
+const inline libmobility::real *cast_to_const_real(pyarray_c &arr) {
   return static_cast<const libmobility::real *>(arr.data());
-}
-
-auto create_array(size_t N = 0) {
-  std::vector<libmobility::real> *v =
-      new std::vector<libmobility::real>(N * 3, 0);
-  nb::capsule deleter(v, [](void *v) noexcept {
-    delete static_cast<std::vector<libmobility::real> *>(v);
-  });
-  return pyarray_c(v->data(), {N, 3}, deleter);
 }
 
 template <class Solver>
@@ -73,15 +70,23 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   }
   auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
   auto t = torques.size() ? cast_to_const_real(torques) : nullptr;
-  auto mf = create_array(N);
-  auto mt = create_array();
+  auto framework = libmobility::tensor::get_framework(forces);
+  last_framework = framework;
+  int device = f ? forces.device_type() : torques.device_type();
+  if (device == nb::device::none::value)
+    device = nb::device::cpu::value;
+  last_device = device;
+  auto mf = libmobility::tensor::create_with_framework<libmobility::real>(
+      N, device, framework);
+  auto mt = nb::ndarray<libmobility::real, nb::c_contig>();
   if (t) {
     if (!myself.getNeedsTorque()) {
       throw std::runtime_error(
           "The was configured without torques. Set needsTorque to true in the "
           "constructor if you want to use torques");
     }
-    mt = create_array(N);
+    mt = libmobility::tensor::create_with_framework<libmobility::real>(
+        N, device, framework);
   }
   return std::make_tuple(f, t, mf, mt);
 }
@@ -128,10 +133,12 @@ tolerance : float, optional
 template <class Solver>
 auto call_sqrtMdotW(Solver &solver, libmobility::real prefactor) {
   int N = solver.getNumberParticles();
-  auto linear = create_array(N);
-  auto angular = create_array();
+  auto linear = libmobility::tensor::create_with_framework<libmobility::real>(
+      N, last_device, last_framework);
+  auto angular = nb::ndarray<libmobility::real, nb::c_contig>();
   if (solver.getNeedsTorque()) {
-    angular = create_array(N);
+    angular = libmobility::tensor::create_with_framework<libmobility::real>(
+        N, last_device, last_framework);
     solver.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
   } else {
     solver.sqrtMdotW(cast_to_real(linear), nullptr, prefactor);
