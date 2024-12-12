@@ -77,7 +77,12 @@ jobs:
         pytest -sv tests/test_initialization.py tests/test_precision.py
         #Only SelfMobility tests can run in the CPU
         pytest -sv -k SelfMobility tests/test*py
-              
+    - name: Run optional tests with extra dependencies
+      run: |
+        micromamba activate libmobility
+        micromamba install torch jax tensorflow -y
+        pytest -sv tests/test_array_origins.py
+        
     - name: Build conda package
       run: |
         micromamba activate libmobility
