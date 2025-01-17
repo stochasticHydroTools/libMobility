@@ -6,7 +6,7 @@ python (accompanied by the default documentation of the mobility interface.
  */
 #ifndef MOBILITY_PYTHONIFY_H
 #include "MobilityInterface.h"
-#include "tensor.h"
+#include "python_tensor.h"
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/pair.h>
@@ -22,8 +22,8 @@ using pyarray_c = nb::ndarray<libmobility::real, nb::c_contig>;
 #define MOBILITYSTR(s) xMOBILITYSTR(s)
 #define xMOBILITYSTR(s) #s
 
-static libmobility::tensor::framework last_framework =
-    libmobility::tensor::framework::numpy;
+static libmobility::python::framework last_framework =
+    libmobility::python::framework::numpy;
 static int last_device = nb::device::cpu::value;
 
 inline auto string2Periodicity(std::string per) {
@@ -51,12 +51,24 @@ inline auto createConfiguration(std::string perx, std::string pery,
   return conf;
 }
 
-inline libmobility::real *cast_to_real(pyarray_c &arr) {
-  return static_cast<libmobility::real *>(arr.data());
+inline libmobility::device get_device(pyarray_c &arr) {
+  switch (arr.device_type()) {
+  case nb::device::cpu::value:
+    return libmobility::device::cpu;
+  case nb::device::cuda::value:
+    return libmobility::device::cuda;
+  default:
+    return libmobility::device::unknown;
+  }
+}
+inline libmobility::device_span<libmobility::real> cast_to_real(pyarray_c &arr) {
+  auto dev = get_device(arr);
+  return {{arr.data(), arr.size()}, dev};
 }
 
-const inline libmobility::real *cast_to_const_real(pyarray_c &arr) {
-  return static_cast<const libmobility::real *>(arr.data());
+inline libmobility::device_span<const libmobility::real> cast_to_const_real(pyarray_c &arr) {
+  auto dev = get_device(arr);
+  return {{arr.data(), arr.size()}, dev};
 }
 
 template <class Solver>
@@ -68,24 +80,24 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   if (torques.size() < 3 * N and torques.size() > 0) {
     throw std::runtime_error("The torques array must have size 3*N.");
   }
-  auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
-  auto t = torques.size() ? cast_to_const_real(torques) : nullptr;
-  auto framework = libmobility::tensor::get_framework(forces);
+  auto f = cast_to_const_real(forces);
+  auto t = cast_to_const_real(torques);
+  auto framework = libmobility::python::get_framework(forces);
   last_framework = framework;
-  int device = f ? forces.device_type() : torques.device_type();
+  int device = f.empty() ?  torques.device_type(): forces.device_type() ;
   if (device == nb::device::none::value)
     device = nb::device::cpu::value;
   last_device = device;
-  auto mf = libmobility::tensor::create_with_framework<libmobility::real>(
+  auto mf = libmobility::python::create_with_framework<libmobility::real>(
       N, device, framework);
   auto mt = nb::ndarray<libmobility::real, nb::c_contig>();
-  if (t) {
+  if (!t.empty()) {
     if (!myself.getNeedsTorque()) {
       throw std::runtime_error(
           "The was configured without torques. Set needsTorque to true in the "
           "constructor if you want to use torques");
     }
-    mt = libmobility::tensor::create_with_framework<libmobility::real>(
+    mt = libmobility::python::create_with_framework<libmobility::real>(
         N, device, framework);
   }
   return std::make_tuple(f, t, mf, mt);
@@ -133,15 +145,16 @@ tolerance : float, optional
 template <class Solver>
 auto call_sqrtMdotW(Solver &solver, libmobility::real prefactor) {
   int N = solver.getNumberParticles();
-  auto linear = libmobility::tensor::create_with_framework<libmobility::real>(
+  auto linear = libmobility::python::create_with_framework<libmobility::real>(
       N, last_device, last_framework);
   auto angular = nb::ndarray<libmobility::real, nb::c_contig>();
   if (solver.getNeedsTorque()) {
-    angular = libmobility::tensor::create_with_framework<libmobility::real>(
+    angular = libmobility::python::create_with_framework<libmobility::real>(
         N, last_device, last_framework);
     solver.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
   } else {
-    solver.sqrtMdotW(cast_to_real(linear), nullptr, prefactor);
+    auto empty = libmobility::device_span<libmobility::real>({}, libmobility::device::cpu);
+    solver.sqrtMdotW(cast_to_real(linear), empty, prefactor);
   }
   return std::make_pair(linear, angular);
 }
