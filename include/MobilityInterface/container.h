@@ -17,7 +17,7 @@ template <numeric T> class device_adapter : public device_span<T> {
   // This class takes a device_span and a target device, if the target is
   // different from the source, it will copy the data to the target device
   using bT = std::remove_const_t<T>;
-  std::vector<bT, allocator::host_cached_allocator<bT>> data;
+  std::vector<bT, allocator::host_cached_allocator<bT>> host_data;
   thrust::device_vector<bT, allocator::device_cached_allocator<bT>> device_data;
   device target_device;
 
@@ -30,8 +30,8 @@ public:
         typename device_span<T>::device_span(
             {device_data.data(), device_data.size()}, target_device);
       } else if (target_device == device::cpu) {
-        data.assign(span.begin(), span.end());
-        typename device_span<T>::device_span(data, target_device);
+        host_data.assign(span.begin(), span.end());
+        typename device_span<T>::device_span(host_data, target_device);
       } else {
         throw std::runtime_error("Unsupported device");
       }
@@ -45,9 +45,10 @@ public:
       if (target_device == device::cuda) {
         thrust::copy(this->begin(), this->end(), device_data.begin());
       } else if (target_device == device::cpu) {
-        thrust::copy(this->begin(), this->end(), data.begin());
+        thrust::copy(this->begin(), this->end(), host_data.begin());
       }
     }
   }
 };
+
 } // namespace libmobility

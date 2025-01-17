@@ -7,7 +7,7 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/mobility.h DESTINATION ${CMAKE_INSTALL
 nanobind_add_module(
   ${NAME}
   STABLE_ABI
-  python_wrapper.cpp
+  python_wrapper.cu
 )
 target_link_libraries(${NAME} PRIVATE libMobility_${NAME})
 install(TARGETS ${NAME} LIBRARY DESTINATION ${Python_SITEARCH}/libMobility)

@@ -1,4 +1,4 @@
-/*Raul P. Pelaez 2021-2022. Python wrapper for the NBody module
+/*Raul P. Pelaez 2021-2025. Python wrapper for the NBody module
 */
 #include"mobility.h"
 #include <MobilityInterface/pythonify.h>
