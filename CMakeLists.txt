@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.24)
 project(libMobility)
 enable_language(CUDA)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/" "$ENV{CONDA_PREFIX}/share/cmake/Modules")
-set(CMAKE_BUILD_TYPE Release)
+if(NOT DEFINED CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 add_compile_definitions(PUBLIC MAXLOGLEVEL=3)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
@@ -15,17 +17,18 @@ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
 endif()
 IF (CMAKE_BUILD_TYPE MATCHES "Debug")
   if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
-    set(CMAKE_CUDA_FLAGS "-g -G  -lineinfo -src-in-ptx")
+    set(CMAKE_CUDA_FLAGS "-g -G -src-in-ptx -fPIC")
   else()
     set(CMAKE_CUDA_FLAGS "-g")
   endif()
- set(CMAKE_CXX_FLAGS "-g -Wall -Wextra -pedantic")
+ set(CMAKE_CXX_FLAGS "-g -Wall -fPIC")
 ENDIF()
 
 # add_compile_definitions(PUBLIC DOUBLE_PRECISION)
 set(THIRD_PARTY_DIR ${CMAKE_SOURCE_DIR}/include/third_party)
 set(UAMMD_INCLUDE ${THIRD_PARTY_DIR}/uammd/src
   ${THIRD_PARTY_DIR}/uammd/src/third_party)
+
 set(BLA_STATIC OFF)
 find_package(BLAS)
 find_package(LAPACK)
@@ -88,6 +91,17 @@ FetchContent_Declare(
   GIT_TAG        v2.4.0
 )
 FetchContent_MakeAvailable(nanobind)
+
+add_compile_options(-DSPDLOG_COMPILED_LIB)
+FetchContent_Declare(
+      spdlog
+      GIT_REPOSITORY https://github.com/gabime/spdlog.git
+      GIT_TAG v1.14.0
+)
+FetchContent_MakeAvailable(spdlog)
+link_libraries(spdlog::spdlog)
+# Set log level to all
+add_compile_definitions(PUBLIC SPDLOG_ACTIVE_LEVEL=0)
 include_directories(${UAMMD_INCLUDE} ${BLAS_INCLUDE_DIRS} ${LAPACKE_INCLUDE_DIRS})
 include_directories(${THIRD_PARTY_DIR}/LanczosAlgorithm/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
@@ -95,14 +109,15 @@ if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr -extended-lambda")
 endif()
 add_subdirectory(solvers)
+enable_testing()
+add_subdirectory(tests/cpp)
+
 
 # Install headers under include/ to the CMAKE_INSTALL_PREFIX include directory
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/MobilityInterface DESTINATION ${CMAKE_INSTALL_PREFIX}/include/)
 install(DIRECTORY ${THIRD_PARTY_DIR}/LanczosAlgorithm/include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/MobilityInterface/)
 install(DIRECTORY ${THIRD_PARTY_DIR}/uammd/src/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/uammd/src)
 
-
-enable_testing()
 install(DIRECTORY tests/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/libMobility/tests/ FILES_MATCHING PATTERN "*.py" PATTERN "*.npz")
 # Add a test for each Python file in the tests directory
 file(GLOB TESTS tests/*.py)
