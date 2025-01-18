@@ -1,11 +1,18 @@
 import numpy as np
-from libMobility import SelfMobility, PSE, NBody, DPStokes
+from libMobility import SelfMobility, NBody, PSE, DPStokes
 
 
 sane_parameters = {
     "PSE": {"psi": 1.0, "Lx": 32, "Ly": 32, "Lz": 32, "shearStrain": 0.0},
     "NBody": {"algorithm": "advise"},
-    "DPStokes": {"dt": 1, "Lx": 16, "Ly": 16, "zmin": -6, "zmax": 6, "allowChangingBoxSize": False},
+    "DPStokes": {
+        "dt": 1,
+        "Lx": 16,
+        "Ly": 16,
+        "zmin": -6,
+        "zmax": 6,
+        "allowChangingBoxSize": False,
+    },
     "SelfMobility": {"parameter": 5.0},
 }
 
@@ -24,6 +31,7 @@ solver_configs_torques = [
     for Solver, periodicity in solver_configs_all
     if not (Solver == PSE)
 ]
+
 
 def initialize_solver(Solver, periodicity, numberParticles, needsTorque=False):
     solver = Solver(*periodicity)

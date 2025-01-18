@@ -141,15 +141,21 @@ public:
     auto dev = linear.dev;
     lanczos->sqrtMdotW(
         [this, dev](const real *f, real *mv) {
+          // Torques are stored at the end of the force array
+          // After, results are separated into linear and angular velocities
           const int N = this->numberParticles;
           const real *t = this->needsTorque ? (f + 3 * N) : nullptr;
           real *mt = this->needsTorque ? (mv + 3 * N) : nullptr;
-          Mdot({{f, f + 3 * N}, dev}, {{t, t + 3 * N}, dev},
-               {{mv, mv + 3 * N}, dev}, {{mt, mt + 3 * N}, dev});
+          device_span<const real> s_t({t, t + (t ? (3 * N) : 0)}, dev);
+          device_span<real> s_mt({mt, mt + (mt ? (3 * N) : 0)}, dev);
+	  device_span<const real> s_f({f, f + 3 * N}, dev);
+	  device_span<real> s_mv({mv, mv + 3 * N}, dev);
+          Mdot(s_f, s_t, s_mv, s_mt);
         },
         lanczosOutput.data(), prefactor);
     thrust::copy(lanczosOutput.begin(),
-                 lanczosOutput.begin() + 3 * this->numberParticles, linear.begin());
+                 lanczosOutput.begin() + 3 * this->numberParticles,
+                 linear.begin());
     if (this->needsTorque)
       thrust::copy(lanczosOutput.begin() + 3 * this->numberParticles,
                    lanczosOutput.end(), angular.begin());

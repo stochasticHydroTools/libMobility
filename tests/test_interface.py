@@ -1,12 +1,15 @@
 import pytest
 from libMobility import *
 import numpy as np
-from utils import sane_parameters, initialize_solver, solver_configs_all, solver_configs_torques
-
-
-@pytest.mark.parametrize(
-    ("Solver", "periodicity"), solver_configs_all
+from utils import (
+    sane_parameters,
+    initialize_solver,
+    solver_configs_all,
+    solver_configs_torques,
 )
+
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_contiguous(Solver, periodicity):
 
     numberParticles = 1
@@ -23,9 +26,7 @@ def test_contiguous(Solver, periodicity):
     solver.setPositions(positions)
 
 
-@pytest.mark.parametrize(
-    ("Solver", "periodicity"), solver_configs_all
-)
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_mf(Solver, periodicity):
 
     numberParticles = 1
@@ -43,11 +44,8 @@ def test_returns_mf(Solver, periodicity):
     assert mf.shape == (numberParticles, 3)
 
 
-@pytest.mark.parametrize(
-    ("Solver", "periodicity"), solver_configs_torques
-)
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
 def test_returns_mf_mt(Solver, periodicity):
-
     numberParticles = 1
     solver = initialize_solver(Solver, periodicity, numberParticles, needsTorque=True)
 
@@ -67,9 +65,7 @@ def test_returns_mf_mt(Solver, periodicity):
     assert w.shape == (numberParticles, 3)
 
 
-@pytest.mark.parametrize(
-    ("Solver", "periodicity"), solver_configs_all
-)
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_sqrtM(Solver, periodicity):
 
     numberParticles = 1
@@ -83,9 +79,7 @@ def test_returns_sqrtM(Solver, periodicity):
     assert sqrtmw.shape == (numberParticles, 3)
 
 
-@pytest.mark.parametrize(
-    ("Solver", "periodicity"), solver_configs_all
-)
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_hydrodisp(Solver, periodicity):
     hydrodynamicRadius = 1.0
     solver = Solver(*periodicity)
@@ -109,9 +103,8 @@ def test_returns_hydrodisp(Solver, periodicity):
     sqrtmw, _ = solver.hydrodynamicVelocities(forces)
     assert sqrtmw.shape == (numberParticles, 3)
 
-@pytest.mark.parametrize(
-    ("Solver", "periodicity"), solver_configs_torques
-)
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
 def test_no_torques_error(Solver, periodicity):
     # Test that the solver raises an error if torques are provided but solver was not initialized with needsTorque=True
     numberParticles = 1
@@ -128,6 +121,7 @@ def test_no_torques_error(Solver, periodicity):
 
     with pytest.raises(RuntimeError):
         u, w = solver.Mdot(forces, torques)
+
 
 @pytest.mark.parametrize(
     ("Solver", "periodicity"),
@@ -158,10 +152,9 @@ def test_no_positions_error(Solver, periodicity):
 
     with pytest.raises(RuntimeError, match=r"\[libMobility\]*"):
         u, _ = solver.hydrodynamicVelocities()
-    
-@pytest.mark.parametrize(
-    ("Solver", "periodicity"), solver_configs_all
-)
+
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("needsTorque", [True, False])
 def test_hydrodisp_equivalent(Solver, periodicity, needsTorque):
     #  Check that calling Mdot is equivalent to calling hydrodynamicVelocities with temperature = 0

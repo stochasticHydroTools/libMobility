@@ -1,3 +1,4 @@
+#pragma once
 #include <cstddef>
 #include <map>
 #include <thrust/device_ptr.h>
@@ -49,13 +50,13 @@ class device_memory_resource : public detail::memory_resource<void *> {
 public:
   using pointer = typename super::pointer;
 
-  virtual pointer do_allocate(std::size_t bytes,
-                              std::size_t alignment) override {
-    return thrust::raw_pointer_cast(thrust::cuda::malloc<char>(bytes));
+  pointer do_allocate(std::size_t bytes, std::size_t alignment) override {
+    auto ptr = thrust::raw_pointer_cast(thrust::cuda::malloc<char>(bytes));
+    return reinterpret_cast<pointer>(ptr);
   }
 
-  virtual void do_deallocate(pointer p, std::size_t bytes,
-                             std::size_t alignment) override {
+  void do_deallocate(pointer p, std::size_t bytes,
+                     std::size_t alignment) override {
     thrust::cuda::pointer<void> void_ptr(p);
     thrust::cuda::free(void_ptr);
   }
@@ -263,5 +264,8 @@ using managed_cached_allocator =
 template <class T>
 using host_cached_allocator =
     polymorphic_cached_allocator<T, host_memory_resource>;
+template <class T>
+using thrust_cached_allocator =
+    polymorphic_allocator<T, device_memory_resource, detail::cuda_ptr<T>>;
 } // namespace allocator
 } // namespace libmobility

@@ -100,10 +100,8 @@ public:
     positions.assign(ipositions.begin(), ipositions.end());
   }
 
-  void Mdot(device_span<const real> iforces, device_span<const real> itorques,
+  void Mdot(device_span<const real> forces, device_span<const real> torques,
             device_span<real> linear, device_span<real> angular) override {
-    device_adapter<const real> forces(iforces, device::cuda);
-    device_adapter<const real> torques(itorques, device::cuda);
     int numberParticles = positions.size() / 3;
     if (numberParticles != this->numberParticles)
       throw std::runtime_error(

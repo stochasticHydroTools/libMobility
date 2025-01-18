@@ -64,6 +64,8 @@ def setup_inputs(framework, use_torques, numberParticles, precision):
 @pytest.mark.parametrize("framework", ["numpy", "torch", "cupy", "jax", "tensorflow"])
 @pytest.mark.parametrize("use_torques", [False, True])
 def test_framework(Solver, periodicity, framework, use_torques):
+    if use_torques and Solver.__name__ in "PSE":
+        pytest.skip("PSE does not support torques")
     numberParticles = 10
     solver = initialize_solver(Solver, periodicity, numberParticles, use_torques)
     # Set precision to be the same as compiled precision
@@ -76,3 +78,4 @@ def test_framework(Solver, periodicity, framework, use_torques):
     assert type(mf) == type(positions)
     if use_torques:
         assert type(mt) == type(positions)
+    del mf

@@ -12,24 +12,9 @@
  */
 #ifndef NBODY_RPY_CUH
 #define NBODY_RPY_CUH
-#include "allocator.h"
 #include "hydrodynamicKernels.cuh"
 #include "interface.h"
 #include "vector.cuh"
-#include <iostream>
-#include <thrust/device_vector.h>
-
-// These lines set up a special cached allocator container that effectively
-// makes allocationg GPU memory free.
-using resource = nbody_rpy::device_memory_resource;
-using device_temporary_memory_resource =
-    nbody_rpy::pool_memory_resource_adaptor<resource>;
-template <class T>
-using allocator_thrust =
-    nbody_rpy::polymorphic_allocator<T, device_temporary_memory_resource,
-                                     thrust::cuda::pointer<T>>;
-template <class T>
-using cached_vector = thrust::device_vector<T, allocator_thrust<T>>;
 
 namespace nbody_rpy {
 
@@ -212,8 +197,8 @@ void batchedNBody(device_span<const real> ipos, device_span<const real> iforces,
                   device_span<const real> itorques, device_span<real> iMF,
                   device_span<real> iMT, int Nbatches, int NperBatch,
                   HydrodynamicKernel &hydrodynamicKernel, algorithm alg) {
-  constexpr size_t elementsPerValue = sizeof(LayoutType) / sizeof(real);
-  const int numberParticles = Nbatches * NperBatch;
+  if(ipos.size() <Nbatches * NperBatch*3)
+    throw std::runtime_error("Not enough space in pos");
   device_adapter<const real> pos(ipos, device::cuda);
   device_adapter<const real> forces(iforces, device::cuda);
   device_adapter<const real> torques(itorques, device::cuda);
@@ -223,13 +208,14 @@ void batchedNBody(device_span<const real> ipos, device_span<const real> iforces,
   // If the called did not provide them we allocate them here, discarding the
   // result
   // TODO: Adjust the kernels to avoid this allocation
-  cached_vector<real> buffer_MT;
-  cached_vector<real> buffer_torques;
+  using cached_vector = thrust::device_vector<real, allocator::thrust_cached_allocator<real>>;
+  cached_vector buffer_MT;
+  cached_vector buffer_torques;
   real *mt_ptr = MT.data();
   const real *torques_ptr = torques.data();
   if (buffer_MT.size() == 0) {
-    buffer_MT.resize(numberParticles * elementsPerValue);
-    buffer_torques.resize(numberParticles * elementsPerValue);
+    buffer_MT.resize(pos.size(), 0);
+    buffer_torques.resize(pos.size(), 0);
     mt_ptr = buffer_MT.data().get();
     torques_ptr = buffer_torques.data().get();
   }
