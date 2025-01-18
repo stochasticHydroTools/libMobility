@@ -23,8 +23,9 @@ IF (CMAKE_BUILD_TYPE MATCHES "Debug")
   endif()
  set(CMAKE_CXX_FLAGS "-g -Wall -fPIC")
 ENDIF()
-
-# add_compile_definitions(PUBLIC DOUBLE_PRECISION)
+if(DEFINED DOUBLEPRECISION)
+  add_compile_definitions(PUBLIC DOUBLE_PRECISION)
+endif()
 set(THIRD_PARTY_DIR ${CMAKE_SOURCE_DIR}/include/third_party)
 set(UAMMD_INCLUDE ${THIRD_PARTY_DIR}/uammd/src
   ${THIRD_PARTY_DIR}/uammd/src/third_party)
