@@ -8,7 +8,6 @@
 #ifndef MOBILITY_SELFMOBILITY_H
 #define MOBILITY_SELFMOBILITY_H
 #include <MobilityInterface/MobilityInterface.h>
-#include <MobilityInterface/utils.h>
 #include <cmath>
 #include <random>
 #include <vector>
@@ -58,9 +57,11 @@ public:
   void setPositions(device_span<const real> ipositions) override {}
 
   void Mdot(device_span<const real> iforces, device_span<const real> itorques,
-            device_span<real> linear, device_span<real> angular) override {
+            device_span<real> ilinear, device_span<real> iangular) override {
     auto forces =
         libmobility::device_adapter(iforces, libmobility::device::cpu);
+    auto linear =
+        libmobility::device_adapter(ilinear, libmobility::device::cpu);
     if (!iforces.empty()) {
       for (int i = 0; i < 3 * numberParticles; i++) {
         linear[i] += forces[i] * linearMobility;
@@ -69,6 +70,8 @@ public:
     if (!itorques.empty()) {
       auto torques =
           libmobility::device_adapter(itorques, libmobility::device::cpu);
+      auto angular =
+          libmobility::device_adapter(iangular, libmobility::device::cpu);
       for (int i = 0; i < 3 * numberParticles; i++) {
         angular[i] += torques[i] * angularMobility;
       }
