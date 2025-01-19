@@ -1,3 +1,10 @@
+/* Raul  P. Pelaez  2025.  Multi device  memory  management
+ * This file  contains a  device_span class that  is a  wrapper around
+ * std::span  that  includes  a  device field.   It  also  contains  a
+ * device_adapter class that takes a  device_span and a target device.
+ * The adapter  will provide  a valid address  for the  target device,
+ * regardless of the origin.
+ */
 #pragma once
 #include "allocator.h"
 #include <span>
@@ -9,14 +16,28 @@ namespace libmobility {
 enum class device { cpu, cuda, unknown };
 template <typename T>
 concept numeric = std::is_arithmetic_v<T>;
+/**
+ * @brief A wrapper around std::span that includes a device field.
+ *
+ * @tparam T The type of the data.
+ */
 template <numeric T> struct device_span : public std::span<T> {
   device dev;
   device_span(std::span<T> data, device dev) : std::span<T>(data), dev(dev) {}
 };
-
+/**
+ * @brief Adapts a device_span to a target device. RAII-enabled to keep original
+ * up to date.
+ *
+ * This class takes a device_span and a target device. If the target device is
+ * different from the source device, it copies the data to the target device.
+ * The adpater becomes a device_span that provides valid addresses on the target
+ * device, regardless of the original device.
+ * The adapter takes care of updating the origin at destruction.
+ * @tparam T The type of the data.
+ */
 template <numeric T> class device_adapter : public device_span<T> {
-  // This class takes a device_span and a target device, if the target is
-  // different from the source, it will copy the data to the target device
+
   using bT = std::remove_const_t<T>;
   std::vector<bT, allocator::host_cached_allocator<bT>> host_data;
   thrust::device_vector<bT, allocator::thrust_cached_allocator<bT>> device_data;

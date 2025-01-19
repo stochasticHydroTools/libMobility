@@ -1,4 +1,4 @@
-/* Raul P. Pelaez 2021-2022. The libMobility interface.
+/* Raul P. Pelaez 2021-2025. The libMobility interface.
    Every mobility implement must inherit from the Mobility virtual base class.
    See solvers/SelfMobility for a simple example
  */
