@@ -16,7 +16,7 @@ using scalar = libmobility::real;
 using MobilityBase = libmobility::Mobility;
 using Configuration = libmobility::Configuration;
 using libmobility::Parameters;
-
+using libmobility::device_span;
 //Configures, initializes any solver (between PSE and NBody)
 //The same function can be extended to create any solver.
 //We need it to desambiguate by calling the solver-dependent setParameters function when necessary. For instance, see PSE below
@@ -47,11 +47,11 @@ auto initializeSolver(Parameters par){
 
 //An example of a function that works for any solver
 auto computeMFWithSolver(std::shared_ptr<MobilityBase> solver,
-			 std::vector<scalar> &pos,
-			 std::vector<scalar> &forces){
-  std::vector<scalar> result(pos.size(), 0);
-  solver->setPositions(pos.data());
-  solver->Mdot(forces.data(), nullptr, result.data(), nullptr);
+			 std::vector<scalar> &ipos,
+			 std::vector<scalar> &iforces){
+  std::vector<scalar> result(ipos.size(), 0);
+  solver->setPositions(ipos);
+  solver->Mdot(iforces, {}, result, {});
   return result;
 }
 
@@ -87,7 +87,7 @@ int main(){
   //The solvers can be used to compute stochastic displacements, even if they do not provide a specific way to compute them (defaults to using the lanczos algorithm
   std::vector<scalar> noiseNBody(pos.size(), 0);
   scalar prefactor = 1.0;
-  solver_nbody->sqrtMdotW(noiseNBody.data(), nullptr, prefactor);
+  solver_nbody->sqrtMdotW(noiseNBody, {}, prefactor);
 
   //Remember to clean up when done
   solver_nbody->clean();
