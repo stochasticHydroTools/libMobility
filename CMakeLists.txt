@@ -92,17 +92,6 @@ FetchContent_Declare(
   GIT_TAG        v2.4.0
 )
 FetchContent_MakeAvailable(nanobind)
-
-add_compile_options(-DSPDLOG_COMPILED_LIB)
-FetchContent_Declare(
-      spdlog
-      GIT_REPOSITORY https://github.com/gabime/spdlog.git
-      GIT_TAG v1.14.0
-)
-FetchContent_MakeAvailable(spdlog)
-link_libraries(spdlog::spdlog)
-# Set log level to all
-add_compile_definitions(PUBLIC SPDLOG_ACTIVE_LEVEL=0)
 include_directories(${UAMMD_INCLUDE} ${BLAS_INCLUDE_DIRS} ${LAPACKE_INCLUDE_DIRS})
 include_directories(${THIRD_PARTY_DIR}/LanczosAlgorithm/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)

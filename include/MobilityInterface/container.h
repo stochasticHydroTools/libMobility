@@ -1,7 +1,6 @@
 #pragma once
 #include "allocator.h"
 #include <span>
-#include <spdlog/spdlog.h>
 #include <thrust/device_vector.h>
 #include <type_traits>
 #include <vector>
@@ -26,7 +25,6 @@ template <numeric T> class device_adapter : public device_span<T> {
 public:
   device_adapter(device_span<T> span, device target_device)
       : device_span<T>(span), original_span(span) {
-    spdlog::set_level(spdlog::level::debug); // Set global log level to debug
     if (span.dev != target_device) {
       if (target_device == device::cuda) {
         device_data.assign(span.begin(), span.end());
