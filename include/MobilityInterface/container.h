@@ -25,10 +25,19 @@ template <numeric T> struct device_span : public std::span<T> {
   device dev;
   device_span(std::span<T> data, device dev) : std::span<T>(data), dev(dev) {}
   device_span() : std::span<T>(), dev(device::unknown) {}
-  device_span(std::vector<T> &data)
+  template <class Allocator>
+  device_span(std::vector<T, Allocator> &data)
       : std::span<T>(data.data(), data.size()), dev(device::cpu) {}
-  device_span(const std::vector<std::remove_const_t<T>> &data)
+  template <class Allocator>
+  device_span(const std::vector<std::remove_const_t<T>, Allocator> &data)
       : std::span<T>(data.data(), data.size()), dev(device::cpu) {}
+  template <class Allocator>
+  device_span(thrust::device_vector<T, Allocator> &data)
+      : std::span<T>(data.data().get(), data.size()), dev(device::cuda) {}
+  template <class Allocator>
+  device_span(
+      const thrust::device_vector<std::remove_const_t<T>, Allocator> &data)
+      : std::span<T>(data.data().get(), data.size()), dev(device::cuda) {}
 };
 /**
  * @brief Adapts a device_span to a target device. RAII-enabled to keep original
