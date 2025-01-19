@@ -1,3 +1,25 @@
+/* Raul P. Pelaez 2025. Allocators for libMobility.
+
+   This file provides a series of memory resources and allocators that
+   can be used with the C++17 allocator interface.
+
+   The main use for this file is to provide cached allocators that can
+   be used with std::vector  for host memory and thrust::device_vector
+   for GPU memory.
+
+   Example:
+
+   using namespace libmobility::allocator;
+   using float_vector = std::vector<float, host_cached_allocator<float>>;
+   using float_device_vector = thrust::device_vector<float, thrust_cached_allocator<float>>;
+
+   float_vector v(1000); // Allocates 1000 floats in host memory
+   float_device_vector dv(1000); // Allocates 1000 floats in device memory
+
+   The cached allocators  will store previously allocated  blocks in a
+   cache, and  retrieve them when  a similar block is  requested. This
+   makes them very efficient for repeated allocations.
+ */
 #pragma once
 #include <cstddef>
 #include <map>
