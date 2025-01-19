@@ -1,4 +1,4 @@
-/*Raul P. Pelaez 2021-2024. Example usage of the NBody mobility solver.
+/*Raul P. Pelaez 2021-2025. Example usage of the NBody mobility solver.
  All available solvers are used in a similar way, providing, in each case, the required parameters.
  For instance, a triply periodic algorithm will need at least a box size.
  */

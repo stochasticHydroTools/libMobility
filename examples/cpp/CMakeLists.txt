@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(libMobility_example)
 enable_language(CUDA)
+add_compile_definitions(PUBLIC CUDA_ENABLED)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -50,6 +51,7 @@ else()
 
 endif()
 include_directories(${BLAS_INCLUDE_DIRS} ${LAPACKE_INCLUDE_DIRS})
-link_libraries(${CUDA_LIBRARY} libMobility_PSE libMobility_NBody cufft cublas curand cusolver cuda cudart)
+link_libraries(${CUDA_LIBRARY} libMobility_PSE libMobility_NBody cufft cublas curand cusolver)
 
-add_executable(example example.cpp)
+add_executable(example example.cu)
+add_executable(example_cuda example_gpu.cu)
