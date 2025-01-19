@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include <vector>
-#include "MobilityInterface/allocator.h"
-#include "MobilityInterface/container.h"
+#include "memory/allocator.h"
+#include "memory/container.h"
 #include "thrust/device_vector.h"
 using namespace libmobility;
 using namespace libmobility::allocator;

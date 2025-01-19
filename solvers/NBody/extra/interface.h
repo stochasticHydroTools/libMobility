@@ -1,8 +1,8 @@
 #ifndef NBODYRPY_INTERFACE_H
 #define NBODYRPY_INTERFACE_H
 
-#include <MobilityInterface/container.h>
-#include <MobilityInterface/defines.h>
+#include "memory/container.h"
+#include "MobilityInterface/defines.h"
 namespace nbody_rpy {
 enum class kernel_type { open_rpy, bottom_wall };
 using namespace libmobility;

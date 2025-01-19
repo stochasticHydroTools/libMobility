@@ -5,8 +5,8 @@ from a class (called className) that inherits from libmobility::Mobility.
 python (accompanied by the default documentation of the mobility interface.
  */
 #ifndef MOBILITY_PYTHONIFY_H
-#include "MobilityInterface.h"
-#include "python_tensor.h"
+#include "MobilityInterface/MobilityInterface.h"
+#include "memory/python_tensor.h"
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/pair.h>
