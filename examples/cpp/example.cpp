@@ -16,7 +16,6 @@ using scalar = libmobility::real;
 using MobilityBase = libmobility::Mobility;
 using Configuration = libmobility::Configuration;
 using libmobility::Parameters;
-using libmobility::device_span;
 //Configures, initializes any solver (between PSE and NBody)
 //The same function can be extended to create any solver.
 //We need it to desambiguate by calling the solver-dependent setParameters function when necessary. For instance, see PSE below
