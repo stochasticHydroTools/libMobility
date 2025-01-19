@@ -24,6 +24,11 @@ concept numeric = std::is_arithmetic_v<T>;
 template <numeric T> struct device_span : public std::span<T> {
   device dev;
   device_span(std::span<T> data, device dev) : std::span<T>(data), dev(dev) {}
+  device_span() : std::span<T>(), dev(device::unknown) {}
+  device_span(std::vector<T> &data)
+      : std::span<T>(data.data(), data.size()), dev(device::cpu) {}
+  device_span(const std::vector<std::remove_const_t<T>> &data)
+      : std::span<T>(data.data(), data.size()), dev(device::cpu) {}
 };
 /**
  * @brief Adapts a device_span to a target device. RAII-enabled to keep original
