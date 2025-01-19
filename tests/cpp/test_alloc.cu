@@ -115,3 +115,17 @@ TEST(Container, adapterHostToDeviceConst){
   }
   ASSERT_EQ(a[0], 1.0f);
 }
+
+TEST(Alloc, empty){
+  // Try to deallocate an empty vector
+  {
+    std::vector<float, host_cached_allocator<float>> a;
+  }
+  {
+    thrust::device_vector<float, thrust_cached_allocator<float>> a;
+  }
+
+  thrust_cached_allocator<float>alloc;
+  alloc.deallocate(nullptr, 0);
+
+}
