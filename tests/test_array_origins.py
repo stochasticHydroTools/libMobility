@@ -29,12 +29,16 @@ def setup_inputs(framework, use_torques, numberParticles, precision):
         positions = torch.from_numpy(positions)
         forces = torch.from_numpy(forces)
         torques = torch.from_numpy(torques) if use_torques else None
+        if torch.cuda.is_available():
+            positions = positions.cuda()
+            forces = forces.cuda()
+            torques = torques.cuda() if use_torques else None
     elif framework == "cupy":
         import cupy as cp
 
         # skip if CUDA is not available
-        #        if cp.cuda.is_available() == False
-        pytest.skip("CUDA not available")
+        if not cp.cuda.is_available():
+            pytest.skip("CUDA not available")
         positions = cp.random.rand(numberParticles, 3).astype(precision)
         forces = cp.random.rand(numberParticles, 3).astype(precision)
         torques = (
@@ -44,7 +48,6 @@ def setup_inputs(framework, use_torques, numberParticles, precision):
         )
     elif framework == "jax":
         import jax
-        import jax.numpy as jnp
 
         device = jax.devices("cpu")[0]
         positions = jax.device_put(positions, device)
@@ -78,4 +81,9 @@ def test_framework(Solver, periodicity, framework, use_torques):
     assert type(mf) == type(positions)
     if use_torques:
         assert type(mt) == type(positions)
+    # Assert device origin is equal to the input
+    if framework != "numpy":
+        assert mf.device == positions.device
+        if use_torques:
+            assert mt.device == positions.device
     del mf
