@@ -197,7 +197,7 @@ void batchedNBody(device_span<const real> ipos, device_span<const real> iforces,
                   device_span<const real> itorques, device_span<real> iMF,
                   device_span<real> iMT, int Nbatches, int NperBatch,
                   HydrodynamicKernel &hydrodynamicKernel, algorithm alg) {
-  if(ipos.size() <Nbatches * NperBatch*3)
+  if (ipos.size() < Nbatches * NperBatch * 3)
     throw std::runtime_error("Not enough space in pos");
   device_adapter<const real> pos(ipos, device::cuda);
   device_adapter<const real> forces(iforces, device::cuda);
@@ -208,7 +208,8 @@ void batchedNBody(device_span<const real> ipos, device_span<const real> iforces,
   // If the called did not provide them we allocate them here, discarding the
   // result
   // TODO: Adjust the kernels to avoid this allocation
-  using cached_vector = thrust::device_vector<real, allocator::thrust_cached_allocator<real>>;
+  using cached_vector =
+      thrust::device_vector<real, allocator::thrust_cached_allocator<real>>;
   cached_vector buffer_MT;
   cached_vector buffer_torques;
   real *mt_ptr = MT.data();
