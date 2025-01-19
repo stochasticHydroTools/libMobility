@@ -1,14 +1,20 @@
+/* Raul P. Pelaez 2025. Tensor creation utilities for the libMobility Python
+   interface
+
+   This file provides utilities to create tensors in different frameworks
+
+ */
 #pragma once
-#include "container.h"
 #include <array>
-#include <cuda_runtime.h>
-#include <iostream>
 #include <map>
 #include <nanobind/ndarray.h>
+#include <numeric>
 #include <vector>
 namespace libmobility {
 namespace python {
 namespace nb = nanobind;
+
+/* Frameworks supported by the library */
 enum class framework { numpy, torch, cupy, jax, tensorflow };
 
 namespace detail {
@@ -19,11 +25,11 @@ static const std::map<framework, std::string> framework_names = {
     {framework::jax, "jax"},
     {framework::tensorflow, "tensorflow"}};
 
-template <typename Framework, typename T>
-auto create_array(size_t N = 0, bool is_cuda = false) {
+template <typename Framework, typename T, size_t N>
+auto create_array(std::array<size_t, N> shape = {}, bool is_cuda = false) {
   nb::ndarray<T, nb::c_contig> gen_array;
-  const std::array<size_t, 2> shape{N, 3};
-  const size_t total_size = N * 3;
+  const size_t total_size =
+      std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<size_t>());
   if (!is_cuda) {
     using alloc = allocator::host_cached_allocator<T>;
     auto *v = new std::vector<T, alloc>(total_size);
@@ -48,6 +54,7 @@ auto create_array(size_t N = 0, bool is_cuda = false) {
 }
 
 } // namespace detail
+
 template <typename pyarray> inline framework get_framework(pyarray &a) {
   nb::object obj = nb::find(a);
   std::string tn = nb::str(nb::getattr(obj, "__class__")).c_str();
@@ -60,28 +67,26 @@ template <typename pyarray> inline framework get_framework(pyarray &a) {
 }
 
 template <typename T>
-inline auto create_with_framework(size_t N, int device_type, framework f) {
+inline auto create_with_framework(auto shape, int device_type, framework f) {
   bool is_cuda = device_type == nb::device::cuda::value;
   bool is_cpu = device_type == nb::device::cpu::value;
   if (!is_cpu && !is_cuda) {
-    std::cerr << "Not cpu (" << nb::device::cpu::value << ") or cuda ("
-              << nb::device::cuda::value << ")" << std::endl;
-    std::cerr << "device_type: " << device_type << std::endl;
-    throw std::runtime_error("Unsupported device type");
+    throw std::runtime_error("Unsupported device type " +
+                             std::to_string(device_type));
   }
   switch (f) {
   case framework::numpy:
-    return detail::create_array<nb::numpy, T>(N, is_cuda);
+    return detail::create_array<nb::numpy, T>(shape, is_cuda);
   case framework::torch:
-    return detail::create_array<nb::pytorch, T>(N, is_cuda);
+    return detail::create_array<nb::pytorch, T>(shape, is_cuda);
   case framework::cupy:
-    return detail::create_array<nb::cupy, T>(N, is_cuda);
+    return detail::create_array<nb::cupy, T>(shape, is_cuda);
   case framework::jax:
-    return detail::create_array<nb::jax, T>(N, is_cuda);
+    return detail::create_array<nb::jax, T>(shape, is_cuda);
   case framework::tensorflow:
-    return detail::create_array<nb::tensorflow, T>(N, is_cuda);
+    return detail::create_array<nb::tensorflow, T>(shape, is_cuda);
   }
-  return detail::create_array<nb::numpy, T>(N);
+  return detail::create_array<nb::numpy, T>(shape);
 }
 } // namespace python
 } // namespace libmobility

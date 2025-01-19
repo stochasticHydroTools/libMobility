@@ -1,4 +1,4 @@
-/*Raul P. Pelaez 2021.
+/*Raul P. Pelaez 2021-2025.
 The MOBILITY_PYTHONIFY(className, description) macro creates a python module
 from a class (called className) that inherits from libmobility::Mobility.
 "description" is a string that will be printed when calling help(className) from
@@ -19,11 +19,15 @@ using namespace nb::literals;
 namespace py = nb;
 using pyarray = nb::ndarray<nb::c_contig>;
 using pyarray_c = nb::ndarray<libmobility::real, nb::c_contig>;
+namespace lp = libmobility::python;
+using libmobility::real;
+using Parameters = libmobility::Parameters;
+using Configuration = libmobility::Configuration;
+
 #define MOBILITYSTR(s) xMOBILITYSTR(s)
 #define xMOBILITYSTR(s) #s
 
-static libmobility::python::framework last_framework =
-    libmobility::python::framework::numpy;
+static lp::framework last_framework = lp::framework::numpy;
 static int last_device = nb::device::cpu::value;
 
 inline auto string2Periodicity(std::string per) {
@@ -61,21 +65,21 @@ inline libmobility::device get_device(pyarray_c &arr) {
     return libmobility::device::unknown;
   }
 }
-inline libmobility::device_span<libmobility::real>
-cast_to_real(pyarray_c &arr) {
+inline libmobility::device_span<real> cast_to_real(pyarray_c &arr) {
   auto dev = get_device(arr);
   return {{arr.data(), arr.size()}, dev};
 }
 
-inline libmobility::device_span<const libmobility::real>
-cast_to_const_real(pyarray_c &arr) {
+inline libmobility::device_span<const real> cast_to_const_real(pyarray_c &arr) {
   auto dev = get_device(arr);
   return {{arr.data(), arr.size()}, dev};
 }
 
 template <class Solver>
 auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
-  int N = myself.getNumberParticles();
+  size_t N = myself.getNumberParticles();
+  std::array shape = {N,3ul};
+
   if (forces.size() < 3 * N and forces.size() > 0) {
     throw std::runtime_error("The forces array must have size 3*N.");
   }
@@ -84,23 +88,21 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   }
   auto f = cast_to_const_real(forces);
   auto t = cast_to_const_real(torques);
-  auto framework = libmobility::python::get_framework(forces);
+  auto framework = lp::get_framework(forces);
   last_framework = framework;
   int device = f.empty() ? torques.device_type() : forces.device_type();
   if (device == nb::device::none::value)
     device = nb::device::cpu::value;
   last_device = device;
-  auto mf = libmobility::python::create_with_framework<libmobility::real>(
-      N, device, framework);
-  auto mt = nb::ndarray<libmobility::real, nb::c_contig>();
+  auto mf = lp::create_with_framework<real>(shape, device, framework);
+  auto mt = nb::ndarray<real, nb::c_contig>();
   if (!t.empty()) {
     if (!myself.getNeedsTorque()) {
       throw std::runtime_error(
           "The solver was configured without torques. Set "
           "needsTorque to true when initializing if you want to use torques");
     }
-    mt = libmobility::python::create_with_framework<libmobility::real>(
-        N, device, framework);
+    mt = lp::create_with_framework<real>(shape, device, framework);
   }
   return std::make_tuple(f, t, mf, mt);
 }
@@ -144,19 +146,16 @@ tolerance : float, optional
 		Tolerance, used for approximate methods and also for Lanczos (default fluctuation computation). Default is 1e-4.
 )pbdoc";
 
-template <class Solver>
-auto call_sqrtMdotW(Solver &solver, libmobility::real prefactor) {
-  int N = solver.getNumberParticles();
-  auto linear = libmobility::python::create_with_framework<libmobility::real>(
-      N, last_device, last_framework);
-  auto angular = nb::ndarray<libmobility::real, nb::c_contig>();
+template <class Solver> auto call_sqrtMdotW(Solver &solver, real prefactor) {
+  size_t N = solver.getNumberParticles();
+  std::array shape = {N,3ul};
+  auto linear = lp::create_with_framework<real>(shape, last_device, last_framework);
+  auto angular = nb::ndarray<real, nb::c_contig>();
   if (solver.getNeedsTorque()) {
-    angular = libmobility::python::create_with_framework<libmobility::real>(
-        N, last_device, last_framework);
+    angular = lp::create_with_framework<real>(shape, last_device, last_framework);
     solver.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
   } else {
-    auto empty = libmobility::device_span<libmobility::real>(
-        {}, libmobility::device::cpu);
+    auto empty = libmobility::device_span<real>({}, libmobility::device::cpu);
     solver.sqrtMdotW(cast_to_real(linear), empty, prefactor);
   }
   return std::make_pair(linear, angular);
@@ -217,9 +216,8 @@ array_like
 )pbdoc";
 
 template <class Solver>
-void call_initialize(Solver &myself, libmobility::real T, libmobility::real eta,
-                     libmobility::real a, int N, bool needsTorque,
-                     libmobility::real tol) {
+void call_initialize(Solver &myself, real T, real eta, real a, int N,
+                     bool needsTorque, real tol) {
   libmobility::Parameters par;
   par.temperature = T;
   par.viscosity = eta;
@@ -236,8 +234,7 @@ template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
 
 template <class Solver>
 auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,
-                                 pyarray_c &torques,
-                                 libmobility::real prefactor) {
+                                 pyarray_c &torques, real prefactor) {
   auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
   auto mf_ptr = cast_to_real(mf);
   auto mt_ptr = cast_to_real(mt);
@@ -278,10 +275,6 @@ std::unique_ptr<Solver> call_construct(std::string perx, std::string pery,
                                        std::string perz) {
   return std::make_unique<Solver>(createConfiguration(perx, pery, perz));
 }
-
-using real = libmobility::real;
-using Parameters = libmobility::Parameters;
-using Configuration = libmobility::Configuration;
 
 template <typename MODULENAME>
 auto define_module_content(
