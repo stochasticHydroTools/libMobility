@@ -11,5 +11,5 @@ FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
 
 add_executable(test_alloc test_alloc.cu)
-target_link_libraries(test_alloc PRIVATE GTest::gtest_main spdlog::spdlog)
+target_link_libraries(test_alloc PRIVATE GTest::gtest_main)
 gtest_discover_tests(test_alloc)
