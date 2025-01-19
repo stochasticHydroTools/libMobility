@@ -213,10 +213,12 @@ void batchedNBody(device_span<const real> ipos, device_span<const real> iforces,
   cached_vector buffer_torques;
   real *mt_ptr = MT.data();
   const real *torques_ptr = torques.data();
-  if (buffer_MT.size() == 0) {
+  if (iMT.size() == 0) {
     buffer_MT.resize(pos.size(), 0);
-    buffer_torques.resize(pos.size(), 0);
     mt_ptr = buffer_MT.data().get();
+  }
+  if (itorques.size() == 0) {
+    buffer_torques.resize(pos.size(), 0);
     torques_ptr = buffer_torques.data().get();
   }
   auto kernel = computeRPYBatchedFast<HydrodynamicKernel, LayoutType>;
