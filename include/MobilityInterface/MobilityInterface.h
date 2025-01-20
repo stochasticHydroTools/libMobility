@@ -4,9 +4,9 @@
  */
 #ifndef MOBILITYINTERFACE_H
 #define MOBILITYINTERFACE_H
-#include "memory/container.h"
 #include "defines.h"
-#include "lanczos.h"
+#include "lanczos/lanczos.h"
+#include "memory/container.h"
 #include <random>
 #include <stdexcept>
 #include <vector>
@@ -48,11 +48,11 @@ private:
   bool initialized = false;
   std::uint64_t lanczosSeed;
   real lanczosTolerance;
-  std::shared_ptr<LanczosStochasticVelocities> lanczos;
-  std::vector<real> lanczosOutput;
+  // std::shared_ptr<LanczosStochasticVelocities> lanczos;
+  lanczos::Lanczos<real> solver;
+  thrust::device_vector<real> lanczosOutput;
   real temperature;
   bool needsTorque = false;
-
 protected:
   Mobility() {};
 
@@ -113,7 +113,7 @@ public:
   // Where dW is a vector of Gaussian random numbers If the solver does not
   // provide a stochastic displacement implementation, the Lanczos algorithm
   // will be used automatically
-  virtual void sqrtMdotW(device_span<real> linear, device_span<real> angular,
+  virtual void sqrtMdotW(device_span<real> ilinear, device_span<real> iangular,
                          real prefactor = 1) {
     if (this->temperature == 0)
       return;
@@ -123,42 +123,41 @@ public:
       throw std::runtime_error(
           "[libMobility] You must initialize the base class in order to use "
           "the default stochastic displacement computation");
-    if (not lanczos) {
-      if (this->lanczosSeed ==
-          0) { // If a seed is not provided, get one from random device
-        this->lanczosSeed = std::random_device()();
-      }
-      int numberElements = this->needsTorque ? (2 * this->numberParticles)
-                                             : this->numberParticles;
-      lanczos = std::make_shared<LanczosStochasticVelocities>(
-          numberElements, this->lanczosTolerance, this->lanczosSeed);
-      lanczosOutput.resize(3 * numberElements);
-    }
-    if (this->needsTorque && angular.empty())
+    lanczosOutput.resize(3 * this->numberParticles +
+                         (this->needsTorque ? 3 * this->numberParticles : 0));
+    if (this->needsTorque && iangular.empty())
       throw std::runtime_error("[libMobility] This solver requires angular "
                                "velocities when configured with torques");
-    std::fill(lanczosOutput.begin(), lanczosOutput.end(), 0);
-    auto dev = linear.dev;
-    lanczos->sqrtMdotW(
-        [this, dev](const real *f, real *mv) {
-          // Torques are stored at the end of the force array
-          // After, results are separated into linear and angular velocities
-          const int N = this->numberParticles;
-          const real *t = this->needsTorque ? (f + 3 * N) : nullptr;
-          real *mt = this->needsTorque ? (mv + 3 * N) : nullptr;
-          device_span<const real> s_t({t, t + (t ? (3 * N) : 0)}, dev);
-          device_span<real> s_mt({mt, mt + (mt ? (3 * N) : 0)}, dev);
-	  device_span<const real> s_f({f, f + 3 * N}, dev);
-	  device_span<real> s_mv({mv, mv + 3 * N}, dev);
-          Mdot(s_f, s_t, s_mv, s_mt);
-        },
-        lanczosOutput.data(), prefactor);
-    thrust::copy(lanczosOutput.begin(),
-                 lanczosOutput.begin() + 3 * this->numberParticles,
-                 linear.begin());
-    if (this->needsTorque)
-      thrust::copy(lanczosOutput.begin() + 3 * this->numberParticles,
-                   lanczosOutput.end(), angular.begin());
+    thrust::fill(lanczosOutput.begin(), lanczosOutput.end(), 0);
+    device_adapter<real> linear(ilinear, device::cuda);
+    device_adapter<real> angular(iangular, device::cuda);
+    std::cerr << "Using Lanczos" << std::endl;
+    auto dot = [this](device_span<const real> v, device_span<real> mv) {
+      // Torques are stored at the end of the force array
+      // After, results are separated into linear and angular velocities
+      const int N = this->numberParticles;
+      const real *t = this->needsTorque ? (v.data() + 3 * N) : nullptr;
+      real *mt = this->needsTorque ? (mv.data() + 3 * N) : nullptr;
+      auto dev = device::cuda;
+      device_span<const real> s_t({t, t + (t ? (3 * N) : 0)}, dev);
+      device_span<real> s_mt({mt, mt + (mt ? (3 * N) : 0)}, dev);
+      device_span<const real> s_f({v.data(), v.data() + 3 * N}, dev);
+      device_span<real> s_mv({mv.data(), mv.data() + 3 * N}, dev);
+      Mdot(s_f, s_t, s_mv, s_mt);
+    };
+    device_span<real> output(lanczosOutput);
+    auto noise = this->generateGaussianNoise(lanczosOutput.size());
+    device_span<const real> noise_span(noise);
+    solver(dot, noise_span, output, lanczosTolerance);
+    auto l_ptr = thrust::cuda::pointer<real>(linear.data());
+    thrust::copy(thrust::cuda::par, lanczosOutput.begin(),
+                 lanczosOutput.begin() + 3 * this->numberParticles, l_ptr);
+    if (this->needsTorque) {
+      auto a_ptr = thrust::cuda::pointer<real>(angular.data());
+      thrust::copy(thrust::cuda::par,
+                   lanczosOutput.begin() + 3 * this->numberParticles,
+                   lanczosOutput.end(), a_ptr);
+    }
   }
 
   // Equivalent to calling Mdot and then stochasticDisplacements, can be faster
