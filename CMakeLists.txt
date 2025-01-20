@@ -23,7 +23,7 @@ IF (CMAKE_BUILD_TYPE MATCHES "Debug")
   endif()
  set(CMAKE_CXX_FLAGS "-g -Wall -fPIC")
 ENDIF()
-if(DEFINED DOUBLEPRECISION)
+if(DOUBLEPRECISION) # checks if equal to 1
   add_compile_definitions(PUBLIC DOUBLE_PRECISION)
 endif()
 set(THIRD_PARTY_DIR ${CMAKE_SOURCE_DIR}/include/third_party)
