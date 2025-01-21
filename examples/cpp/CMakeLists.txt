@@ -9,8 +9,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CUDA_STANDARD 20)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
-
-set(ROOT_DIR ../../)
 # enable the line below if libmobility is compiled in double
 # add_compile_definitions(PUBLIC DOUBLE_PRECISION)
 set(BLA_STATIC OFF)
@@ -53,7 +51,7 @@ else()
 endif()
 
 include_directories(${BLAS_INCLUDE_DIRS} ${LAPACKE_INCLUDE_DIRS})
-include_directories(${ROOT_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/include)
 link_libraries(${CUDA_LIBRARY} libMobility_PSE libMobility_NBody cufft cublas curand cusolver)
 
 add_executable(example example.cu)
