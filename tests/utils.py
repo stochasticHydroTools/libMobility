@@ -92,6 +92,6 @@ def generate_positions_in_box(parameters, numberParticles):
         positions[:, 2] += 0.5  # [-0.5, 0.5] -> [0, 1]
         positions *= 10  # [0, 1] -> [0, 10]
         # Move particles to at least one hydrodynamic radius away from the bottom wall
-        positions[:, 2] += 1  # [0, 10] -> [1, 11]
+        # positions[:, 2] += 1  # [0, 10] -> [1, 11]
 
     return positions
