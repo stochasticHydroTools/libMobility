@@ -101,15 +101,17 @@ __device__ real3 RPY_WF(real3 rij,real r, real rh){
     real rt0; //rot-trans & trans-rot mobility
   public:
 
-    __device__ mdot_result dotProduct(real3 pi, real3 pj, real3 fj, real3 tj){
+    __device__ mdot_result dotProduct(real3 pi, real3 pj, real3 fj, real3 tj, bool haveTorque){
       mdot_result result;
       real3 rij = make_real3(pi)-make_real3(pj);
       const real r = sqrt(dot(rij, rij));
 
       result.MF += dotProduct_UF(rij, r, fj);
-      result.MF += dotProduct_UT(rij, r, tj);
-      result.MT += dotProduct_WF(rij, r, fj);
-      result.MT += dotProduct_WT(rij, r, tj);
+      if(haveTorque){
+        result.MF += dotProduct_UT(rij, r, tj);
+        result.MT += dotProduct_WF(rij, r, fj);
+        result.MT += dotProduct_WT(rij, r, tj);
+      }
 
       return result;
     }
@@ -310,7 +312,7 @@ __device__ real3 RPY_WF(real3 rij,real r, real rh){
     //The constructor needs a mobility coefficient for each block and an hydrodynamic radius
     BottomWall(real t0, real r0, real rt0, real rh):t0(t0), r0(r0), rt0(rt0), rh(rh){}
 
-    __device__ mdot_result dotProduct(real3 pi, real3 pj, real3 fj, real3 tj){
+    __device__ mdot_result dotProduct(real3 pi, real3 pj, real3 fj, real3 tj, bool haveTorque){
       mdot_result result;
       // implements damping from Appendix 1 in [2] so the matrix is positive definite when a particle overlaps the wall
       real bi = min(pi.z/rh, real(1.0));
@@ -326,9 +328,11 @@ __device__ real3 RPY_WF(real3 rij,real r, real rh){
       const real r = sqrt(dot(rij, rij));
 
       result.MF += bi2*dotProduct_UF(rij, r, fj, pj.z);
-      result.MF += bi2*dotProduct_UT(rij, r, tj, pi.z); // this is correct with pi.z: see note on dotProduct_UT
-      result.MT += bi2*dotProduct_WF(rij, r, fj, pj.z);
-      result.MT += bi2*dotProduct_WT(rij, r, tj, pj.z);
+      if (haveTorque){
+        result.MF += bi2*dotProduct_UT(rij, r, tj, pi.z); // this is correct with pi.z: see note on dotProduct_UT
+        result.MT += bi2*dotProduct_WF(rij, r, fj, pj.z);
+        result.MT += bi2*dotProduct_WT(rij, r, tj, pj.z);
+      }
 
       return result;
     }
