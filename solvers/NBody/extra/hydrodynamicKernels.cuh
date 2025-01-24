@@ -317,21 +317,21 @@ __device__ real3 RPY_WF(real3 rij,real r, real rh){
       // implements damping from Appendix 1 in [2] so the matrix is positive definite when a particle overlaps the wall
       real bi = min(pi.z/rh, real(1.0));
       bi = max(bi, real(0.0));
-      if(bi == real(0.0)){
-        return result;
-      }
-      real bi2 = bi*bi;
+      real bj = min(pj.z/rh, real(1.0));
+      bj = max(bj, real(0.0));
+      real bij = bi*bj;
+
       pi.z = max(pi.z, rh);
       pj.z = max(pj.z, rh);
 
       real3 rij = make_real3(pi)-make_real3(pj);
       const real r = sqrt(dot(rij, rij));
 
-      result.MF += bi2*dotProduct_UF(rij, r, fj, pj.z);
+      result.MF += bij*dotProduct_UF(rij, r, fj, pj.z);
       if (haveTorque){
-        result.MF += bi2*dotProduct_UT(rij, r, tj, pi.z); // this is correct with pi.z: see note on dotProduct_UT
-        result.MT += bi2*dotProduct_WF(rij, r, fj, pj.z);
-        result.MT += bi2*dotProduct_WT(rij, r, tj, pj.z);
+        result.MF += bij*dotProduct_UT(rij, r, tj, pi.z); // this is correct with pi.z: see note on dotProduct_UT
+        result.MT += bij*dotProduct_WF(rij, r, fj, pj.z);
+        result.MT += bij*dotProduct_WT(rij, r, tj, pj.z);
       }
 
       return result;
