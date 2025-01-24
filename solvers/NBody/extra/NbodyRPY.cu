@@ -16,6 +16,7 @@
 #include "interface.h"
 #include "vector.cuh"
 
+
 namespace nbody_rpy {
 
 // Reference: Fast N-Body Simulation with CUDA. Chapter 31 of GPU Gems 3
@@ -67,10 +68,9 @@ __global__ void computeRPYBatchedFastGPU(const vecType *pos,
           const real3 fj = shForce[counter];
           const real3 pj = shPos[counter];
           const real3 tj = shTorque[counter];
-          MF += kernel.dotProduct_UF(pi, pj, fj);
-          MF += kernel.dotProduct_UT(pi, pj, tj);
-          MT += kernel.dotProduct_WT(pi, pj, tj);
-          MT += kernel.dotProduct_WF(pi, pj, fj);
+          mdot_result dot = kernel.dotProduct(pi, pj, fj, tj);
+          MF += dot.MF;
+          MT += dot.MT;
         }
       }
     }
@@ -115,11 +115,10 @@ __global__ void computeRPYBatchedNaiveGPU(const vecType *pos,
     real3 pj = make_real3(pos[i]);
     real3 fj = make_real3(forces[i]);
     real3 tj = make_real3(torques[i]);
-    MF += kernel.dotProduct_UF(pi, pj, fj);
-    MF += kernel.dotProduct_UT(pi, pj, tj);
-    MT += kernel.dotProduct_WT(pi, pj, tj);
-    MT += kernel.dotProduct_WF(pi, pj, fj);
-  }
+    mdot_result dot = kernel.dotProduct(pi, pj, fj, tj);
+    MF += dot.MF;
+    MT += dot.MT;
+}
   Mv[tid] = MF;
   Mw[tid] = MT;
 }
@@ -156,10 +155,9 @@ __global__ void computeRPYBatchedNaiveBlockGPU(
     real3 pj = make_real3(pos[i]);
     real3 fj = make_real3(forces[i]);
     real3 tj = make_real3(torque[i]);
-    MF += kernel.dotProduct_UF(pi, pj, fj);
-    MF += kernel.dotProduct_UT(pi, pj, tj);
-    MT += kernel.dotProduct_WT(pi, pj, tj);
-    MT += kernel.dotProduct_WF(pi, pj, fj);
+    mdot_result dot = kernel.dotProduct(pi, pj, fj, tj);
+    MF += dot.MF;
+    MT += dot.MT;
   }
   sharedMemory[threadIdx.x] = MF;
   sharedMemory[threadIdx.x + blockDim.x] = MT;

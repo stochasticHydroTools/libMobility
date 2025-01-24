@@ -15,6 +15,7 @@ to linear and angular forces (torques). For example, dotProduct_UF computes U = 
 
 namespace nbody_rpy{
 
+  struct mdot_result {real3 MF=real3(); real3 MT=real3();};
 
   //RPY = (1/(6*pi*viscosity*rh))*(f*I + g* r\diadic r/r^2). rh is hydrodynamic radius. This function returns {f, g/r^2}
   inline  __device__  real2 RPY_UF(real r, real rh){
@@ -59,9 +60,9 @@ __device__ real2 RPY_WT(real r, real rh){
 }
   
 // returns (M_xy, M_xz, M_yz)
-__device__ real3 RPY_UT(real3 rij, real rh){
+__device__ real3 RPY_UT(real3 rij, real r, real rh){
   const real invrh = real(1.0)/rh;
-  const real r = sqrt(dot(rij, rij))*invrh;
+  r*=invrh;
   rij *= invrh;
   if(r>=2){
     real invr3 = real(1.0)/(r*r*r);
@@ -76,9 +77,9 @@ __device__ real3 RPY_UT(real3 rij, real rh){
 }
 
 // returns (M_xy, M_xz, M_yz)
-__device__ real3 RPY_WF(real3 rij, real rh){
+__device__ real3 RPY_WF(real3 rij,real r, real rh){
   const real invrh = real(1.0)/rh;
-  const real r = sqrt(dot(rij, rij))*invrh;
+  r *= invrh;
   rij *= invrh;
   if(r>=2){
     const real invr3 = real(1.0)/(r*r*r);
@@ -100,13 +101,24 @@ __device__ real3 RPY_WF(real3 rij, real rh){
     real rt0; //rot-trans & trans-rot mobility
   public:
 
+    __device__ mdot_result dotProduct(real3 pi, real3 pj, real3 fj, real3 tj){
+      mdot_result result;
+      real3 rij = make_real3(pi)-make_real3(pj);
+      const real r = sqrt(dot(rij, rij));
+
+      result.MF += dotProduct_UF(rij, r, fj);
+      result.MF += dotProduct_UT(rij, r, tj);
+      result.MT += dotProduct_WF(rij, r, fj);
+      result.MT += dotProduct_WT(rij, r, tj);
+
+      return result;
+    }
+
     //The constructor needs a self mobility and an hydrodynamic radius
     OpenBoundary(real t0, real r0, real rt0, real rh):t0(t0), r0(r0), rt0(rt0), rh(rh){}
 
     //Computes M(ri, rj)*vj
-    __device__ real3 dotProduct_UF(real3 pi, real3 pj, real3 vj){
-      const real3 rij = make_real3(pi)-make_real3(pj);
-      const real r = sqrt(dot(rij, rij));
+    __device__ real3 dotProduct_UF(real3 rij, real r, real3 vj){
       const real2 c12 = RPY_UF(r, rh);
       const real f = c12.x;
       const real gdivr2 = c12.y;
@@ -115,9 +127,7 @@ __device__ real3 RPY_WF(real3 rij, real rh){
       return t0*Mv_t;
     }
 
-  __device__ real3 dotProduct_WT(real3 pi, real3 pj, real3 vj){
-      const real3 rij = make_real3(pi)-make_real3(pj);
-      const real r = sqrt(dot(rij, rij));
+  __device__ real3 dotProduct_WT(real3 rij, real r, real3 vj){
       const real2 c12 = RPY_WT(r, rh);
       const real f = c12.x;
       const real gdivr2 = c12.y;
@@ -126,18 +136,16 @@ __device__ real3 RPY_WF(real3 rij, real rh){
       return r0*Mv_t;
   }
 
-  __device__ real3 dotProduct_UT(real3 pi, real3 pj, real3 vj){
-      const real3 rij = make_real3(pi)-make_real3(pj);
-      const real3 m = RPY_UT(rij, rh); // (M_xy, M_xz, M_yz)
+  __device__ real3 dotProduct_UT(real3 rij, real r, real3 vj){
+      const real3 m = RPY_UT(rij, r, rh); // (M_xy, M_xz, M_yz)
       const real3 Mv_t = {m.x*vj.y + m.y*vj.z,
                          -m.x*vj.x + m.z*vj.z, 
                          -m.y*vj.x - m.z*vj.y};
       return rt0*Mv_t;
   }
 
-  __device__ real3 dotProduct_WF(real3 pi, real3 pj, real3 vj){
-      const real3 rij = make_real3(pi)-make_real3(pj);
-      const real3 m = RPY_WF(rij, rh); // (M_xy, M_xz, M_yz)
+  __device__ real3 dotProduct_WF(real3 rij, real r, real3 vj){
+      const real3 m = RPY_WF(rij, r, rh); // (M_xy, M_xz, M_yz)
       const real3 Mv_t = {m.x*vj.y + m.y*vj.z,
                          -m.x*vj.x + m.z*vj.z, 
                          -m.y*vj.x - m.z*vj.y};
@@ -301,67 +309,65 @@ __device__ real3 RPY_WF(real3 rij, real rh){
     //The constructor needs a mobility coefficient for each block and an hydrodynamic radius
     BottomWall(real t0, real r0, real rt0, real rh):t0(t0), r0(r0), rt0(rt0), rh(rh){}
 
-    //Computes M(ri, rj)*vj
-    __device__ real3 dotProduct_UF(real3 pi, real3 pj, real3 vj){
+    __device__ mdot_result dotProduct(real3 pi, real3 pj, real3 fj, real3 tj){
+      mdot_result result;
       real3 rij = make_real3(pi)-make_real3(pj);
       const real r = sqrt(dot(rij, rij));
+
+      result.MF += dotProduct_UF(rij, r, fj, pj.z);
+      result.MF += dotProduct_UT(rij, r, tj, pi.z); // this is correct with pi.z: see note on dotProduct_UT
+      result.MT += dotProduct_WF(rij, r, fj, pj.z);
+      result.MT += dotProduct_WT(rij, r, tj, pj.z);
+
+      return result;
+    }
+
+    __device__ real3 dotProduct_UF(real3 rij, real r, real3 vj, real hj){
       const real2 c12 = RPY_UF(r, rh);
       const real f = c12.x;
       const real gdivr2 = c12.y;
       const real gv = gdivr2*dot(rij, vj);
       real3 Mv_t = f*vj + (r>real(0)?gv*rij:real3());
-      const real hj = pj.z;
-      rij.z = rij.z + 2*pj.z;
+      rij.z += 2*hj;
       Mv_t += wallCorrection_UF(rij/rh,(r==0), hj/rh, vj);
       return t0*Mv_t;
     }
 
-    __device__ real3 dotProduct_WT(real3 pi, real3 pj, real3 vj){
-      real3 rij = make_real3(pi)-make_real3(pj);
-      const real r = sqrt(dot(rij, rij));
+    __device__ real3 dotProduct_WT(real3 rij, real r, real3 vj, real hj){
       const real2 c12 = RPY_WT(r, rh);
       const real f = c12.x;
       const real gdivr2 = c12.y;
       const real gv = gdivr2*dot(rij, vj);
       real3 Mv_t = f*vj + (r>real(0)?gv*rij:real3());
-      const real hj = pj.z;
-      rij.z = rij.z + 2*pj.z;
+      rij.z += 2*hj;
       Mv_t += wallCorrection_WT(rij/rh,(r==0), hj/rh, vj);
       return r0*Mv_t;
     }
 
   // IMPORTANT: wallCorrection_UT is implemented as the transpose of wallCorrection_WF.
   // In the complete mobility matrix, M_{WF, ij}^T = M_{UT, ji}. however, we want to compute M_{UT, ij} on this
-  // iteration of the calling loop. so, we call wallCorrection_UT with R = -rih = pj - pi and h = pi.z,
+  // iteration of the calling loop. so, we call wallCorrection_UT with R = -rij = pj - pi and h = pi.z,
   // i.e. we flip the order of the (ij) arguments so that we get M_{UT, ij}
-    __device__ real3 dotProduct_UT(real3 pi, real3 pj, real3 vj){
-    real3 rij = make_real3(pi)-make_real3(pj);
-    const real r = sqrt(dot(rij, rij));
-    const real3 m = RPY_UT(rij, rh); // (M_xy, M_xz, M_yz)
+    __device__ real3 dotProduct_UT(real3 rij, real r, real3 vj, real hi){
+    const real3 m = RPY_UT(rij, r, rh); // (M_xy, M_xz, M_yz)
     real3 Mv_t = {m.x*vj.y + m.y*vj.z,
                  -m.x*vj.x + m.z*vj.z, 
                  -m.y*vj.x - m.z*vj.y};
-    const real hi = pi.z;
-    rij.z = -rij.z + 2*pi.z;
-    rij.x = -rij.x;
-    rij.y = -rij.y;
+    rij = -1*rij;
+    rij.z += 2*hi;
     Mv_t += wallCorrection_UT(rij/rh,(r==0), hi/rh, vj);
     return rt0*Mv_t;
     }
 
-    __device__ real3 dotProduct_WF(real3 pi, real3 pj, real3 vj){
-    real3 rij = make_real3(pi)-make_real3(pj);
-    const real r = sqrt(dot(rij, rij));
-    const real3 m = RPY_WF(rij, rh); // (M_xy, M_xz, M_yz)
+    __device__ real3 dotProduct_WF(real3 rij, real r, real3 vj, real hj){
+    const real3 m = RPY_WF(rij, r, rh); // (M_xy, M_xz, M_yz)
     real3 Mv_t = {m.x*vj.y + m.y*vj.z,
                  -m.x*vj.x + m.z*vj.z, 
                  -m.y*vj.x - m.z*vj.y};
-    const real hj = pj.z;
-    rij.z = rij.z + 2*pj.z;
+    rij.z += 2*hj;
     Mv_t += wallCorrection_WF(rij/rh,(r==0), hj/rh, vj);
     return rt0*Mv_t;
     }
-    
   };
 
 }
