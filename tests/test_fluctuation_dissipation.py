@@ -92,7 +92,7 @@ def test_fluctuation_dissipation_linear_displacements(
 
 @pytest.mark.parametrize("needsTorques", [True, False])
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
-def test_matrix_spd(Solver, periodicity, needsTorques):
+def test_matrix_pos_def(Solver, periodicity, needsTorques):
 
     if needsTorques and Solver == PSE:
         pytest.skip("PSE does not support torques")

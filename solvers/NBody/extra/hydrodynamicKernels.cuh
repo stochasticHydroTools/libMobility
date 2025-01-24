@@ -15,7 +15,7 @@ to linear and angular forces (torques). For example, dotProduct_UF computes U = 
 
 namespace nbody_rpy{
 
-  struct mdot_result {real3 MF=real3(); real3 MT=real3();};
+  struct mdot_result {real3 MF=real3(0,0,0); real3 MT=real3(0,0,0);};
 
   //RPY = (1/(6*pi*viscosity*rh))*(f*I + g* r\diadic r/r^2). rh is hydrodynamic radius. This function returns {f, g/r^2}
   inline  __device__  real2 RPY_UF(real r, real rh){
@@ -157,6 +157,7 @@ __device__ real3 RPY_WF(real3 rij,real r, real rh){
   //Evaluates the RPY tensor with open boundaries in all boundaries except a wall at the bottom in Z=0
   // References: 
     // [1] Simulation of hydrodynamically interacting particles near a no-slip boundary, Swan & Brady 2007
+    // [2] Brownian dynamics of confined suspensions of active microrollers, Usabiaga et al. 2017
   class BottomWall{
     real rh; //Hydrodynamic radius
     real t0; //trans-trans mobility
@@ -170,7 +171,7 @@ __device__ real3 RPY_WF(real3 rij,real r, real rh){
     //hj: height of the particle j
     //vj: quantity (i.e force) of particle j
     __device__ real3 wallCorrection_UF(real3 rij, bool self, real hj, real3 vj){
-      real3 correction = real3();
+      real3 correction = real3(0,0,0);
       if(self){ // B1*vj in [1]
 	real invZi = real(1.0) / hj;
 	real invZi3 = invZi * invZi * invZi;
@@ -206,7 +207,7 @@ __device__ real3 RPY_WF(real3 rij,real r, real rh){
     // NOTE: normalized by 8 pi eta a**3. [1] normalizes by 6 pi et a**3
     // so, all coeffs are multiplied by 4/3 if compared to [1]
     __device__ real3 wallCorrection_WT(real3 rij, bool self, real hj, real3 vj){
-        real3 correction = real3();
+        real3 correction = real3(0,0,0);
         if(self){ // B3*vj in [1]
             real invZi = real(1.0) / hj;
             real invZi3 = invZi * invZi * invZi;
@@ -240,7 +241,7 @@ __device__ real3 RPY_WF(real3 rij,real r, real rh){
   // note: [1] seemingly uses the left-hand rule for the cross product, so the signs are flipped on expressions
   // in that paper that use the Levi-Civita symbol
   __device__ real3 wallCorrection_UT(real3 rij, bool self, real h, real3 vj){
-      real3 correction = real3();
+      real3 correction = real3(0,0,0);
       if(self){ // B2^T*vj in [1]. ^T denotes transpose.
         real invZi = real(1.0) / h;
         real invZi4 = invZi * invZi * invZi * invZi;
@@ -273,7 +274,7 @@ __device__ real3 RPY_WF(real3 rij,real r, real rh){
   // note: [1] seemingly uses the left-hand rule for the cross product, so the signs are flipped on expressions
   // in that paper that use the Levi-Civita symbol
   __device__ real3 wallCorrection_WF(real3 rij, bool self, real h, real3 vj){
-        real3 correction = real3();
+        real3 correction = real3(0,0,0);
         if(self){ // B2*fj in [1].
             real invZi = real(1.0) / h;
             real invZi4 = invZi * invZi * invZi * invZi;
@@ -311,13 +312,23 @@ __device__ real3 RPY_WF(real3 rij,real r, real rh){
 
     __device__ mdot_result dotProduct(real3 pi, real3 pj, real3 fj, real3 tj){
       mdot_result result;
+      // implements damping from Appendix 1 in [2] so the matrix is positive definite when a particle overlaps the wall
+      real bi = min(pi.z/rh, real(1.0));
+      bi = max(bi, real(0.0));
+      if(bi == real(0.0)){
+        return result;
+      }
+      real bi2 = bi*bi;
+      pi.z = max(pi.z, rh);
+      pj.z = max(pj.z, rh);
+
       real3 rij = make_real3(pi)-make_real3(pj);
       const real r = sqrt(dot(rij, rij));
 
-      result.MF += dotProduct_UF(rij, r, fj, pj.z);
-      result.MF += dotProduct_UT(rij, r, tj, pi.z); // this is correct with pi.z: see note on dotProduct_UT
-      result.MT += dotProduct_WF(rij, r, fj, pj.z);
-      result.MT += dotProduct_WT(rij, r, tj, pj.z);
+      result.MF += bi2*dotProduct_UF(rij, r, fj, pj.z);
+      result.MF += bi2*dotProduct_UT(rij, r, tj, pi.z); // this is correct with pi.z: see note on dotProduct_UT
+      result.MT += bi2*dotProduct_WF(rij, r, fj, pj.z);
+      result.MT += bi2*dotProduct_WT(rij, r, tj, pj.z);
 
       return result;
     }
