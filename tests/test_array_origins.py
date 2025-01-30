@@ -87,3 +87,12 @@ def test_framework(Solver, periodicity, framework, use_torques):
         if use_torques:
             assert mt.device == positions.device
     del mf
+    mf, mt = solver.hydrodynamicVelocities(forces, torques, prefactor=1)
+    assert type(mf) == type(positions)
+    if use_torques:
+        assert type(mt) == type(positions)
+    # Assert device origin is equal to the input
+    if framework != "numpy":
+        assert mf.device == positions.device
+        if use_torques:
+            assert mt.device == positions.device
