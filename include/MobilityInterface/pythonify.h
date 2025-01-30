@@ -1,22 +1,34 @@
-/*Raul P. Pelaez 2021.
-The MOBILITY_PYTHONIFY(className, description) macro creates a pybind11 module
+/*Raul P. Pelaez 2021-2025.
+The MOBILITY_PYTHONIFY(className, description) macro creates a python module
 from a class (called className) that inherits from libmobility::Mobility.
 "description" is a string that will be printed when calling help(className) from
 python (accompanied by the default documentation of the mobility interface.
  */
-#include <stdexcept>
 #ifndef MOBILITY_PYTHONIFY_H
-#include "MobilityInterface.h"
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
-namespace py = pybind11;
-using namespace pybind11::literals;
-using pyarray = py::array;
-using pyarray_c =
-    py::array_t<libmobility::real, py::array::c_style | py::array::forcecast>;
+#include "MobilityInterface/MobilityInterface.h"
+#include "memory/python_tensor.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/ndarray.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/unique_ptr.h>
+#include <nanobind/stl/vector.h>
+#include <stdexcept>
+namespace nb = nanobind;
+using namespace nb::literals;
+namespace py = nb;
+using pyarray = nb::ndarray<nb::c_contig>;
+using pyarray_c = nb::ndarray<libmobility::real, nb::c_contig>;
+namespace lp = libmobility::python;
+using libmobility::real;
+using Parameters = libmobility::Parameters;
+using Configuration = libmobility::Configuration;
 
 #define MOBILITYSTR(s) xMOBILITYSTR(s)
 #define xMOBILITYSTR(s) #s
+
+static lp::framework last_framework = lp::framework::numpy;
+static int last_device = nb::device::cpu::value;
 
 inline auto string2Periodicity(std::string per) {
   using libmobility::periodicity_mode;
@@ -43,50 +55,55 @@ inline auto createConfiguration(std::string perx, std::string pery,
   return conf;
 }
 
-template <typename T, class Array> void check_dtype(Array &arr) {
-  if (not py::isinstance<py::array_t<T>>(arr)) {
-    throw std::runtime_error("Input array must have the correct data type.");
-  }
-  if (not py::isinstance<
-          py::array_t<T, py::array::c_style | py::array::forcecast>>(arr)) {
-    throw std::runtime_error(
-        "The input array is not contiguous and cannot be used as a buffer.");
+inline libmobility::device get_device(pyarray_c &arr) {
+  switch (arr.device_type()) {
+  case nb::device::cpu::value:
+    return libmobility::device::cpu;
+  case nb::device::cuda::value:
+    return libmobility::device::cuda;
+  default:
+    return libmobility::device::unknown;
   }
 }
-
-template <class Array> libmobility::real *cast_to_real(Array &arr) {
-  check_dtype<libmobility::real>(arr);
-  return static_cast<libmobility::real *>(arr.mutable_data());
+inline libmobility::device_span<real> cast_to_real(pyarray_c &arr) {
+  auto dev = get_device(arr);
+  return {{arr.data(), arr.size()}, dev};
 }
 
-template <class Array> const libmobility::real *cast_to_const_real(Array &arr) {
-  check_dtype<const libmobility::real>(arr);
-  return static_cast<const libmobility::real *>(arr.data());
+inline libmobility::device_span<const real> cast_to_const_real(pyarray_c &arr) {
+  auto dev = get_device(arr);
+  return {{arr.data(), arr.size()}, dev};
 }
 
 template <class Solver>
 auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
-  int N = myself.getNumberParticles();
+  size_t N = myself.getNumberParticles();
+  std::array shape = {N,3ul};
+
   if (forces.size() < 3 * N and forces.size() > 0) {
     throw std::runtime_error("The forces array must have size 3*N.");
   }
   if (torques.size() < 3 * N and torques.size() > 0) {
     throw std::runtime_error("The torques array must have size 3*N.");
   }
-  auto f = forces.size() ? cast_to_const_real(forces) : nullptr;
-  auto t = torques.size() ? cast_to_const_real(torques) : nullptr;
-  auto mf = py::array_t<libmobility::real>();
-  auto mt = py::array_t<libmobility::real>();
-  mf.resize({3 * N});
-  mf.attr("fill")(0);
-  if (t) {
-    if(!myself.getNeedsTorque()){
-      throw std::runtime_error("The was configured without torques. Set needsTorque to true in the constructor if you want to use torques");
+  auto f = cast_to_const_real(forces);
+  auto t = cast_to_const_real(torques);
+  auto framework = lp::get_framework(forces);
+  last_framework = framework;
+  int device = f.empty() ? torques.device_type() : forces.device_type();
+  if (device == nb::device::none::value)
+    device = nb::device::cpu::value;
+  last_device = device;
+  auto mf = lp::create_with_framework<real>(shape, device, framework);
+  auto mt = nb::ndarray<real, nb::c_contig>();
+  if (!t.empty()) {
+    if (!myself.getNeedsTorque()) {
+      throw std::runtime_error(
+          "The solver was configured without torques. Set "
+          "needsTorque to true when initializing if you want to use torques");
     }
-    mt.resize({3 * N});
-    mt.attr("fill")(0);
+    mt = lp::create_with_framework<real>(shape, device, framework);
   }
-
   return std::make_tuple(f, t, mf, mt);
 }
 
@@ -129,21 +146,18 @@ tolerance : float, optional
 		Tolerance, used for approximate methods and also for Lanczos (default fluctuation computation). Default is 1e-4.
 )pbdoc";
 
-template <class Solver>
-auto call_sqrtMdotW(Solver &solver, libmobility::real prefactor) {
-  int N = solver.getNumberParticles();
-  auto linear = py::array_t<libmobility::real>({N * 3});
-  linear.attr("fill")(0);
-  auto angular = py::array_t<libmobility::real>();
+template <class Solver> auto call_sqrtMdotW(Solver &solver, real prefactor) {
+  size_t N = solver.getNumberParticles();
+  std::array shape = {N,3ul};
+  auto linear = lp::create_with_framework<real>(shape, last_device, last_framework);
+  auto angular = nb::ndarray<real, nb::c_contig>();
   if (solver.getNeedsTorque()) {
-    angular.resize({3 * N});
-    angular.attr("fill")(0);
+    angular = lp::create_with_framework<real>(shape, last_device, last_framework);
     solver.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
-    angular = angular.reshape({N, 3});
   } else {
-    solver.sqrtMdotW(cast_to_real(linear), nullptr, prefactor);
+    auto empty = libmobility::device_span<real>({}, libmobility::device::cpu);
+    solver.sqrtMdotW(cast_to_real(linear), empty, prefactor);
   }
-  linear = linear.reshape({N, 3});
   return std::make_pair(linear, angular);
 }
 
@@ -172,13 +186,9 @@ template <class Solver>
 auto call_mdot(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
   int N = myself.getNumberParticles();
-  auto mf_ptr = mf.size() ? cast_to_real(mf) : nullptr;
-  auto mt_ptr = mt.size() ? cast_to_real(mt) : nullptr;
+  auto mf_ptr = cast_to_real(mf);
+  auto mt_ptr = cast_to_real(mt);
   myself.Mdot(f, t, mf_ptr, mt_ptr);
-  if (mf_ptr)
-    mf = mf.reshape({N, 3});
-  if (mt_ptr)
-    mt = mt.reshape({N, 3});
   return std::make_pair(mf, mt);
 }
 
@@ -206,9 +216,8 @@ array_like
 )pbdoc";
 
 template <class Solver>
-void call_initialize(Solver &myself, libmobility::real T, libmobility::real eta,
-                     libmobility::real a, int N, bool needsTorque,
-                     libmobility::real tol) {
+void call_initialize(Solver &myself, real T, real eta, real a, int N,
+                     bool needsTorque, real tol) {
   libmobility::Parameters par;
   par.temperature = T;
   par.viscosity = eta;
@@ -223,20 +232,14 @@ template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
   myself.setPositions(cast_to_const_real(pos));
 }
 
-
 template <class Solver>
 auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,
-                                 pyarray_c &torques,
-                                 libmobility::real prefactor) {
+                                 pyarray_c &torques, real prefactor) {
   auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
-  auto mf_ptr = mf.size() ? cast_to_real(mf) : nullptr;
-  auto mt_ptr = mt.size() ? cast_to_real(mt) : nullptr;
+  auto mf_ptr = cast_to_real(mf);
+  auto mt_ptr = cast_to_real(mt);
   myself.hydrodynamicVelocities(f, t, mf_ptr, mt_ptr, prefactor);
   int N = myself.getNumberParticles();
-  if (mf_ptr)
-    mf = mf.reshape({N, 3});
-  if (mt_ptr)
-    mt = mt.reshape({N, 3});
   return std::make_pair(mf, mt);
 }
 
@@ -268,24 +271,20 @@ array_like
 )pbdoc";
 
 template <class Solver>
-auto call_construct(std::string perx, std::string pery, std::string perz) {
-  return std::unique_ptr<Solver>(
-      new Solver(createConfiguration(perx, pery, perz)));
+std::unique_ptr<Solver> call_construct(std::string perx, std::string pery,
+                                       std::string perz) {
+  return std::make_unique<Solver>(createConfiguration(perx, pery, perz));
 }
-
-using real = libmobility::real;
-using Parameters = libmobility::Parameters;
-using Configuration = libmobility::Configuration;
 
 template <typename MODULENAME>
 auto define_module_content(
-    py::module &m, const char *name, const char *documentation,
+    py::module_ &m, const char *name, const char *documentation,
     const std::function<void(py::class_<MODULENAME> &)> &extra_code) {
 
   auto solver = py::class_<MODULENAME>(m, name, documentation);
 
   solver
-      .def(py::init(&call_construct<MODULENAME>), constructor_docstring,
+      .def(nb::new_(&call_construct<MODULENAME>), constructor_docstring,
            "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)
       .def("initialize", call_initialize<MODULENAME>, initialize_docstring,
            "temperature"_a, "viscosity"_a, "hydrodynamicRadius"_a,
@@ -303,7 +302,7 @@ auto define_module_content(
            "torques"_a = pyarray_c(), "prefactor"_a = 1)
       .def("clean", &MODULENAME::clean,
            "Frees any memory allocated by the module.")
-      .def_property_readonly_static(
+      .def_prop_ro_static(
           "precision", [](py::object) { return MODULENAME::precision; },
           R"pbdoc(Compilation precision, a string holding either float or double.)pbdoc");
 
@@ -312,7 +311,7 @@ auto define_module_content(
 }
 
 #define MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(MODULENAME, EXTRA, documentation)   \
-  PYBIND11_MODULE(MODULENAME, m) {                                             \
+  NB_MODULE(MODULENAME, m) {                                                   \
     auto solver = define_module_content<MODULENAME>(                           \
         m, MOBILITYSTR(MODULENAME), documentation,                             \
         [](py::class_<MODULENAME> &solver) { EXTRA });                         \

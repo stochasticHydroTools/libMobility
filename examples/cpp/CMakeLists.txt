@@ -1,14 +1,16 @@
 cmake_minimum_required(VERSION 3.22)
 project(libMobility_example)
 enable_language(CUDA)
+# add_compile_definitions(PUBLIC CUDA_ENABLED) # uncommenting this makes the code not compile- I don't know why
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CUDA_STANDARD 20)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
-set(UAMMD_INCLUDE include/third_party/uammd/src include/third_party/uammd/src/third_party)
+
+set(ROOT_DIR ../../)
 # enable the line below if libmobility is compiled in double
 # add_compile_definitions(PUBLIC DOUBLE_PRECISION)
 set(BLA_STATIC OFF)
@@ -49,7 +51,10 @@ else()
   )
 
 endif()
+
 include_directories(${BLAS_INCLUDE_DIRS} ${LAPACKE_INCLUDE_DIRS})
+include_directories(${ROOT_DIR}/include)
 link_libraries(${CUDA_LIBRARY} libMobility_PSE libMobility_NBody cufft cublas curand cusolver)
 
-add_executable(example example.cpp)
+add_executable(example example.cu)
+add_executable(example_cuda example_gpu.cu)

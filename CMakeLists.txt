@@ -2,11 +2,13 @@ cmake_minimum_required(VERSION 3.24)
 project(libMobility)
 enable_language(CUDA)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/" "$ENV{CONDA_PREFIX}/share/cmake/Modules")
-set(CMAKE_BUILD_TYPE Release)
+if(NOT DEFINED CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 add_compile_definitions(PUBLIC MAXLOGLEVEL=3)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CUDA_STANDARD 20)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
 # Set CUDA archs so all supported GPUs are covered
@@ -15,17 +17,19 @@ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
 endif()
 IF (CMAKE_BUILD_TYPE MATCHES "Debug")
   if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
-    set(CMAKE_CUDA_FLAGS "-g -G  -lineinfo -src-in-ptx")
+    set(CMAKE_CUDA_FLAGS "-g -G -src-in-ptx -fPIC")
   else()
     set(CMAKE_CUDA_FLAGS "-g")
   endif()
- set(CMAKE_CXX_FLAGS "-g -Wall -Wextra -pedantic")
+ set(CMAKE_CXX_FLAGS "-g -Wall -fPIC")
 ENDIF()
-
-# add_compile_definitions(PUBLIC DOUBLE_PRECISION)
+if(DOUBLEPRECISION) # checks if equal to 1
+  add_compile_definitions(PUBLIC DOUBLE_PRECISION)
+endif()
 set(THIRD_PARTY_DIR ${CMAKE_SOURCE_DIR}/include/third_party)
 set(UAMMD_INCLUDE ${THIRD_PARTY_DIR}/uammd/src
   ${THIRD_PARTY_DIR}/uammd/src/third_party)
+
 set(BLA_STATIC OFF)
 find_package(BLAS)
 find_package(LAPACK)
@@ -43,6 +47,15 @@ if(BLAS_FOUND AND LAPACK_FOUND)
   if(MKL_DETECTED)
     message(STATUS "Intel MKL environment detected")
     add_compile_definitions(PUBLIC USE_MKL)
+    find_path(MKL_INCLUDE_DIR NAMES mkl.h PATHS
+      $ENV{CONDA_PREFIX}/include
+      $ENV{PREFIX}/include
+      $ENV{MKLROOT}/include
+      $ENV{BLAS_HOME}/include
+      /usr/include
+      /usr/local/include
+    )
+    include_directories(${MKL_INCLUDE_DIR})
   else()
     find_path(BLAS_INCLUDE_DIR NAMES lapacke.h PATHS
       $ENV{CONDA_PREFIX}/include
@@ -68,32 +81,33 @@ if(BLAS_FOUND AND LAPACK_FOUND)
 else()
   message(FATAL_ERROR "BLAS and LAPACK not found. Please install them.")
 endif()
-
-link_libraries(BLAS::BLAS LAPACK::LAPACK)
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-find_package(pybind11 REQUIRED CONFIG)
-include_directories(${pybind11_INCLUDE_DIRS})
-include_directories(${Python3_INCLUDE_DIRS})
+link_libraries(BLAS::BLAS LAPACK::LAPACK cudart)
+find_package(Python 3
+  REQUIRED COMPONENTS Interpreter Development.Module
+  OPTIONAL_COMPONENTS Development.SABIModule)
+include(FetchContent)
+FetchContent_Declare(
+  nanobind
+  GIT_REPOSITORY https://github.com/wjakob/nanobind/
+  GIT_TAG        v2.4.0
+)
+FetchContent_MakeAvailable(nanobind)
 include_directories(${UAMMD_INCLUDE} ${BLAS_INCLUDE_DIRS} ${LAPACKE_INCLUDE_DIRS})
 include_directories(${THIRD_PARTY_DIR}/LanczosAlgorithm/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr -extended-lambda")
 endif()
-
-# Ensure ${Python3_SOABI} is not empty
-if(NOT Python3_SOABI)
-  message(FATAL_ERROR "Python3_SOABI is empty. Set it to the output of 'python3-config --extension-suffix'")
-endif()
 add_subdirectory(solvers)
+enable_testing()
+add_subdirectory(tests/cpp)
+
 
 # Install headers under include/ to the CMAKE_INSTALL_PREFIX include directory
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/MobilityInterface DESTINATION ${CMAKE_INSTALL_PREFIX}/include/)
 install(DIRECTORY ${THIRD_PARTY_DIR}/LanczosAlgorithm/include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/MobilityInterface/)
 install(DIRECTORY ${THIRD_PARTY_DIR}/uammd/src/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/uammd/src)
 
-
-enable_testing()
 install(DIRECTORY tests/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/libMobility/tests/ FILES_MATCHING PATTERN "*.py" PATTERN "*.npz")
 # Add a test for each Python file in the tests directory
 file(GLOB TESTS tests/*.py)

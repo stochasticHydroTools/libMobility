@@ -6,7 +6,12 @@ from numpy.linalg import eig
 import logging
 
 from libMobility import SelfMobility, PSE, NBody, DPStokes
-from utils import compute_M, sane_parameters, generate_positions_in_box, solver_configs_all
+from utils import (
+    compute_M,
+    sane_parameters,
+    generate_positions_in_box,
+    solver_configs_all,
+)
 
 
 def fluctuation_dissipation_KS(M, fluctuation_method, needsTorques):
@@ -57,11 +62,9 @@ def fluctuation_dissipation_KS(M, fluctuation_method, needsTorques):
         ), f"KS test failed for component {m}, p = {p}, 1-mu_alpha = {1-mu_alpha}. This stochastic test may fail occasionally, try running it again."
 
 
-@pytest.mark.parametrize(
-    ("Solver", "periodicity"), solver_configs_all
-)
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("hydrodynamicRadius", [0.95, 1.12])
-@pytest.mark.parametrize("numberParticles", [1,2,10])
+@pytest.mark.parametrize("numberParticles", [1, 2, 10])
 def test_fluctuation_dissipation_linear_displacements(
     Solver, periodicity, hydrodynamicRadius, numberParticles
 ):

@@ -1,11 +1,18 @@
 import numpy as np
-from libMobility import SelfMobility, PSE, NBody, DPStokes
+from libMobility import SelfMobility, NBody, PSE, DPStokes
 
 
 sane_parameters = {
     "PSE": {"psi": 1.0, "Lx": 32, "Ly": 32, "Lz": 32, "shearStrain": 0.0},
     "NBody": {"algorithm": "advise"},
-    "DPStokes": {"dt": 1, "Lx": 16, "Ly": 16, "zmin": -6, "zmax": 6, "allowChangingBoxSize": False},
+    "DPStokes": {
+        "dt": 1,
+        "Lx": 16,
+        "Ly": 16,
+        "zmin": -6,
+        "zmax": 6,
+        "allowChangingBoxSize": False,
+    },
     "SelfMobility": {"parameter": 5.0},
 }
 
@@ -25,11 +32,17 @@ solver_configs_torques = [
     if not (Solver == PSE)
 ]
 
-def initialize_solver(Solver, periodicity, numberParticles, needsTorque=False):
+
+def initialize_solver(
+    Solver, periodicity, numberParticles, needsTorque=False, parameters=None, **kwargs
+):
     solver = Solver(*periodicity)
-    solver.setParameters(**sane_parameters[Solver.__name__])
+    if parameters is not None:
+        solver.setParameters(**parameters)
+    else:
+        solver.setParameters(**sane_parameters[Solver.__name__])
     solver.initialize(
-        temperature=1.0,
+        temperature=kwargs.get("temperature", 1.0),
         viscosity=1.0,
         hydrodynamicRadius=1.0,
         numberParticles=numberParticles,
@@ -76,7 +89,9 @@ def generate_positions_in_box(parameters, numberParticles):
 
     # generates positions for NBody
     if "algorithm" in parameters:
-        positions[:, 2] += 0.5
-        positions *= 10
+        positions[:, 2] += 0.5  # [-0.5, 0.5] -> [0, 1]
+        positions *= 10  # [0, 1] -> [0, 10]
+        # Move particles to at least one hydrodynamic radius away from the bottom wall
+        positions[:, 2] += 1  # [0, 10] -> [1, 11]
 
     return positions

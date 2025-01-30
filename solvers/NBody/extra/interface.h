@@ -1,20 +1,20 @@
 #ifndef NBODYRPY_INTERFACE_H
 #define NBODYRPY_INTERFACE_H
 
-#include <MobilityInterface/defines.h>
+#include "memory/container.h"
+#include "MobilityInterface/defines.h"
+namespace nbody_rpy {
+enum class kernel_type { open_rpy, bottom_wall };
+using namespace libmobility;
 
-namespace nbody_rpy{
-  using  real  = libmobility::real;
+enum class algorithm { fast, naive, block, advise };
+void callBatchedNBody(device_span<const real> pos,
+                      device_span<const real> forces,
+                      device_span<const real> torques, device_span<real> MF,
+                      device_span<real> MT, int Nbatches, int NperBatch,
+                      real transMobility, real rotMobility,
+                      real transRotMobility, real hydrodynamicRadius,
+                      algorithm alg, kernel_type kernel);
 
-  enum class algorithm{fast, naive, block, advise};
-  void callBatchedNBodyOpenBoundaryRPY(const real* h_pos, const real* h_forces, const real* h_torques,
-				       real* h_MF, real* h_MT, int Nbatches, int NperBatch,
-				       real transMobility, real rotMobility, real transRotMobility, real hydrodynamicRadius, algorithm alg);
-
-  void callBatchedNBodyBottomWallRPY(const real* h_pos, const real* h_forces, const real* h_torques,
-             real* h_MF, real* h_MT, int Nbatches, int NperBatch,
-				     real transMobility, real rotMobility, real transRotMobility, real hydrodynamicRadius, algorithm alg);
-
-
-}
+} // namespace nbody_rpy
 #endif
