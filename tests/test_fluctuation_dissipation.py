@@ -90,6 +90,7 @@ def test_fluctuation_dissipation_linear_displacements(
 
     fluctuation_dissipation_KS(M, fluctuation_method, needsTorques)
 
+
 @pytest.mark.parametrize("needsTorques", [True, False])
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_matrix_pos_def(Solver, periodicity, needsTorques):
@@ -100,7 +101,11 @@ def test_matrix_pos_def(Solver, periodicity, needsTorques):
     numberParticles = 10
     parameters = sane_parameters[Solver.__name__]
     solver = initialize_solver(
-        Solver, periodicity, numberParticles, needsTorque=needsTorques, parameters=parameters
+        Solver,
+        periodicity,
+        numberParticles,
+        needsTorque=needsTorques,
+        parameters=parameters,
     )
 
     n_iter = 20
@@ -108,5 +113,6 @@ def test_matrix_pos_def(Solver, periodicity, needsTorques):
         positions = generate_positions_in_box(parameters, numberParticles)
         solver.setPositions(positions)
         M = compute_M(solver, numberParticles, needsTorque=needsTorques)
-        assert np.all(np.linalg.eigvals(M) > 0), "Mobility matrix is not positive definite."
-
+        assert np.all(
+            np.linalg.eigvals(M) > 0
+        ), "Mobility matrix is not positive definite."
