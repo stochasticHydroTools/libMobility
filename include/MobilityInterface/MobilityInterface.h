@@ -84,7 +84,6 @@ public:
   //  void setParametersModuleName(MyParameters par){
   //    //Store required parameters
   //  }
-
   // Initialize should leave the solver in a state ready for setPositions to be
   //  called. Furthermore, initialize can be called again if some parameter
   //  changes
