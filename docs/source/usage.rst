@@ -62,7 +62,7 @@ A libMobility solver is initialized in three steps:
 		import numpy as np
 		from libMobility import SelfMobility
 		numberParticles = 100;
-		precision = np.float32 if Solver.precision == "float" else np.float64
+		precision = np.float32 if SelfMobility.precision == "float" else np.float64
 		solver = SelfMobility("open", "open", "open")
 		solver.setParameters(parameter=5) # SelfMobility only exposes an example parameter
 		solver.initialize(
