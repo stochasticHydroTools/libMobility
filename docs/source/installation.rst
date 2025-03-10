@@ -18,9 +18,7 @@ If you want to compile the library from source, you can clone the repository wit
 
 .. code-block:: shell
 
-    $ git clone --recursive https://github.com/stochasticHydroTools/libMobility
-
-The ``--recursive`` flag is necessary to clone the submodules of the repository.
+    $ git clone https://github.com/stochasticHydroTools/libMobility
 
 Getting dependencies
 --------------------
