@@ -106,6 +106,6 @@ jobs:
           mkl-devel
     - name: Run optional tests with extra dependencies
       run: |
+        pip install -vv .
         pytest -sv -k SelfMobility tests/test_array_origins.py
-        shell: micromamba-shell {0}
       shell: micromamba-shell {0}
