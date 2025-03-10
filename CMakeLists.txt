@@ -62,12 +62,6 @@ add_subdirectory(solvers)
 enable_testing()
 add_subdirectory(tests/cpp)
 
-
-# Install headers under include/ to the CMAKE_INSTALL_PREFIX include directory
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/MobilityInterface DESTINATION ${CMAKE_INSTALL_PREFIX}/include/)
-install(DIRECTORY ${THIRD_PARTY_DIR}/LanczosAlgorithm/include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/MobilityInterface/)
-install(DIRECTORY ${THIRD_PARTY_DIR}/uammd/src/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/uammd/src)
-
 install(DIRECTORY tests/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/libMobility/tests/ FILES_MATCHING PATTERN "*.py" PATTERN "*.npz")
 # Add a test for each Python file in the tests directory
 file(GLOB TESTS tests/*.py)
