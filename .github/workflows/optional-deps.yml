@@ -33,7 +33,7 @@ jobs:
     - name: Create environment with extra dependencies
       uses: mamba-org/setup-micromamba@v2
       with:
-        generate-run-shell: false
+        generate-run-shell: true
         environment-file: environment.yml
         environment-name: libmobility-extra
         create-args: >-
