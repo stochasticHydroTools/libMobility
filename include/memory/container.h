@@ -30,14 +30,29 @@ template <numeric T> struct device_span : public std::span<T> {
       : std::span<T>(data.data(), data.size()), dev(device::cpu) {}
   template <class Allocator>
   device_span(const std::vector<std::remove_const_t<T>, Allocator> &data)
-      : std::span<T>(data.data(), data.size()), dev(device::cpu) {}
+      : device_span<const T>(std::span<const T>{data.data(), data.size()}, device::cpu) {}
   template <class Allocator>
   device_span(thrust::device_vector<T, Allocator> &data)
-      : std::span<T>(data.data().get(), data.size()), dev(device::cuda) {}
+      : device_span<T>(
+            std::span<T>{thrust::raw_pointer_cast(data.data()), data.size()},
+            device::cuda) {}
   template <class Allocator>
   device_span(
       const thrust::device_vector<std::remove_const_t<T>, Allocator> &data)
-      : std::span<T>(data.data().get(), data.size()), dev(device::cuda) {}
+      : device_span<T>(
+            std::span<T>{thrust::raw_pointer_cast(data.data()), data.size()},
+            device::cuda) {}
+  /**
+   * @brief Implicit conversion to a `device_span<const T>` so that it can be
+   *        passed to functions that accept `device_span<const T>`.
+   */
+  operator device_span<const T>() const
+    requires(!std::is_const_v<T>)
+  {
+    // Construct from *this (which is std::span<T>) to std::span<const T>
+    // preserving the same device.
+    return device_span<const T>(std::span<const T>(*this), dev);
+  }
 };
 /**
  * @brief Adapts a device_span to a target device. RAII-enabled to keep original

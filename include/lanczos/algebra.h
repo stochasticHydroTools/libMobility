@@ -16,8 +16,8 @@ using libmobility::numeric;
 namespace detail {
 template <numeric T>
 void cublas_gemv(cublasHandle_t handle, int n, int m, T alpha,
-                 device_span<const T> A, device_span<const T> x,
-                 device_span<T> y) {
+                 const device_span<T> &A, const device_span<T>& x,
+                 device_span<T> &y) {
   cublasStatus_t status;
   T beta = 1.0;
   if constexpr (std::is_same_v<T, double>)
@@ -33,8 +33,8 @@ void cublas_gemv(cublasHandle_t handle, int n, int m, T alpha,
 }
 
 template <numeric T>
-void cblas_gemv(int n, int m, T alpha, device_span<const T> A,
-                device_span<const T> x, device_span<T> y) {
+void cblas_gemv(int n, int m, T alpha, const device_span<T> &A,
+                const device_span<T>& x, device_span<T> &y) {
   if constexpr (std::is_same_v<T, double>)
     cblas_dgemv(CblasColMajor, CblasNoTrans, n, m, alpha, A.data(), n, x.data(),
                 1, 1.0, y.data(), 1);
@@ -46,26 +46,26 @@ void cblas_gemv(int n, int m, T alpha, device_span<const T> A,
 } // namespace detail
 struct Algebra {
 
-  template <numeric T> T nrm2(device_span<const T> v) {
-    return sqrt(thrust::inner_product(v.begin(), v.end()));
+  template <typename Iter> auto norm2(Iter &v) {
+    return sqrt(*thrust::inner_product(v.begin(), v.end(), v.begin(), v.begin()));
+  }
+
+  template <numeric T, typename Iter1, typename Iter2>
+  void axpy(T a, const Iter1 &x, Iter2 &y){
+    //thrust::transform(x.begin(), x.end(), y.begin(), y.begin(), a * _1 + _2);
+  }
+
+  template <typename Iter, numeric T> void scal(Iter& x, T a) {
+    //thrust::transform(x.begin(), x.end(), x.begin(), a * _1);
+  }
+
+  template <typename Iter1, typename Iter2> auto dot(const Iter1 &x, const Iter2 &y) {
+    return 1.0;//*thrust::inner_product(x.begin(), x.end(), y.begin(), y.begin());
   }
 
   template <numeric T>
-  void axpy(T a, device_span<const T> x, device_span<T> y) {
-    thrust::transform(x.begin(), x.end(), y.begin(), y.begin(), a * _1 + _2);
-  }
-
-  template <numeric T> void scal(T a, device_span<T> x) {
-    thrust::transform(x.begin(), x.end(), x.begin(), a * _1);
-  }
-
-  template <numeric T> T dot(device_span<const T> x, device_span<const T> y) {
-    return thrust::inner_product(x.begin(), x.end(), y.begin());
-  }
-
-  template <numeric T>
-  void gemv(int n, int m, T alpha, device_span<const T> A,
-            device_span<const T> x, device_span<T> y) {
+  void gemv(int n, int m, T alpha, const device_span<T> &A,
+            const device_span<T>& x, device_span<T> &y) {
     if (A.dev == device::cuda) {
       detail::cublas_gemv(handle, n, m, alpha, A, x, y);
     } else {

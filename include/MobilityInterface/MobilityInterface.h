@@ -7,10 +7,23 @@
 #include "defines.h"
 #include "lanczos/lanczos.h"
 #include "memory/container.h"
+#include "third_party/uammd/src/third_party/saruprng.cuh"
 #include <random>
 #include <stdexcept>
+#include <thrust/transform.h>
 #include <vector>
 namespace libmobility {
+
+struct SaruNoise {
+  uint seed1;
+  uint seed2;
+  SaruNoise(uint s1, uint s2) : seed1(s1), seed2(s2) {}
+
+  __device__ real operator()(uint i) {
+    Saru s(seed1, seed2, i);
+    return s.gf(0.0f, 1.0f).x;
+  }
+};
 
 enum class periodicity_mode {
   single_wall,
@@ -49,10 +62,21 @@ private:
   std::uint64_t lanczosSeed;
   real lanczosTolerance;
   // std::shared_ptr<LanczosStochasticVelocities> lanczos;
-  lanczos::Lanczos<real> solver;
-  thrust::device_vector<real> lanczosOutput;
+  lanczos::Lanczos<real> lanczos_solver;
+  thrust::device_vector<real> lanczosOutput, lanczosNoise;
   real temperature;
   bool needsTorque = false;
+  void fillGaussianNoise(size_t elements) {
+    static int ncalls = 0;
+    lanczosNoise.resize(elements);
+    auto cit = thrust::make_counting_iterator<uint>(0);
+    // thrust::transform(thrust::cuda::par, cit,
+    //                   cit + elements,
+    //                   lanczosNoise.begin(),
+    // 		      SaruNoise(lanczosSeed, ncalls));
+    ncalls++;
+  }
+
 protected:
   Mobility() {};
 
@@ -145,9 +169,9 @@ public:
       Mdot(s_f, s_t, s_mv, s_mt);
     };
     device_span<real> output(lanczosOutput);
-    auto noise = this->generateGaussianNoise(lanczosOutput.size());
-    device_span<const real> noise_span(noise);
-    solver(dot, noise_span, output, lanczosTolerance);
+    this->fillGaussianNoise(lanczosOutput.size());
+    device_span<const real> noise_span(lanczosNoise);
+    lanczos_solver(dot, noise_span, output, lanczosTolerance);
     auto l_ptr = thrust::cuda::pointer<real>(linear.data());
     thrust::copy(thrust::cuda::par, lanczosOutput.begin(),
                  lanczosOutput.begin() + 3 * this->numberParticles, l_ptr);
@@ -177,10 +201,7 @@ public:
   bool getNeedsTorque() const { return this->needsTorque; }
 
   // Clean any memory allocated by the solver
-  virtual void clean() {
-    lanczos.reset();
-    lanczosOutput.clear();
-  }
+  virtual void clean() { lanczosOutput.clear(); }
 };
 } // namespace libmobility
 #endif

@@ -30,6 +30,11 @@ template <numeric T> void square_mv(int size, const T *A, const T *x, T *y) {
               beta, y, 1);
 }
 
+  template <class T1, class T2>
+  void copy(T1& src, T2& dst) {
+    thrust::copy(src.begin(), src.end(), dst.begin());
+  }
+
 /*See algorithm I in [1]*/
 template <numeric T> class KrylovSubspace {
   Algebra algebra;
@@ -93,7 +98,7 @@ template <numeric T> class KrylovSubspace {
     auto &Vm = getTransformationMatrix();
     this->normz = algebra.norm2(z);
     // v[0] = z/norm(z)
-    copy(z, Vm);
+    detail::copy(z, Vm);
     algebra.scal(Vm, 1.0 / normz);
   }
 
@@ -109,11 +114,11 @@ public:
     this->subSpaceDimension++;
     resize(subSpaceDimension + 1);
     /*w = D·vi*/
-    auto V_i = device_span<T>(V.data().get() + size * i, size, device::cuda);
+    auto V_i = device_span<T>({V.data().get() + size * i, size}, device::cuda);
     auto V_im1 =
-        device_span<T>(V.data().get() + size * (i - 1), size, device::cuda);
+      device_span<T>({V.data().get() + size * (i - 1), size}, device::cuda);
     auto V_ip1 =
-        device_span<T>(V.data().get() + size * (i + 1), size, device::cuda);
+      device_span<T>({V.data().get() + size * (i + 1), size}, device::cuda);
     dot(V_i, w);
     if (i > 0) {
       /*w = w-h[i-1][i]·vi*/
@@ -136,7 +141,7 @@ public:
       thrust::fill(w.begin(), w.end(), T());
       w[0] = 1;
     }
-    copy(w, V_ip1);
+    detail::copy(w, V_ip1);
   }
 
   int getSubSpaceSize() { return subSpaceDimension; }
@@ -181,7 +186,7 @@ template <numeric T> struct Lanczos {
           }
         }
         // Store current estimation
-        copy(mv, oldBz);
+        detail::copy(mv, oldBz);
       }
     }
     throw std::runtime_error("[Lanczos] Could not converge");
@@ -191,11 +196,11 @@ private:
   T computeError(device_span<T> mv) {
     // Compute error as in eq 27 in [1]
     // Error = ||Bz_i - Bz_{i-1}||_2 / ||Bz_{i-1}||_2
-    T normResult_prev = algebra.nrm2(oldBz);
+    T normResult_prev = algebra.norm2(oldBz);
     // oldBz = Bz-oldBz
     algebra.axpy(-1.0, mv, oldBz);
     // yy = ||Bz_i - Bz_{i-1}||_2
-    T yy = algebra.nrm2(oldBz);
+    T yy = algebra.norm2(oldBz);
     // eq. 27 in [1]
     T Error = abs(yy / normResult_prev);
     if (std::isnan(Error)) {
