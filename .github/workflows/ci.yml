@@ -42,62 +42,60 @@ jobs:
 
     - name: List environment
       run: |
-        micromamba activate libmobility
         micromamba list
+      shell: micromamba-shell {0}
 
     - name: Configure and compile the library
       run: |
-        micromamba activate libmobility
         mkdir build && cd build
         cmake -DCMAKE_VERBOSE_MAKEFILE=yes -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
         make -j3 all install
+      shell: micromamba-shell {0}
       
     - name: Build Sphinx Documentation
       run: |
         cd docs
         make html
-      shell: bash -el {0}
+      shell: micromamba-shell {0}
 
     - name: Compile examples
       run: |
-        micromamba activate libmobility
         mkdir examples/cpp/build && cd examples/cpp/build
         cmake -DCMAKE_VERBOSE_MAKEFILE=yes -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
         make -j3
-        
+      shell: micromamba-shell {0}
+      
     - name: Try to import libMobility
       run: |
-        micromamba activate libmobility
         python -c "import libMobility"
         python -c "from libMobility import DPStokes, PSE, NBody, SelfMobility"
-        
+      shell: micromamba-shell {0}
+      
     - name: Run pytest
       run: |
-        micromamba activate libmobility
         pytest -sv -k SelfMobility tests/test_initialization.py tests/test_precision.py
         #Only SelfMobility tests can run in the CPU
         pytest -sv -k SelfMobility tests/test*py
-
+      shell: micromamba-shell {0}
+      
     - name: Build conda package
       run: |
-        micromamba activate libmobility
-        # install conda-build
         micromamba install -c conda-forge conda-build
         export CUDA_VERSION=12
         conda build devtools/conda-build
-      shell: bash -el {0}
+      shell: micromamba-shell {0}
 
     - name: Install via pip
       run: |
-        micromamba activate libmobility
         pip install -vv .
-      shell: bash -el {0}
+      shell: micromamba-shell {0}
       
     - name: Create environment with extra dependencies
       uses: mamba-org/setup-micromamba@v2
       with:
         generate-run-shell: true
         environment-file: environment.yml
+        environment-name: libmobility-extra
         create-args: >-
           pytorch
           jax
