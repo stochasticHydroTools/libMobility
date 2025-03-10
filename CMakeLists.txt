@@ -26,7 +26,6 @@ ENDIF()
 if(DOUBLEPRECISION) # checks if equal to 1
   add_compile_definitions(PUBLIC DOUBLE_PRECISION)
 endif()
-set(THIRD_PARTY_DIR ${CMAKE_SOURCE_DIR}/include/third_party)
 find_package(Python 3
   REQUIRED COMPONENTS Interpreter Development.Module
   OPTIONAL_COMPONENTS Development.SABIModule)
