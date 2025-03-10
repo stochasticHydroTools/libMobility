@@ -93,7 +93,7 @@ jobs:
         pip install -vv .
       shell: bash -el {0}
       
-    - name: Run optional tests with extra dependencies
+    - name: Create environment with extra dependencies
       uses: mamba-org/setup-micromamba@v2
       with:
         generate-run-shell: true
@@ -103,7 +103,9 @@ jobs:
           jax
           tensorflow
           mkl
-          mkl-devel          
+          mkl-devel
+    - name: Run optional tests with extra dependencies
       run: |
         pytest -sv -k SelfMobility tests/test_array_origins.py
         shell: micromamba-shell {0}
+      shell: micromamba-shell {0}
