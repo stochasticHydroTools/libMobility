@@ -13,48 +13,29 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
 set(ROOT_DIR ../../)
 # enable the line below if libmobility is compiled in double
 # add_compile_definitions(PUBLIC DOUBLE_PRECISION)
-set(BLA_STATIC OFF)
-set(BLA_VENDOR Intel10_64lp)
-find_package(BLAS)
-if(BLAS_FOUND)
-  message("mkl environment detected")
-  add_compile_definitions(PUBLIC USE_MKL)
-  link_libraries(
-    BLAS::BLAS
-  )
-  find_path(BLAS_INCLUDE_DIRS mkl.h
-    $ENV{CONDA_PREFIX}/include
-    /usr/include
-    /usr/local/include
-    $ENV{MKLROOT}/include
-    $ENV{BLAS_HOME}/include
-  )
-else()
-  unset(BLA_VENDOR)
-  find_package(LAPACK REQUIRED)
-  find_package(LAPACKE REQUIRED)
-  find_package(BLAS REQUIRED)
-  link_libraries(${LAPACK_LIBRARIES} ${LAPACKE_LIBRARIES})
-  find_path(BLAS_INCLUDE_DIRS cblas.h
-    $ENV{CONDA_PREFIX}/include
-    /usr/include
-    /usr/local/include
-    $ENV{MKLROOT}/include
-    $ENV{BLAS_HOME}/include
-  )
-  find_path(LAPACKE_INCLUDE_DIRS lapacke.h
-    $ENV{CONDA_PREFIX}/include
-    /usr/include
-    /usr/local/include
-    $ENV{MKLROOT}/include
-    $ENV{LAPACKE_HOME}/include
-  )
 
-endif()
+include(FetchContent)
+FetchContent_Declare(
+  uammd
+  GIT_REPOSITORY https://github.com/RaulPPelaez/uammd/
+  GIT_TAG        v2.7.3
+)
+FetchContent_MakeAvailable(uammd)
+FetchContent_Declare(
+  lanczos
+  GIT_REPOSITORY https://github.com/RaulPPelaez/LanczosAlgorithm
+  GIT_TAG        v1.0.1
+)
+FetchContent_MakeAvailable(lanczos)
+include_directories(${lanczos_SOURCE_DIR}/include)
 
-include_directories(${BLAS_INCLUDE_DIRS} ${LAPACKE_INCLUDE_DIRS})
+find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
+
 include_directories(${ROOT_DIR}/include)
-link_libraries(${CUDA_LIBRARY} libMobility_PSE libMobility_NBody cufft cublas curand cusolver)
+link_libraries(libMobility_PSE libMobility_NBody)
 
 add_executable(example example.cu)
 add_executable(example_cuda example_gpu.cu)
+uammd_setup_target(example)
+uammd_setup_target(example_cuda)

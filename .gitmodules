@@ -1,6 +1,0 @@
-[submodule "third_party/uammd"]
-	path = include/third_party/uammd
-	url = https://github.com/raulppelaez/uammd
-[submodule "third_party/LanczosAlgorithm"]
-	path = include/third_party/LanczosAlgorithm
-	url = https://github.com/Raulppelaez/LanczosAlgorithm
