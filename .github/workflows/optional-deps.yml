@@ -1,0 +1,49 @@
+name: CI-optional-deps
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run every Sunday at midnight
+    - cron:  '0 0 * * 0'
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Latest supported versions
+          - name: Linux (CUDA 12)
+    steps:
+    - name: Check out
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: recursive
+
+    - name: Create environment with extra dependencies
+      uses: mamba-org/setup-micromamba@v2
+      with:
+        generate-run-shell: false
+        environment-file: environment.yml
+        environment-name: libmobility-extra
+        create-args: >-
+          pytorch
+          jax
+          tensorflow
+          mkl
+          mkl-devel
+    - name: Run optional tests with extra dependencies
+      run: |
+        pip install -vv .
+        pytest -sv -k SelfMobility tests/test_array_origins.py
+      shell: micromamba-shell {0}
