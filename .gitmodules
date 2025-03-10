@@ -1,3 +1,0 @@
-[submodule "third_party/LanczosAlgorithm"]
-	path = include/third_party/LanczosAlgorithm
-	url = https://github.com/Raulppelaez/LanczosAlgorithm
