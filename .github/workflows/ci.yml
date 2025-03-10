@@ -34,7 +34,7 @@ jobs:
       run: cat environment.yml
       
     - name: Install Mamba
-      uses: mamba-org/setup-micromamba@v1
+      uses: mamba-org/setup-micromamba@v2
       with:
         environment-file: environment.yml
         cache-environment: false
@@ -77,12 +77,7 @@ jobs:
         pytest -sv -k SelfMobility tests/test_initialization.py tests/test_precision.py
         #Only SelfMobility tests can run in the CPU
         pytest -sv -k SelfMobility tests/test*py
-    - name: Run optional tests with extra dependencies
-      run: |
-        micromamba activate libmobility
-        micromamba install pytorch jax tensorflow mkl mkl-devel -y
-        pytest -sv -k SelfMobility tests/test_array_origins.py
-        
+
     - name: Build conda package
       run: |
         micromamba activate libmobility
@@ -97,3 +92,18 @@ jobs:
         micromamba activate libmobility
         pip install -vv .
       shell: bash -el {0}
+      
+    - name: Run optional tests with extra dependencies
+      uses: mamba-org/setup-micromamba@v2
+      with:
+        generate-run-shell: true
+        environment-file: environment.yml
+        create-args: >-
+          pytorch
+          jax
+          tensorflow
+          mkl
+          mkl-devel          
+      run: |
+        pytest -sv -k SelfMobility tests/test_array_origins.py
+        shell: micromamba-shell {0}
