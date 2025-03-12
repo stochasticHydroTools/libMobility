@@ -39,7 +39,7 @@ FetchContent_MakeAvailable(nanobind)
 FetchContent_Declare(
   uammd
   GIT_REPOSITORY https://github.com/RaulPPelaez/uammd/
-  GIT_TAG        v2.7.3
+  GIT_TAG        v2.7.4
 )
 FetchContent_MakeAvailable(uammd)
 FetchContent_Declare(
