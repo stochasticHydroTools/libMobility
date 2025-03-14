@@ -16,7 +16,7 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         cuda-version: ["12.1", "12.3", "12.6", "12.8"]
-        mkl-version: ["2025"]
+        mkl-version: ["2025.*"]
     steps:
       - uses: actions/checkout@v4
         with:
