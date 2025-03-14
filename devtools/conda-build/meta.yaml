@@ -18,15 +18,16 @@ requirements:
     - cuda-libraries-dev
     - cuda-nvcc 
     - make
-    - mkl-devel
-    - pybind11
-    - python
+    - mkl-devel {{ MKL_VERSION }}
+    - python ={{ CONDA_PY }}
   run:
-    - python
+    - python ={{ CONDA_PY }}
     - cuda-version >={{ CUDA_VERSION }}
     - numpy
-    - cuda-libraries
-    - mkl
+    - cuda-cudart
+    - libcufft
+    - libcublas
+    - mkl <={{ MKL_VERSION }}
 
 test:
   requires:
