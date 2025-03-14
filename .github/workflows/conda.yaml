@@ -31,7 +31,7 @@ jobs:
           auto-activate-base: false
           show-channel-urls: true
       - name: Build and upload the conda packages
-        uses: uibcdf/action-build-and-upload-conda-packages@v1.3.0
+        uses: uibcdf/action-build-and-upload-conda-packages@v1.4.0
         # Export cuda-version as an environment variable
         env:
           CUDA_VERSION: ${{ matrix.cuda-version }}
