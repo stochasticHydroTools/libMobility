@@ -83,6 +83,8 @@ jobs:
       run: |
         micromamba install -c conda-forge conda-build
         export CUDA_VERSION=12
+        export PYTHON_VERSION=3
+        export MKL_VERSION=2025
         conda build devtools/conda-build
       shell: micromamba-shell {0}
 
