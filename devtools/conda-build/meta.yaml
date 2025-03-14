@@ -19,9 +19,9 @@ requirements:
     - cuda-nvcc 
     - make
     - mkl-devel {{ MKL_VERSION }}
-    - python ={{ CONDA_PY }}
+    - python ={{ PYTHON_VERSION }}
   run:
-    - python ={{ CONDA_PY }}
+    - python ={{ PYTHON_VERSION }}
     - cuda-version >={{ CUDA_VERSION }}
     - numpy
     - cuda-cudart
