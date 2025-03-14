@@ -6,7 +6,6 @@ on:
   # lets add on PR for testing
   # pull_request:
   #   types: ['opened', 'edited', 'reopened', 'synchronize']
-
   workflow_dispatch:        # Un comment line if you also want to trigger action manually
 
 jobs:
@@ -21,7 +20,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: recursive
       - name: Conda environment creation and activation
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -39,6 +37,7 @@ jobs:
           meta_yaml_dir: devtools/conda-build
           python-version: ${{ matrix.python-version }} # Values previously defined in `matrix`
           user: stochasticHydroTools
-          label: auto
+          label: main
           overwrite: true
           token: ${{ secrets.ANACONDA_TOKEN }}
+          
