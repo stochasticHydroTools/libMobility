@@ -27,7 +27,7 @@ requirements:
     - cuda-cudart
     - libcufft
     - libcublas
-    - mkl <={{ MKL_VERSION }}
+    - mkl
 
 test:
   requires:
