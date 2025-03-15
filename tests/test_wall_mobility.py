@@ -92,9 +92,6 @@ def test_self_mobility_linear(Solver, periodicity, tol, ref_file, wallHeight):
     ]  # only take diagonal elements from forces
 
     for diag, ref_diag in zip(diags, ref_diags):
-        # if not np.allclose(diag, ref_diag, rtol=tol, atol=tol):
-        #     breakpoint()
-        #     continue
         assert np.allclose(
             diag, ref_diag, rtol=tol, atol=tol
         ), f"Self mobility does not match reference"

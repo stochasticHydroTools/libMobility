@@ -109,7 +109,9 @@ def generate_positions_in_box(parameters, numberParticles):
 
 
 def get_wall_params(solverName, wallHeight):
-    params = wall_parameters[solverName]
+    params = wall_parameters[
+        solverName
+    ].copy()  # copy is necessary, otherwise modifications accumulate
     if solverName == "DPStokes":
         params["zmax"] += wallHeight
         params["zmin"] += wallHeight
