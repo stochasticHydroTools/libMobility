@@ -26,6 +26,8 @@ class NBody : public libmobility::Mobility {
   int numberParticles;
   nbody_rpy::algorithm algorithm = nbody_rpy::algorithm::advise;
 
+  int wallHeight; // location of the wall in z
+
   // Batched functionality configuration
   int Nbatch;
   int NperBatch;
@@ -47,6 +49,7 @@ public:
     nbody_rpy::algorithm algo = nbody_rpy::algorithm::advise;
     int Nbatch = -1;
     int NperBatch = -1;
+    real wallHeight = 0;
   };
   /**
    * @brief Sets the parameters for the N-body computation
@@ -74,6 +77,11 @@ public:
     this->algorithm = par.algo;
     this->Nbatch = par.Nbatch;
     this->NperBatch = par.NperBatch;
+
+    if (par.wallHeight != 0 && kernel != nbody_rpy::kernel_type::bottom_wall)
+        throw std::runtime_error(
+            "[Mobility] Wall height parameter is only valid for bottom wall. If you want to use a wall, set periodicityZ to single_wall in the configuration.");
+    this->wallHeight = par.wallHeight;
   }
 
   void initialize(Parameters ipar) override {
@@ -98,7 +106,10 @@ public:
 
   void setPositions(device_span<const real> ipositions) override {
     positions.assign(ipositions.begin(), ipositions.end());
-  }
+    for (int i = 0; i < numberParticles; i++)
+    {
+        positions[i * 3 + 2] -= wallHeight; // we adjust z so the wall is at 0 since that is how the wall kernels are programmed.
+    }
 
   void Mdot(device_span<const real> forces, device_span<const real> torques,
             device_span<real> linear, device_span<real> angular) override {
