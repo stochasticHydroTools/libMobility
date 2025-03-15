@@ -6,7 +6,6 @@ sane_parameters = {
     "PSE": {"psi": 1.0, "Lx": 32, "Ly": 32, "Lz": 32, "shearStrain": 0.0},
     "NBody": {"algorithm": "advise"},
     "DPStokes": {
-        "dt": 1,
         "Lx": 16,
         "Ly": 16,
         "zmin": -6,

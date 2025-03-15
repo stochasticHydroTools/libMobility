@@ -9,7 +9,7 @@ from utils import compute_M
 # This is because the reference data was generated in double precision.
 
 wall_params = {
-    "DPStokes": {"dt": 1, "Lx": 76.8, "Ly": 76.8, "zmin": 0, "zmax": 19.2},
+    "DPStokes": {"Lx": 76.8, "Ly": 76.8, "zmin": 0, "zmax": 19.2},
     "NBody": {"algorithm": "advise"},
 }
 
