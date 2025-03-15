@@ -10,8 +10,6 @@ When the periodicity is set to :code:`single_wall` a wall in the bottom of the d
 
 Parameters
 ----------
-dt : float
-		The time step.
 Lx : float
 		The box size in the x direction.
 Ly : float
@@ -27,17 +25,17 @@ allowChangingBoxSize : bool
 MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(DPStokes,
                                    solver.def(
                                        "setParameters",
-                                       [](DPStokes &self, real dt, real Lx,
-                                          real Ly, real zmin, real zmax, bool allowChangingBoxSize) {
-                                         DPStokesParameters params;
-                                         params.dt = dt;
-                                         params.Lx = Lx;
-                                         params.Ly = Ly;
-                                         params.zmin = zmin;
-                                         params.zmax = zmax;
-                                         params.allowChangingBoxSize = allowChangingBoxSize;
-                                         self.setParametersDPStokes(params);
+                                       [](DPStokes &self, real Lx,
+                                          real Ly, real zmin, real zmax, bool allowChangingBoxSize)
+                                       {
+                                           DPStokesParameters params;
+                                           params.Lx = Lx;
+                                           params.Ly = Ly;
+                                           params.zmin = zmin;
+                                           params.zmax = zmax;
+                                           params.allowChangingBoxSize = allowChangingBoxSize;
+                                           self.setParametersDPStokes(params);
                                        },
-                                       "dt"_a, "Lx"_a, "Ly"_a, "zmin"_a,
+                                       "Lx"_a, "Ly"_a, "zmin"_a,
                                        "zmax"_a, "allowChangingBoxSize"_a = false);
                                    , docstring);
