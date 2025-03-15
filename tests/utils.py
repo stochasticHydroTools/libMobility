@@ -16,6 +16,19 @@ sane_parameters = {
     "SelfMobility": {"parameter": 5.0},
 }
 
+wall_parameters = {
+    "NBody": {"algorithm": "advise", "wallHeight": 0.0},
+    "DPStokes": {
+        "dt": 1,
+        "Lx": 76.8,
+        "Ly": 76.8,
+        "zmin": 0,
+        "zmax": 19.2,
+        "allowChangingBoxSize": False,
+    },
+}
+
+
 solver_configs_all = [
     (SelfMobility, ("open", "open", "open")),
     (NBody, ("open", "open", "open")),
@@ -93,3 +106,14 @@ def generate_positions_in_box(parameters, numberParticles):
         positions *= 10  # [0, 1] -> [0, 10]
 
     return positions
+
+
+def get_wall_params(solverName, wallHeight):
+    params = wall_parameters[solverName]
+    if solverName == "DPStokes":
+        params["zmax"] += wallHeight
+        params["zmin"] += wallHeight
+    elif solverName == "NBody":
+        params["wallHeight"] = wallHeight
+
+    return params

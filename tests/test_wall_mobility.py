@@ -44,7 +44,7 @@ def test_self_mobility_linear(Solver, periodicity, tol, ref_file, wallHeight):
     zmax = 19.2 + wallHeight
     zmin = wallHeight
     xymax = 76.8
-    params = get_wall_params(Solver.__name__, zmin, zmax)
+    params = get_wall_params(Solver.__name__, wallHeight)
     needsTorque = False
 
     ref_dir = "./ref/"
@@ -92,9 +92,9 @@ def test_self_mobility_linear(Solver, periodicity, tol, ref_file, wallHeight):
     ]  # only take diagonal elements from forces
 
     for diag, ref_diag in zip(diags, ref_diags):
-        if not np.allclose(diag, ref_diag, rtol=tol, atol=tol):
-            breakpoint()
-            continue
+        # if not np.allclose(diag, ref_diag, rtol=tol, atol=tol):
+        #     breakpoint()
+        #     continue
         assert np.allclose(
             diag, ref_diag, rtol=tol, atol=tol
         ), f"Self mobility does not match reference"
@@ -133,7 +133,7 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol, wallHeight):
     zmax = 19.2 + wallHeight
     zmin = wallHeight
     xymax = 76.8
-    params = get_wall_params(Solver.__name__, zmin, zmax)
+    params = get_wall_params(Solver.__name__, wallHeight)
     needsTorque = False
 
     ref_dir = "./ref/"
@@ -207,7 +207,7 @@ def test_self_mobility_angular(Solver, periodicity, ref_file, wallHeight):
     zmax = 19.2 + wallHeight
     zmin = wallHeight
     xymax = 76.8
-    params = get_wall_params(Solver.__name__, zmin, zmax)
+    params = get_wall_params(Solver.__name__, wallHeight)
 
     hydrodynamicRadius = 1.0
     eta = 1 / 4 / np.sqrt(np.pi)
@@ -276,7 +276,7 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file, offset, wallHeight
     zmax = 19.2 + wallHeight
     zmin = wallHeight
     xymax = 76.8
-    params = get_wall_params(Solver.__name__, zmin, zmax)
+    params = get_wall_params(Solver.__name__, wallHeight)
     hydrodynamicRadius = 1.0
     eta = 1 / 4 / np.sqrt(np.pi)
     needsTorque = True

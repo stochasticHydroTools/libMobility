@@ -106,10 +106,16 @@ public:
 
   void setPositions(device_span<const real> ipositions) override {
     positions.assign(ipositions.begin(), ipositions.end());
-    for (int i = 0; i < numberParticles; i++)
+    if (wallHeight != 0)
     {
-        positions[i * 3 + 2] -= wallHeight; // we adjust z so the wall is at 0 since that is how the wall kernels are programmed.
+        for (int i = 0; i < numberParticles; i++)
+        {
+            positions[i * 3 + 2] -=
+                wallHeight; // we adjust z so the wall is at 0 since that is how
+                            // the wall kernels are programmed.
+        }
     }
+  }
 
   void Mdot(device_span<const real> forces, device_span<const real> torques,
             device_span<real> linear, device_span<real> angular) override {

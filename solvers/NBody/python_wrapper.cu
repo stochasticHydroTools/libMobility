@@ -23,10 +23,11 @@ MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(
     NBody,
     solver.def(
         "setParameters",
-        [](NBody &myself, std::string algo, int NBatch, int NperBatch) {
-          myself.setParametersNBody(
-              {nbody_rpy::string2NBodyAlgorithm(algo), NBatch, NperBatch});
+        [](NBody &myself, std::string algo, int NBatch, int NperBatch, real wallHeight)
+        {
+            myself.setParametersNBody(
+                {nbody_rpy::string2NBodyAlgorithm(algo), NBatch, NperBatch, wallHeight});
         },
-        "algorithm"_a = "advise", "Nbatch"_a = -1, "NperBatch"_a = -1);
+        "algorithm"_a = "advise", "Nbatch"_a = -1, "NperBatch"_a = -1, "wallHeight"_a = 0.0);
     , "This module computes the RPY mobility using an N^2 algorithm in the "
       "GPU. Different hydrodynamic kernels can be chosen.");
