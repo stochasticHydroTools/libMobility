@@ -41,8 +41,6 @@ def test_self_mobility_linear(Solver, periodicity, tol, ref_file, wallHeight):
             "The test is only valid for double precision due to how reference data was generated."
         )
 
-    zmax = 19.2 + wallHeight
-    zmin = wallHeight
     xymax = 76.8
     params = get_wall_params(Solver.__name__, wallHeight)
     needsTorque = False
@@ -127,8 +125,6 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol, wallHeight):
             "The test is only valid for double precision due to how reference data was generated."
         )
 
-    zmax = 19.2 + wallHeight
-    zmin = wallHeight
     xymax = 76.8
     params = get_wall_params(Solver.__name__, wallHeight)
     needsTorque = False
@@ -201,8 +197,6 @@ def test_self_mobility_angular(Solver, periodicity, ref_file, wallHeight):
             "The test is only valid for double precision due to how reference data was generated."
         )
 
-    zmax = 19.2 + wallHeight
-    zmin = wallHeight
     xymax = 76.8
     params = get_wall_params(Solver.__name__, wallHeight)
 
@@ -270,8 +264,6 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file, offset, wallHeight
             "The test is only valid for double precision due to how reference data was generated."
         )
 
-    zmax = 19.2 + wallHeight
-    zmin = wallHeight
     xymax = 76.8
     params = get_wall_params(Solver.__name__, wallHeight)
     hydrodynamicRadius = 1.0
