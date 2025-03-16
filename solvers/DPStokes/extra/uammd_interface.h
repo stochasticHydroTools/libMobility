@@ -21,7 +21,7 @@ namespace uammd_dpstokes{
     int nx = -1;
     int ny = -1;
     int nz = -1;
-    real dt;
+    real dt = 0;
     real viscosity;
     real Lx;
     real Ly;
