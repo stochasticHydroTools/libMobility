@@ -38,7 +38,7 @@ def test_dpstokes_invalid_box():
     with pytest.raises(RuntimeError):
         Lx, Ly = 10, 20
         solver = DPStokes("periodic", "periodic", "single_wall")
-        params = {"dt": 1, "Lx": Lx, "Ly": Ly, "zmin": 0, "zmax": 19.2}
+        params = {"Lx": Lx, "Ly": Ly, "zmin": 0, "zmax": 19.2}
         solver.setParameters(**params)
 
 @pytest.mark.parametrize(("NBatch", "NperBatch"),
@@ -55,7 +55,7 @@ def test_nbody_good_batch_parameters(NBatch, NperBatch):
         viscosity=1.0,
         hydrodynamicRadius=1.5,
         numberParticles=numberParticles)
-    
+
 def test_nbody_default_parameters():
     solver = NBody("open", "open", "open")
     solver.setParameters("advise")
@@ -65,7 +65,7 @@ def test_nbody_default_parameters():
         viscosity=1.0,
         hydrodynamicRadius=1.5,
         numberParticles=numberParticles)
-    
+
 @pytest.mark.parametrize(("NBatch", "NperBatch", "numberParticles"),
                          [
                             (5, 1, 10),
