@@ -2,9 +2,6 @@ set(NAME SelfMobility)
 add_library(libMobility_${NAME} SHARED selfmobility.cu)
 uammd_setup_target(libMobility_${NAME})
 target_include_directories(libMobility_${NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-set_target_properties(libMobility_${NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-install(TARGETS libMobility_${NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/mobility.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/libMobility/solvers/${NAME})
 nanobind_add_module(
   ${NAME}
   STABLE_ABI
