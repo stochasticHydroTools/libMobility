@@ -34,7 +34,7 @@ precision = np.float32 if NBody.precision == "float" else np.float64
         ),
     ],
 )
-@pytest.mark.parametrize("wallHeight", [0, 5, -5])
+@pytest.mark.parametrize("wallHeight", [0, 5.4, -10])
 def test_self_mobility_linear(Solver, periodicity, tol, ref_file, wallHeight):
     if precision == np.float32 and Solver.__name__ == "DPStokes":
         pytest.skip(

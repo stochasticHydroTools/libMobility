@@ -26,7 +26,7 @@ class NBody : public libmobility::Mobility {
   int numberParticles;
   nbody_rpy::algorithm algorithm = nbody_rpy::algorithm::advise;
 
-  int wallHeight; // location of the wall in z
+  real wallHeight; // location of the wall in z
 
   // Batched functionality configuration
   int Nbatch;
