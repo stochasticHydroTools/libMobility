@@ -118,7 +118,7 @@ def test_self_mobility_linear(Solver, periodicity, tol, ref_file, wallHeight):
         ),
     ],
 )
-@pytest.mark.parametrize("wallHeight", [0, 5, -5])
+@pytest.mark.parametrize("wallHeight", [0, 5.4, -10])
 def test_pair_mobility_linear(Solver, periodicity, ref_file, tol, wallHeight):
     if precision == np.float32 and Solver.__name__ == "DPStokes":
         pytest.skip(
@@ -190,7 +190,7 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol, wallHeight):
         (NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.npz"),
     ],
 )
-@pytest.mark.parametrize("wallHeight", [0, 5, -5])
+@pytest.mark.parametrize("wallHeight", [0, 5.4, -10])
 def test_self_mobility_angular(Solver, periodicity, ref_file, wallHeight):
     if precision == np.float32 and Solver.__name__ == "DPStokes":
         pytest.skip(
@@ -257,7 +257,7 @@ def test_self_mobility_angular(Solver, periodicity, ref_file, wallHeight):
     ],
 )
 @pytest.mark.parametrize("offset", ["x", "y"])
-@pytest.mark.parametrize("wallHeight", [0, 5, -5])
+@pytest.mark.parametrize("wallHeight", [0, 5.4, -10])
 def test_pair_mobility_angular(Solver, periodicity, ref_file, offset, wallHeight):
     if precision == np.float32 and Solver.__name__ == "DPStokes":
         pytest.skip(
