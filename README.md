@@ -15,7 +15,7 @@ Where $d\boldsymbol{X}$ are the linear displacements, $\boldsymbol{d\tau}$ are t
 
 Each solver in libMobility allows to compute either the deterministic term, the stochastic term, or both at the same time.  
 
-For each solver, a python and a C++ interface are provided. All solvers have the same interface, although some input parameters might change (an open boundaries solver does not accept a box size as a parameter).  
+For each solver, a python interface is provided. All solvers have the same interface, although some input parameters might change (an open boundaries solver does not accept a box size as a parameter).  
 
 ## Repository Structure  
 
@@ -99,5 +99,5 @@ will provide more in depth information about the solver.
 ## C++ Usage
 
 In order to use a module called SolverName, the header solvers/SolverName/mobility.h must be included.  
-If the module has been compiled correctly the definitions required for the functions in mobility.h will be available at solvers/SolverName/mobility.so.  
-An example is available in cpp/example.cpp.  
+If the module has been compiled correctly the definitions required for the functions in mobility.h will be available at `libMobility_[SolverName].so` and installed to `$CMAKE_INSTALL_PREFIX/lib`.  
+An example is available in `cpp/example.cpp`.  

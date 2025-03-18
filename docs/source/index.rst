@@ -35,10 +35,7 @@ Each solver in libMobility allows computation of:
 Interfaces
 ----------
 
-For each solver, the following interfaces are provided:
-
-- Python interface
-- C++ interface
+For each solver, a Python interface is provided.
 
 All solvers have the same interface, although some input parameters might change (e.g., an open boundaries solver does not accept a box size as a parameter).
     
