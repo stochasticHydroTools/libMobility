@@ -108,12 +108,17 @@ public:
     positions.assign(ipositions.begin(), ipositions.end());
     if (wallHeight != 0)
     {
-        for (int i = 0; i < numberParticles; i++)
-        {
-            positions[i * 3 + 2] -=
-                wallHeight; // we adjust z so the wall is at 0 since that is how
-                            // the wall kernels are programmed.
-        }
+        auto counting_iter = thrust::make_counting_iterator(0);
+        auto strided_iter = thrust::make_transform_iterator(
+            counting_iter,
+            thrust::placeholders::_1 * 3);
+
+        auto permZ = thrust::make_permutation_iterator(
+            positions.begin() + 2,
+            strided_iter);
+
+        thrust::transform(permZ, permZ + numberParticles, permZ,
+                          thrust::placeholders::_1 - wallHeight);
     }
   }
 
