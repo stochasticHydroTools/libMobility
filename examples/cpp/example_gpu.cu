@@ -5,8 +5,8 @@
  instead of std::vector
  */
 #include "MobilityInterface/MobilityInterface.h"
-#include "libMobility/solvers/NBody/mobility.h"
-#include "libMobility/solvers/PSE/mobility.h"
+#include "solvers/NBody/mobility.h"
+#include "solvers/PSE/mobility.h"
 #include <algorithm>
 #include <iostream>
 #include <random>

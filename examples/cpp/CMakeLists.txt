@@ -13,7 +13,6 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
 set(ROOT_DIR ../../)
 # enable the line below if libmobility is compiled in double
 # add_compile_definitions(PUBLIC DOUBLE_PRECISION)
-
 include(FetchContent)
 FetchContent_Declare(
   uammd
@@ -33,6 +32,7 @@ find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 
 include_directories(${ROOT_DIR}/include)
+include_directories(${ROOT_DIR})
 link_libraries(libMobility_PSE libMobility_NBody)
 
 add_executable(example example.cu)
