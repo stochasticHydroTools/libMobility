@@ -18,7 +18,6 @@ sane_parameters = {
 wall_parameters = {
     "NBody": {"algorithm": "advise", "wallHeight": 0.0},
     "DPStokes": {
-        "dt": 1,
         "Lx": 76.8,
         "Ly": 76.8,
         "zmin": 0,
