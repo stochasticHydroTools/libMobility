@@ -30,12 +30,15 @@ find_package(Python 3
   REQUIRED COMPONENTS Interpreter Development.Module
   OPTIONAL_COMPONENTS Development.SABIModule)
 include(FetchContent)
-FetchContent_Declare(
-  nanobind
-  GIT_REPOSITORY https://github.com/wjakob/nanobind/
-  GIT_TAG        v2.4.0
-)
-FetchContent_MakeAvailable(nanobind)
+find_package(nanobind QUIET)
+if (NOT nanobind_FOUND)
+  FetchContent_Declare(
+    nanobind
+    GIT_REPOSITORY https://github.com/wjakob/nanobind/
+    GIT_TAG        v2.4.0
+  )
+  FetchContent_MakeAvailable(nanobind)
+endif()
 FetchContent_Declare(
   uammd
   GIT_REPOSITORY https://github.com/RaulPPelaez/uammd/
