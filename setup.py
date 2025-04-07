@@ -3,6 +3,7 @@ from setuptools.command.build_ext import build_ext
 import subprocess
 import os
 import sys
+import multiprocessing
 
 try:
     version = (
@@ -50,7 +51,8 @@ class CMakeBuild(build_ext):
             f"-DDOUBLEPRECISION={double_precision}",
         ]
 
-        build_args = ["--config", "Release"]
+        num_jobs = os.cpu_count()
+        build_args = ["--config", "Release", f"-j{num_jobs}"]
 
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
