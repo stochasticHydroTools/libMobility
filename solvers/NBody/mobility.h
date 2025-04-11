@@ -6,7 +6,7 @@
 #include "extra/interface.h"
 #include <MobilityInterface/MobilityInterface.h>
 #include <cmath>
-#include <nanobind/stl/optional.h>
+#include <optional>
 #include <type_traits>
 #include <vector>
 
