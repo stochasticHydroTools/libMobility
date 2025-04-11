@@ -80,3 +80,21 @@ def test_nbody_bad_parameters(NBatch, NperBatch, numberParticles):
             viscosity=1.0,
             hydrodynamicRadius=1.5,
             numberParticles=numberParticles)
+
+
+def test_nbody_wall_height_parameter():
+
+    solver = NBody("open", "open", "open")
+    with pytest.raises(RuntimeError):
+        solver.setParameters(
+            wallHeight=0.5
+        )  # wallHeight is not valid for open periodicity
+    solver.setParameters("advise")
+
+    solver = NBody("open", "open", "single_wall")
+    with pytest.raises(RuntimeError):
+        solver.setParameters(
+            "advise"
+        )  # single_wall periodicity requires wall height param
+
+    solver.setParameters(wallHeight=0.5)

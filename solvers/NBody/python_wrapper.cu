@@ -2,6 +2,22 @@
  */
 #include "mobility.h"
 #include <MobilityInterface/pythonify.h>
+#include <nanobind/stl/optional.h>
+
+static const char *docstringSetParameters = R"pbdoc(
+        Set the parameters for the NBody solver.
+
+        Parameters
+        ----------
+        algorithm : str
+                The algorithm to use. Options are "naive", "fast", "block" and "advise". Default is "advise".
+        NBatch : int
+                The number of batches to use. If -1 (default), the number of batches is automatically determined.
+        NperBatch : int
+                The number of particles per batch. If -1 (default), the number of particles per batch is automatically determined.
+        wallHeight : float
+                The height of the wall. Only valid if periodicityZ is single_wall.
+        )pbdoc";
 
 namespace nbody_rpy {
 auto string2NBodyAlgorithm(std::string algo) {
@@ -23,10 +39,12 @@ MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(
     NBody,
     solver.def(
         "setParameters",
-        [](NBody &myself, std::string algo, int NBatch, int NperBatch) {
-          myself.setParametersNBody(
-              {nbody_rpy::string2NBodyAlgorithm(algo), NBatch, NperBatch});
+        [](NBody &myself, std::string algo, int NBatch, int NperBatch, std::optional<real> wallHeight)
+        {
+            myself.setParametersNBody(
+                {nbody_rpy::string2NBodyAlgorithm(algo), NBatch, NperBatch, wallHeight});
         },
-        "algorithm"_a = "advise", "Nbatch"_a = -1, "NperBatch"_a = -1);
+        docstringSetParameters,
+        "algorithm"_a = "advise", "Nbatch"_a = -1, "NperBatch"_a = -1, "wallHeight"_a = std::nullopt);
     , "This module computes the RPY mobility using an N^2 algorithm in the "
       "GPU. Different hydrodynamic kernels can be chosen.");

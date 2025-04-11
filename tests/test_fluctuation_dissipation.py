@@ -8,8 +8,8 @@ import logging
 from libMobility import PSE
 from utils import (
     compute_M,
-    sane_parameters,
     generate_positions_in_box,
+    get_sane_params,
     solver_configs_all,
     solver_configs_torques,
     initialize_solver,
@@ -68,7 +68,7 @@ def test_fluctuation_dissipation_linear_displacements(
     needsTorques = False
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
-    parameters = sane_parameters[Solver.__name__]
+    parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver.setParameters(**parameters)
     numberParticles = 10
     solver.initialize(
@@ -97,7 +97,7 @@ def test_fluctuation_dissipation_angular_displacements(
     needsTorques = True
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
-    parameters = sane_parameters[Solver.__name__]
+    parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver.setParameters(**parameters)
     numberParticles = 10
     solver.initialize(
@@ -126,7 +126,7 @@ def test_matrix_pos_def(Solver, periodicity, needsTorques):
         pytest.skip("PSE does not support torques")
 
     numberParticles = 10
-    parameters = sane_parameters[Solver.__name__]
+    parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver = initialize_solver(
         Solver,
         periodicity,

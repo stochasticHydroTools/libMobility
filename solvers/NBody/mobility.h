@@ -6,6 +6,7 @@
 #include "extra/interface.h"
 #include <MobilityInterface/MobilityInterface.h>
 #include <cmath>
+#include <optional>
 #include <type_traits>
 #include <vector>
 
@@ -25,6 +26,8 @@ class NBody : public libmobility::Mobility {
   real hydrodynamicRadius;
   int numberParticles;
   nbody_rpy::algorithm algorithm = nbody_rpy::algorithm::advise;
+
+  real wallHeight; // location of the wall in z
 
   // Batched functionality configuration
   int Nbatch;
@@ -47,6 +50,7 @@ public:
     nbody_rpy::algorithm algo = nbody_rpy::algorithm::advise;
     int Nbatch = -1;
     int NperBatch = -1;
+    std::optional<real> wallHeight = std::nullopt;
   };
   /**
    * @brief Sets the parameters for the N-body computation
@@ -74,6 +78,21 @@ public:
     this->algorithm = par.algo;
     this->Nbatch = par.Nbatch;
     this->NperBatch = par.NperBatch;
+
+    if (kernel == nbody_rpy::kernel_type::bottom_wall) {
+      if (par.wallHeight) {
+        this->wallHeight = par.wallHeight.value();
+      } else {
+        throw std::runtime_error(
+            "[Mobility] Wall height parameter is required for a bottom wall. "
+            "If you want to use a wall, set the wallHeight parameter.");
+      }
+    } else if (par.wallHeight) {
+      throw std::runtime_error(
+          "[Mobility] Wall height parameter is only valid for bottom wall. If "
+          "you want to use a wall, set periodicityZ to single_wall in the "
+          "configuration.");
+    }
   }
 
   void initialize(Parameters ipar) override {
@@ -98,6 +117,15 @@ public:
 
   void setPositions(device_span<const real> ipositions) override {
     positions.assign(ipositions.begin(), ipositions.end());
+    if (wallHeight != 0) { // shifts positions so the wall is at z=0 since the
+                           // kernels are programmed as such.
+      auto index_3 = thrust::make_transform_iterator(
+          thrust::make_counting_iterator(0), thrust::placeholders::_1 * 3);
+      auto positionZ =
+          thrust::make_permutation_iterator(positions.begin() + 2, index_3);
+      thrust::transform(positionZ, positionZ + numberParticles, positionZ,
+                        thrust::placeholders::_1 - wallHeight);
+    }
   }
 
   void Mdot(device_span<const real> forces, device_span<const real> torques,
