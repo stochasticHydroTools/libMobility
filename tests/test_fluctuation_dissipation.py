@@ -97,7 +97,7 @@ def test_fluctuation_dissipation_angular_displacements(
     needsTorques = True
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
-    parameters = sane_parameters[Solver.__name__]
+    parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver.setParameters(**parameters)
     numberParticles = 10
     solver.initialize(
