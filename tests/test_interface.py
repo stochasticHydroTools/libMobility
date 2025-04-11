@@ -157,6 +157,7 @@ def test_hydrodisp_equivalent(Solver, periodicity, needsTorque):
         periodicity,
         numberParticles=numberParticles,
         needsTorque=needsTorque,
+        temperature=0.0,
     )
 
     # Set precision to be the same as compiled precision
