@@ -150,14 +150,11 @@ def test_hydrodisp_equivalent(Solver, periodicity, needsTorque):
     #  Check that calling Mdot is equivalent to calling hydrodynamicVelocities with temperature = 0
     if needsTorque and Solver.__name__ == "PSE":
         pytest.skip("PSE does not support torques")
-    hydrodynamicRadius = 1.0
-    solver = Solver(*periodicity)
-    solver.setParameters(**get_sane_params(Solver.__name__, periodicity[2]))
+
     numberParticles = 1
-    solver.initialize(
-        temperature=0.0,
-        viscosity=1.0,
-        hydrodynamicRadius=hydrodynamicRadius,
+    solver = initialize_solver(
+        Solver,
+        periodicity,
         numberParticles=numberParticles,
         needsTorque=needsTorque,
     )
