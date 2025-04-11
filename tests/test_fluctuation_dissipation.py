@@ -5,12 +5,13 @@ from scipy.stats import kstest, norm
 from numpy.linalg import eig
 import logging
 
-from libMobility import SelfMobility, PSE, NBody, DPStokes
+from libMobility import PSE
 from utils import (
     compute_M,
     generate_positions_in_box,
     get_sane_params,
     solver_configs_all,
+    solver_configs_torques,
     initialize_solver,
 )
 
@@ -42,16 +43,11 @@ def fluctuation_dissipation_KS(M, fluctuation_method, needsTorques):
     Ns = int(round(2 * (norm.ppf(mu_alpha) / mu_a) ** 2))
     ScaledNoise = np.full((N, Ns), np.nan)
     sing_check = Sigma < 1e-6
-    if needsTorques:
-        # TODO this won't work yet for torques
-        # will also probably need to modify fluctuation_method's return
-        ScaledNoise = (
-            MInvhalf @ np.array([fluctuation_method() for _ in range(Ns)]).T
-        ).squeeze()
-    else:
-        ScaledNoise = (
-            MInvhalf @ np.array([fluctuation_method() for _ in range(Ns)]).T
-        ).squeeze()
+
+    ScaledNoise = (
+        MInvhalf @ np.array([fluctuation_method() for _ in range(Ns)]).T
+    ).squeeze()
+
     for m in range(N):
         if sing_check[m]:
             logging.info(f"Component {m}: Skipped due to zero singular value")
@@ -80,6 +76,7 @@ def test_fluctuation_dissipation_linear_displacements(
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
         numberParticles=numberParticles,
+        needsTorque=needsTorques,
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
     solver.setPositions(positions)
@@ -87,6 +84,36 @@ def test_fluctuation_dissipation_linear_displacements(
 
     def fluctuation_method():
         return solver.sqrtMdotW(prefactor=1.0)[0].flatten()
+
+    fluctuation_dissipation_KS(M, fluctuation_method, needsTorques)
+
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
+@pytest.mark.parametrize("hydrodynamicRadius", [0.95, 1.12])
+@pytest.mark.parametrize("numberParticles", [1, 2, 10])
+def test_fluctuation_dissipation_angular_displacements(
+    Solver, periodicity, hydrodynamicRadius, numberParticles
+):
+    needsTorques = True
+    precision = np.float32 if Solver.precision == "float" else np.float64
+    solver = Solver(*periodicity)
+    parameters = sane_parameters[Solver.__name__]
+    solver.setParameters(**parameters)
+    numberParticles = 10
+    solver.initialize(
+        temperature=0.5,  # needs to be 1/2 to cancel out the sqrt(2*T) when computing Mdot
+        viscosity=1.0,
+        hydrodynamicRadius=hydrodynamicRadius,
+        numberParticles=numberParticles,
+        needsTorque=needsTorques,
+    )
+    positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
+    solver.setPositions(positions)
+    M = compute_M(solver, numberParticles, needsTorque=needsTorques)
+
+    def fluctuation_method():
+        u, omega = solver.sqrtMdotW(prefactor=1.0)
+        return np.concatenate((u.flatten(), omega.flatten()))
 
     fluctuation_dissipation_KS(M, fluctuation_method, needsTorques)
 

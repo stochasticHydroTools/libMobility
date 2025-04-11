@@ -30,22 +30,27 @@ find_package(Python 3
   REQUIRED COMPONENTS Interpreter Development.Module
   OPTIONAL_COMPONENTS Development.SABIModule)
 include(FetchContent)
-FetchContent_Declare(
-  nanobind
-  GIT_REPOSITORY https://github.com/wjakob/nanobind/
-  GIT_TAG        v2.4.0
-)
-FetchContent_MakeAvailable(nanobind)
+find_package(nanobind QUIET)
+if (NOT nanobind_FOUND)
+  FetchContent_Declare(
+    nanobind
+    GIT_REPOSITORY https://github.com/wjakob/nanobind/
+    GIT_TAG        v2.6.0
+  )
+  FetchContent_MakeAvailable(nanobind)
+endif()
 FetchContent_Declare(
   uammd
   GIT_REPOSITORY https://github.com/RaulPPelaez/uammd/
-  GIT_TAG        v2.7.4
+  GIT_TAG        v2.8.0
+  EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(uammd)
 FetchContent_Declare(
   lanczos
   GIT_REPOSITORY https://github.com/RaulPPelaez/LanczosAlgorithm
   GIT_TAG        v1.0.1
+  EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(lanczos)
 include_directories(${lanczos_SOURCE_DIR}/include)
