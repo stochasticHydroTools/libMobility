@@ -6,6 +6,7 @@
 #include "extra/interface.h"
 #include <MobilityInterface/MobilityInterface.h>
 #include <cmath>
+#include <nanobind/stl/optional.h>
 #include <type_traits>
 #include <vector>
 
@@ -49,7 +50,7 @@ public:
     nbody_rpy::algorithm algo = nbody_rpy::algorithm::advise;
     int Nbatch = -1;
     int NperBatch = -1;
-    real wallHeight = 0;
+    std::optional<real> wallHeight = std::nullopt;
   };
   /**
    * @brief Sets the parameters for the N-body computation
@@ -78,10 +79,20 @@ public:
     this->Nbatch = par.Nbatch;
     this->NperBatch = par.NperBatch;
 
-    if (par.wallHeight != 0 && kernel != nbody_rpy::kernel_type::bottom_wall)
+    if (kernel == nbody_rpy::kernel_type::bottom_wall) {
+      if (par.wallHeight) {
+        this->wallHeight = par.wallHeight.value();
+      } else {
         throw std::runtime_error(
-            "[Mobility] Wall height parameter is only valid for bottom wall. If you want to use a wall, set periodicityZ to single_wall in the configuration.");
-    this->wallHeight = par.wallHeight;
+            "[Mobility] Wall height parameter is required for a bottom wall. "
+            "If you want to use a wall, set the wallHeight parameter.");
+      }
+    } else if (par.wallHeight) {
+      throw std::runtime_error(
+          "[Mobility] Wall height parameter is only valid for bottom wall. If "
+          "you want to use a wall, set periodicityZ to single_wall in the "
+          "configuration.");
+    }
   }
 
   void initialize(Parameters ipar) override {
