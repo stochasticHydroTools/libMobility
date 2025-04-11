@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 
 from libMobility import *
-from utils import solver_configs_all, sane_parameters
+from utils import solver_configs_all, get_sane_params
 
 @pytest.mark.parametrize(
     ("Solver", "periodicity"), solver_configs_all
@@ -13,7 +13,7 @@ def test_precision(Solver, periodicity):
     hydrodynamicRadius = 1.0
 
     solver = Solver(*periodicity)
-    solver.setParameters(**sane_parameters[Solver.__name__])
+    solver.setParameters(**get_sane_params(Solver.__name__, periodicity[2]))
     numberParticles = 1
     solver.initialize(
         temperature=1.0,
@@ -47,7 +47,7 @@ def test_incorrect_precision(Solver, periodicity):
     hydrodynamicRadius = 1.0
 
     solver = Solver(*periodicity)
-    solver.setParameters(**sane_parameters[Solver.__name__])
+    solver.setParameters(**get_sane_params(Solver.__name__, periodicity[2]))
     numberParticles = 1
     solver.initialize(
         temperature=1.0,

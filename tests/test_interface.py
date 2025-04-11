@@ -2,7 +2,7 @@ import pytest
 from libMobility import *
 import numpy as np
 from utils import (
-    sane_parameters,
+    get_sane_params,
     initialize_solver,
     solver_configs_all,
     solver_configs_torques,
@@ -48,7 +48,7 @@ def test_returns_mf(Solver, periodicity):
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
 def test_returns_mf_mt(Solver, periodicity):
     numberParticles = 1
-    parameters = sane_parameters[Solver.__name__]
+    parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver = initialize_solver(
         Solver, periodicity, numberParticles, needsTorque=True, parameters=parameters
     )
@@ -73,7 +73,7 @@ def test_returns_mf_mt(Solver, periodicity):
 def test_returns_sqrtM(Solver, periodicity):
 
     numberParticles = 1
-    parameters = sane_parameters[Solver.__name__]
+    parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver = initialize_solver(
         Solver, periodicity, numberParticles, parameters=parameters, temperature=1.0
     )
@@ -86,8 +86,8 @@ def test_returns_sqrtM(Solver, periodicity):
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_hydrodisp(Solver, periodicity):
-    parameters = sane_parameters[Solver.__name__]
     numberParticles = 1
+    parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver = initialize_solver(
         Solver, periodicity, numberParticles, parameters=parameters, temperature=1.0
     )
@@ -152,8 +152,7 @@ def test_hydrodisp_equivalent(Solver, periodicity, needsTorque):
         pytest.skip("PSE does not support torques")
     hydrodynamicRadius = 1.0
     solver = Solver(*periodicity)
-    parameters = sane_parameters[Solver.__name__]
-    solver.setParameters(**parameters)
+    solver.setParameters(**get_sane_params(Solver.__name__, periodicity[2]))
     numberParticles = 1
     solver.initialize(
         temperature=0.0,
