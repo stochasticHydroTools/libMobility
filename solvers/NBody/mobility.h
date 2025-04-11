@@ -117,19 +117,14 @@ public:
 
   void setPositions(device_span<const real> ipositions) override {
     positions.assign(ipositions.begin(), ipositions.end());
-    if (wallHeight != 0)
-    {
-        auto counting_iter = thrust::make_counting_iterator(0);
-        auto strided_iter = thrust::make_transform_iterator(
-            counting_iter,
-            thrust::placeholders::_1 * 3);
-
-        auto permZ = thrust::make_permutation_iterator(
-            positions.begin() + 2,
-            strided_iter);
-
-        thrust::transform(permZ, permZ + numberParticles, permZ,
-                          thrust::placeholders::_1 - wallHeight);
+    if (wallHeight != 0) { // shifts positions so the wall is at z=0 since the
+                           // kernels are programmed as such.
+      auto index_3 = thrust::make_transform_iterator(
+          thrust::make_counting_iterator(0), thrust::placeholders::_1 * 3);
+      auto positionZ =
+          thrust::make_permutation_iterator(positions.begin() + 2, index_3);
+      thrust::transform(positionZ, positionZ + numberParticles, positionZ,
+                        thrust::placeholders::_1 - wallHeight);
     }
   }
 
