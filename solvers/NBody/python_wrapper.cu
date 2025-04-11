@@ -2,6 +2,7 @@
  */
 #include "mobility.h"
 #include <MobilityInterface/pythonify.h>
+#include <nanobind/stl/optional.h>
 
 static const char *docstringSetParameters = R"pbdoc(
         Set the parameters for the NBody solver.
