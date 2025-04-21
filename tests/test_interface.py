@@ -30,8 +30,8 @@ def test_contiguous(Solver, periodicity):
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_mf(Solver, periodicity):
 
-    numberParticles = 1
-    solver = initialize_solver(Solver, periodicity)
+    numberParticles = 2
+    solver = initialize_solver(Solver, periodicity, numberParticles)
 
     # Set precision to be the same as compiled precision
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -39,10 +39,16 @@ def test_returns_mf(Solver, periodicity):
     forces = np.random.rand(numberParticles, 3).astype(precision)
     solver.setPositions(positions)
     mf, _ = solver.Mdot(forces)
-    assert mf.shape == (numberParticles, 3)
-    forces = forces.reshape(3 * numberParticles)
+    assert mf.shape == positions.shape
+
+    positions = positions.reshape(numberParticles * 3)
+    solver.setPositions(positions)
     mf, _ = solver.Mdot(forces)
-    assert mf.shape == (numberParticles, 3)
+    assert mf.shape == positions.shape
+
+    forces = forces.reshape(numberParticles * 3)
+    mf, _ = solver.Mdot(forces)
+    assert mf.shape == positions.shape
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
@@ -60,13 +66,15 @@ def test_returns_mf_mt(Solver, periodicity):
     torques = np.random.rand(numberParticles, 3).astype(precision)
     solver.setPositions(positions)
     u, w = solver.Mdot(forces, torques)
-    assert u.shape == (numberParticles, 3)
-    assert w.shape == (numberParticles, 3)
-    forces = forces.reshape(3 * numberParticles)
-    torques = torques.reshape(3 * numberParticles)
+    assert u.shape == positions.shape
+    assert w.shape == positions.shape
+
+    positions = positions.reshape(numberParticles * 3)
+    solver.setPositions(positions)
+
     u, w = solver.Mdot(forces, torques)
-    assert u.shape == (numberParticles, 3)
-    assert w.shape == (numberParticles, 3)
+    assert u.shape == positions.shape
+    assert w.shape == positions.shape
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
@@ -81,7 +89,12 @@ def test_returns_sqrtM(Solver, periodicity):
     positions = generate_positions_in_box(parameters, numberParticles)
     solver.setPositions(positions)
     sqrtmw, _ = solver.sqrtMdotW()
-    assert sqrtmw.shape == (numberParticles, 3)
+    assert sqrtmw.shape == positions.shape
+
+    positions = positions.reshape(numberParticles * 3)
+    solver.setPositions(positions)
+    sqrtmw, _ = solver.sqrtMdotW()
+    assert sqrtmw.shape == positions.shape
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
@@ -96,10 +109,17 @@ def test_returns_hydrodisp(Solver, periodicity):
     positions = generate_positions_in_box(parameters, numberParticles)
     forces = np.random.rand(numberParticles, 3).astype(precision)
     solver.setPositions(positions)
-    sqrtmw, _ = solver.hydrodynamicVelocities()
-    assert sqrtmw.shape == (numberParticles, 3)
-    sqrtmw, _ = solver.hydrodynamicVelocities(forces)
-    assert sqrtmw.shape == (numberParticles, 3)
+    v, _ = solver.hydrodynamicVelocities()
+    assert v.shape == positions.shape
+    v, _ = solver.hydrodynamicVelocities(forces)
+    assert v.shape == positions.shape
+
+    positions = positions.reshape(numberParticles * 3)
+    solver.setPositions(positions)
+    v, _ = solver.hydrodynamicVelocities()
+    assert v.shape == positions.shape
+    v, _ = solver.hydrodynamicVelocities(forces)
+    assert v.shape == positions.shape
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
