@@ -29,6 +29,7 @@ using Configuration = libmobility::Configuration;
 
 static lp::framework last_framework = lp::framework::numpy;
 static int last_device = nb::device::cpu::value;
+static std::vector<size_t> last_shape;
 
 inline auto string2Periodicity(std::string per) {
   using libmobility::periodicity_mode;
@@ -77,11 +78,12 @@ inline libmobility::device_span<const real> cast_to_const_real(pyarray_c &arr) {
 
 template <class Solver>
 auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
-  size_t N = myself.getNumberParticles();
-  std::array shape = {N, 3ul};
-  if (forces.size() < 3 * N and forces.size() > 0) {
-    throw std::runtime_error("The forces array must have size 3*N.");
-  }
+    size_t N = myself.getNumberParticles();
+
+    if (forces.size() < 3 * N and forces.size() > 0)
+    {
+        throw std::runtime_error("The forces array must have size 3*N.");
+    }
   if (torques.size() < 3 * N and torques.size() > 0) {
     throw std::runtime_error("The torques array must have size 3*N.");
   }
@@ -93,7 +95,7 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   if (device == nb::device::none::value)
     device = nb::device::cpu::value;
   last_device = device;
-  auto mf = lp::create_with_framework<real>(shape, device, framework);
+  auto mf = lp::create_with_framework<real>(last_shape, device, framework);
   auto mt = nb::ndarray<real, nb::c_contig>();
   if (!t.empty()) {
     if (!myself.getNeedsTorque()) {
@@ -101,7 +103,7 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
           "The solver was configured without torques. Set "
           "needsTorque to true when initializing if you want to use torques");
     }
-    mt = lp::create_with_framework<real>(shape, device, framework);
+    mt = lp::create_with_framework<real>(last_shape, device, framework);
   }
   return std::make_tuple(f, t, mf, mt);
 }
@@ -144,20 +146,13 @@ tolerance : float, optional
 )pbdoc";
 
 template <class Solver> auto call_sqrtMdotW(Solver &solver, real prefactor) {
-  const size_t N = solver.getNumberParticles();
-  if (N <= 0) {
-    throw std::runtime_error(
-        "[libMobility] The number of particles is not set. Did you "
-        "forget to call setPositions?");
-  }
-  std::array shape = {N, 3ul};
-  auto linear =
-      lp::create_with_framework<real>(shape, last_device, last_framework);
+  size_t N = solver.getNumberParticles();
+
+  auto linear = lp::create_with_framework<real>(last_shape, last_device, last_framework);
   auto angular = nb::ndarray<real, nb::c_contig>();
   if (solver.getNeedsTorque()) {
-    angular =
-        lp::create_with_framework<real>(shape, last_device, last_framework);
-    solver.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
+      angular = lp::create_with_framework<real>(last_shape, last_device, last_framework);
+      solver.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
   } else {
     auto empty = libmobility::device_span<real>({}, libmobility::device::cpu);
     solver.sqrtMdotW(cast_to_real(linear), empty, prefactor);
@@ -235,6 +230,11 @@ template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
   last_framework = lp::get_framework(pos);
   last_device = pos.device_type();
   myself.setPositions(cast_to_const_real(pos));
+  last_shape.resize(pos.ndim());
+  for (size_t i = 0; i < pos.ndim(); ++i)
+  {
+      last_shape[i] = pos.shape(i);
+  }
 }
 
 template <class Solver>
