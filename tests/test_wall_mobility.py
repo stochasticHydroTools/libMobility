@@ -60,7 +60,6 @@ def test_self_mobility_linear(Solver, periodicity, tol, ref_file, wallHeight):
         temperature=0,
         viscosity=eta,
         hydrodynamicRadius=hydrodynamicRadius,
-        numberParticles=numberParticles,
     )
 
     nHeights = len(refHeights)
@@ -147,7 +146,6 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol, wallHeight):
         temperature=0,
         viscosity=eta,
         hydrodynamicRadius=radH,
-        numberParticles=numberParticles,
     )
 
     normMat = (1 / (6 * np.pi * eta)) * np.ones(
@@ -218,7 +216,6 @@ def test_self_mobility_angular(Solver, periodicity, ref_file, wallHeight):
         temperature=0,
         viscosity=eta,
         hydrodynamicRadius=hydrodynamicRadius,
-        numberParticles=numberParticles,
         needsTorque=needsTorque,
     )
 
@@ -285,7 +282,6 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file, offset, wallHeight
         temperature=0,
         viscosity=eta,
         hydrodynamicRadius=hydrodynamicRadius,
-        numberParticles=nP,
         needsTorque=needsTorque,
     )
 

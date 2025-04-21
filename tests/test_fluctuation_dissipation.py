@@ -75,7 +75,6 @@ def test_fluctuation_dissipation_linear_displacements(
         temperature=0.5,  # needs to be 1/2 to cancel out the sqrt(2*T) when computing Mdot
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
-        numberParticles=numberParticles,
         needsTorque=needsTorques,
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
@@ -104,7 +103,6 @@ def test_fluctuation_dissipation_angular_displacements(
         temperature=0.5,  # needs to be 1/2 to cancel out the sqrt(2*T) when computing Mdot
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
-        numberParticles=numberParticles,
         needsTorque=needsTorques,
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
@@ -130,7 +128,6 @@ def test_matrix_pos_def(Solver, periodicity, needsTorques):
     solver = initialize_solver(
         Solver,
         periodicity,
-        numberParticles,
         needsTorque=needsTorques,
         parameters=parameters,
     )
