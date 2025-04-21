@@ -5,6 +5,7 @@ from libMobility import SelfMobility, NBody, PSE, DPStokes
 sane_parameters = {
     "PSE": {"psi": 1.0, "Lx": 32, "Ly": 32, "Lz": 32, "shearStrain": 0.0},
     "NBody": {"algorithm": "advise"},
+    "NBody_wall": {"algorithm": "advise", "wallHeight": 0.0},
     "DPStokes": {
         "Lx": 16,
         "Ly": 16,
@@ -14,6 +15,18 @@ sane_parameters = {
     },
     "SelfMobility": {"parameter": 5.0},
 }
+
+wall_parameters = {
+    "NBody": {"algorithm": "advise", "wallHeight": 0.0},
+    "DPStokes": {
+        "Lx": 76.8,
+        "Ly": 76.8,
+        "zmin": 0,
+        "zmax": 19.2,
+        "allowChangingBoxSize": False,
+    },
+}
+
 
 solver_configs_all = [
     (SelfMobility, ("open", "open", "open")),
@@ -39,7 +52,7 @@ def initialize_solver(
     if parameters is not None:
         solver.setParameters(**parameters)
     else:
-        solver.setParameters(**sane_parameters[Solver.__name__])
+        solver.setParameters(**get_sane_params(Solver.__name__, periodicity[2]))
     solver.initialize(
         temperature=kwargs.get("temperature", 1.0),
         viscosity=1.0,
@@ -92,3 +105,24 @@ def generate_positions_in_box(parameters, numberParticles):
         positions *= 10  # [0, 1] -> [0, 10]
 
     return positions
+
+
+def get_sane_params(solverName, geom=None):
+    if solverName == "NBody" and geom == "single_wall":
+        params = sane_parameters["NBody_wall"].copy()
+    else:
+        params = sane_parameters[solverName].copy()
+    return params
+
+
+def get_wall_params(solverName, wallHeight):
+    params = wall_parameters[
+        solverName
+    ].copy()  # copy is necessary, otherwise modifications accumulate
+    if solverName == "DPStokes":
+        params["zmax"] += wallHeight
+        params["zmin"] += wallHeight
+    elif solverName == "NBody":
+        params["wallHeight"] = wallHeight
+
+    return params

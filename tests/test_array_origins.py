@@ -4,10 +4,8 @@ import numpy as np
 import importlib
 
 from utils import (
-    sane_parameters,
     initialize_solver,
     solver_configs_all,
-    solver_configs_torques,
 )
 
 

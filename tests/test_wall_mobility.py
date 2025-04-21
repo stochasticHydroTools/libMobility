@@ -3,15 +3,10 @@ import numpy as np
 
 from libMobility import DPStokes, NBody
 import libMobility
-from utils import compute_M
+from utils import compute_M, get_wall_params
 
 # NOTE: Some of the following tests will only pass if compiled with double precision.
 # This is because the reference data was generated in double precision.
-
-wall_params = {
-    "DPStokes": {"Lx": 76.8, "Ly": 76.8, "zmin": 0, "zmax": 19.2},
-    "NBody": {"algorithm": "advise"},
-}
 
 precision = np.float32 if NBody.precision == "float" else np.float64
 
@@ -39,14 +34,15 @@ precision = np.float32 if NBody.precision == "float" else np.float64
         ),
     ],
 )
-def test_self_mobility_linear(Solver, periodicity, tol, ref_file):
+@pytest.mark.parametrize("wallHeight", [0, 5.4, -10])
+def test_self_mobility_linear(Solver, periodicity, tol, ref_file, wallHeight):
     if precision == np.float32 and Solver.__name__ == "DPStokes":
         pytest.skip(
             "The test is only valid for double precision due to how reference data was generated."
         )
 
     xymax = 76.8
-    params = wall_params[Solver.__name__]
+    params = get_wall_params(Solver.__name__, wallHeight)
     needsTorque = False
 
     ref_dir = "./ref/"
@@ -79,7 +75,9 @@ def test_self_mobility_linear(Solver, periodicity, tol, ref_file):
         (nHeights, 3 * numberParticles, 3 * numberParticles), dtype=precision
     )
     for i in range(0, nHeights):
-        positions = np.array([[xymax / 2, xymax / 2, refHeights[i]]], dtype=precision)
+        positions = np.array(
+            [[xymax / 2, xymax / 2, refHeights[i] + wallHeight]], dtype=precision
+        )
         solver.setPositions(positions)
 
         M = compute_M(solver, numberParticles, needsTorque)
@@ -120,14 +118,15 @@ def test_self_mobility_linear(Solver, periodicity, tol, ref_file):
         ),
     ],
 )
-def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
+@pytest.mark.parametrize("wallHeight", [0, 5.4, -10])
+def test_pair_mobility_linear(Solver, periodicity, ref_file, tol, wallHeight):
     if precision == np.float32 and Solver.__name__ == "DPStokes":
         pytest.skip(
             "The test is only valid for double precision due to how reference data was generated."
         )
 
     xymax = 76.8
-    params = wall_params[Solver.__name__]
+    params = get_wall_params(Solver.__name__, wallHeight)
     needsTorque = False
 
     ref_dir = "./ref/"
@@ -166,8 +165,8 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
             xpos = xymax / 2
             positions = np.array(
                 [
-                    [xpos + seps[i] / 2, xpos, refHeights[k]],
-                    [xpos - seps[i] / 2, xpos, refHeights[k]],
+                    [xpos + seps[i] / 2, xpos, refHeights[k] + wallHeight],
+                    [xpos - seps[i] / 2, xpos, refHeights[k] + wallHeight],
                 ],
                 dtype=precision,
             )
@@ -191,15 +190,15 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol):
         (NBody, ("open", "open", "single_wall"), "self_mobility_bw_ref_noimg.npz"),
     ],
 )
-def test_self_mobility_angular(Solver, periodicity, ref_file):
+@pytest.mark.parametrize("wallHeight", [0, 5.4, -10])
+def test_self_mobility_angular(Solver, periodicity, ref_file, wallHeight):
     if precision == np.float32 and Solver.__name__ == "DPStokes":
         pytest.skip(
             "The test is only valid for double precision due to how reference data was generated."
         )
 
-    zmax = 19.2
     xymax = 76.8
-    params = wall_params[Solver.__name__]
+    params = get_wall_params(Solver.__name__, wallHeight)
 
     hydrodynamicRadius = 1.0
     eta = 1 / 4 / np.sqrt(np.pi)
@@ -235,7 +234,9 @@ def test_self_mobility_angular(Solver, periodicity, ref_file):
         (nHeights, 6 * numberParticles, 6 * numberParticles), dtype=precision
     )
     for i in range(0, nHeights):
-        positions = np.array([[xymax / 2, xymax / 2, refHeights[i]]], dtype=precision)
+        positions = np.array(
+            [[xymax / 2, xymax / 2, refHeights[i] + wallHeight]], dtype=precision
+        )
         solver.setPositions(positions)
 
         M = compute_M(solver, numberParticles, needsTorque)
@@ -256,15 +257,15 @@ def test_self_mobility_angular(Solver, periodicity, ref_file):
     ],
 )
 @pytest.mark.parametrize("offset", ["x", "y"])
-def test_pair_mobility_angular(Solver, periodicity, ref_file, offset):
+@pytest.mark.parametrize("wallHeight", [0, 5.4, -10])
+def test_pair_mobility_angular(Solver, periodicity, ref_file, offset, wallHeight):
     if precision == np.float32 and Solver.__name__ == "DPStokes":
         pytest.skip(
             "The test is only valid for double precision due to how reference data was generated."
         )
 
-    zmax = 19.2
     xymax = 76.8
-    params = wall_params[Solver.__name__]
+    params = get_wall_params(Solver.__name__, wallHeight)
     hydrodynamicRadius = 1.0
     eta = 1 / 4 / np.sqrt(np.pi)
     needsTorque = True
@@ -315,8 +316,8 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file, offset):
         for k in range(0, nHeights):
             positions = np.array(
                 [
-                    [xpos, xpos, refHeights[k]] + seps_vec,
-                    [xpos, xpos, refHeights[k]] - seps_vec,
+                    [xpos, xpos, refHeights[k] + wallHeight] + seps_vec,
+                    [xpos, xpos, refHeights[k] + wallHeight] - seps_vec,
                 ],
                 dtype=precision,
             )

@@ -2,12 +2,10 @@ from utils import sane_parameters, compute_M, generate_positions_in_box
 import pytest
 import numpy as np
 from libMobility import SelfMobility, PSE, NBody, DPStokes
-from utils import compute_M, solver_configs_all, solver_configs_torques
+from utils import compute_M, solver_configs_all, solver_configs_torques, get_sane_params
 
 
-@pytest.mark.parametrize(
-    ("Solver", "periodicity"), solver_configs_torques
-)
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
 def test_mobility_matrix_linear(
@@ -16,7 +14,7 @@ def test_mobility_matrix_linear(
     needsTorque = False
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
-    parameters = sane_parameters[Solver.__name__]
+    parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver.setParameters(**parameters)
     solver.initialize(
         temperature=0.0,
@@ -49,7 +47,7 @@ def test_mobility_matrix_angular(
     needsTorque = True
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
-    parameters = sane_parameters[Solver.__name__]
+    parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver.setParameters(**parameters)
     solver.initialize(
         temperature=0.0,
