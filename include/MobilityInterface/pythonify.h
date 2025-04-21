@@ -216,14 +216,13 @@ array_like
 )pbdoc";
 
 template <class Solver>
-void call_initialize(Solver &myself, real T, real eta, real a, int N,
+void call_initialize(Solver &myself, real T, real eta, real a,
                      bool needsTorque, real tol) {
   libmobility::Parameters par;
   par.temperature = T;
   par.viscosity = eta;
   par.hydrodynamicRadius = {a};
   par.tolerance = tol;
-  par.numberParticles = N;
   par.needsTorque = needsTorque;
   myself.initialize(par);
 }
@@ -288,7 +287,7 @@ auto define_module_content(
            "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)
       .def("initialize", call_initialize<MODULENAME>, initialize_docstring,
            "temperature"_a, "viscosity"_a, "hydrodynamicRadius"_a,
-           "numberParticles"_a, "needsTorque"_a = false, "tolerance"_a = 1e-4)
+	   "needsTorque"_a = false, "tolerance"_a = 1e-4)
       .def("setPositions", call_setPositions<MODULENAME>,
            "The module will compute the mobility according to this set of "
            "positions.",
