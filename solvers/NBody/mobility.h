@@ -24,7 +24,6 @@ class NBody : public libmobility::Mobility {
   real rotMobility;
   real transRotMobility;
   real hydrodynamicRadius;
-  int numberParticles;
   nbody_rpy::algorithm algorithm = nbody_rpy::algorithm::advise;
 
   real wallHeight; // location of the wall in z
@@ -78,7 +77,6 @@ public:
     this->algorithm = par.algo;
     this->Nbatch = par.Nbatch;
     this->NperBatch = par.NperBatch;
-
     if (kernel == nbody_rpy::kernel_type::bottom_wall) {
       if (par.wallHeight) {
         this->wallHeight = par.wallHeight.value();
@@ -96,15 +94,6 @@ public:
   }
 
   void initialize(Parameters ipar) override {
-    this->numberParticles = ipar.numberParticles;
-    if (Nbatch < 0)
-      Nbatch = 1;
-    if (NperBatch < 0)
-      NperBatch = ipar.numberParticles;
-    if (NperBatch * Nbatch != numberParticles)
-      throw std::runtime_error("[Mobility] Invalid batch parameters for NBody. "
-                               "If in doubt, use the defaults.");
-
     this->hydrodynamicRadius = ipar.hydrodynamicRadius[0];
     this->transMobility =
         1.0 / (6 * M_PI * ipar.viscosity * hydrodynamicRadius);
@@ -117,6 +106,12 @@ public:
 
   void setPositions(device_span<const real> ipositions) override {
     positions.assign(ipositions.begin(), ipositions.end());
+    const auto numberParticles = this->getNumberParticles();
+    int i_Nbatch = (this->Nbatch < 0) ? 1 : this->Nbatch;
+    int i_NperBatch = (this->NperBatch < 0) ? numberParticles : this->NperBatch;
+    if (i_NperBatch * i_Nbatch != numberParticles)
+      throw std::runtime_error("[Mobility] Invalid batch parameters for NBody. "
+                               "If in doubt, use the defaults.");
     if (wallHeight != 0) { // shifts positions so the wall is at z=0 since the
                            // kernels are programmed as such.
       auto index_3 = thrust::make_transform_iterator(
@@ -128,18 +123,23 @@ public:
     }
   }
 
+  uint getNumberParticles() override { return this->positions.size() / 3; }
+
   void Mdot(device_span<const real> forces, device_span<const real> torques,
             device_span<real> linear, device_span<real> angular) override {
-    int numberParticles = positions.size() / 3;
-    if (numberParticles != this->numberParticles)
+    const auto numberParticles = this->getNumberParticles();
+    int i_Nbatch = (this->Nbatch < 0) ? 1 : this->Nbatch;
+    int i_NperBatch = (this->NperBatch < 0) ? numberParticles : this->NperBatch;
+    if (numberParticles == 0)
       throw std::runtime_error(
-          "[libMobility] Wrong number of particles in positions. Did you "
-          "forget to call setPositions?");
+          "[Mobility] Positions have 0 particles. Did you call "
+          "setPositions?");
     device_span<const real> pos{{positions.data().get(), positions.size()},
                                 libmobility::device::cuda};
-    nbody_rpy::callBatchedNBody(
-        pos, forces, torques, linear, angular, Nbatch, NperBatch, transMobility,
-        rotMobility, transRotMobility, hydrodynamicRadius, algorithm, kernel);
+    nbody_rpy::callBatchedNBody(pos, forces, torques, linear, angular, i_Nbatch,
+                                i_NperBatch, transMobility, rotMobility,
+                                transRotMobility, hydrodynamicRadius, algorithm,
+                                kernel);
   }
 };
 #endif
