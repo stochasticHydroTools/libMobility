@@ -104,11 +104,12 @@ auto check_and_get_shape(pyarray_c &arr) {
 
 template <class Solver>
 auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
-  size_t N = myself.getNumberParticles();
+    size_t N = myself.getNumberParticles();
 
-  if (forces.size() < 3 * N and forces.size() > 0) {
-    throw std::runtime_error("The forces array must have size 3*N.");
-  }
+    if (forces.size() < 3 * N and forces.size() > 0)
+    {
+        throw std::runtime_error("The forces array must have size 3*N.");
+    }
   if (torques.size() < 3 * N and torques.size() > 0) {
     throw std::runtime_error("The torques array must have size 3*N.");
   }
@@ -260,6 +261,11 @@ template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
   last_framework = lp::get_framework(pos);
   last_device = pos.device_type();
   myself.setPositions(cast_to_const_real(pos));
+  last_shape.resize(pos.ndim());
+  for (size_t i = 0; i < pos.ndim(); ++i)
+  {
+      last_shape[i] = pos.shape(i);
+  }
 }
 
 template <class Solver>
