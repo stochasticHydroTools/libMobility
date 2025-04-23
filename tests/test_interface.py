@@ -14,7 +14,7 @@ from utils import (
 def test_contiguous(Solver, periodicity):
 
     numberParticles = 1
-    solver = initialize_solver(Solver, periodicity, numberParticles)
+    solver = initialize_solver(Solver, periodicity)
 
     # Set precision to be the same as compiled precision
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -31,7 +31,7 @@ def test_contiguous(Solver, periodicity):
 def test_returns_mf(Solver, periodicity):
 
     numberParticles = 1
-    solver = initialize_solver(Solver, periodicity, numberParticles)
+    solver = initialize_solver(Solver, periodicity)
 
     # Set precision to be the same as compiled precision
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -50,7 +50,7 @@ def test_returns_mf_mt(Solver, periodicity):
     numberParticles = 1
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver = initialize_solver(
-        Solver, periodicity, numberParticles, needsTorque=True, parameters=parameters
+        Solver, periodicity, needsTorque=True, parameters=parameters
     )
 
     # Set precision to be the same as compiled precision
@@ -75,7 +75,7 @@ def test_returns_sqrtM(Solver, periodicity):
     numberParticles = 1
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver = initialize_solver(
-        Solver, periodicity, numberParticles, parameters=parameters, temperature=1.0
+        Solver, periodicity, parameters=parameters, temperature=1.0
     )
     # Set precision to be the same as compiled precision
     positions = generate_positions_in_box(parameters, numberParticles)
@@ -89,7 +89,7 @@ def test_returns_hydrodisp(Solver, periodicity):
     numberParticles = 1
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver = initialize_solver(
-        Solver, periodicity, numberParticles, parameters=parameters, temperature=1.0
+        Solver, periodicity, parameters=parameters, temperature=1.0
     )
     # Set precision to be the same as compiled precision
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -106,7 +106,7 @@ def test_returns_hydrodisp(Solver, periodicity):
 def test_no_torques_error(Solver, periodicity):
     # Test that the solver raises an error if torques are provided but solver was not initialized with needsTorque=True
     numberParticles = 1
-    solver = initialize_solver(Solver, periodicity, numberParticles, needsTorque=False)
+    solver = initialize_solver(Solver, periodicity, needsTorque=False)
 
     # Set precision to be the same as compiled precision
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -127,7 +127,7 @@ def test_no_positions_error(Solver, periodicity):
     if Solver.__name__ == "SelfMobility":
         pytest.skip("SelfMobility does not require positions")
     numberParticles = 1
-    solver = initialize_solver(Solver, periodicity, numberParticles)
+    solver = initialize_solver(Solver, periodicity)
 
     # Set precision to be the same as compiled precision
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -155,7 +155,6 @@ def test_hydrodisp_equivalent(Solver, periodicity, needsTorque):
     solver = initialize_solver(
         Solver,
         periodicity,
-        numberParticles=numberParticles,
         needsTorque=needsTorque,
         temperature=0.0,
     )
@@ -172,3 +171,34 @@ def test_hydrodisp_equivalent(Solver, periodicity, needsTorque):
     assert np.allclose(mf, bothmf, atol=1e-6)
     if needsTorque:
         assert np.allclose(mt, bothmt, atol=1e-6)
+
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
+@pytest.mark.parametrize("needsTorque", [True, False])
+def test_changing_number_particles(Solver, periodicity, needsTorque):
+    if needsTorque and Solver.__name__ == "PSE":
+        pytest.skip("PSE does not support torques")
+
+    solver = initialize_solver(
+        Solver,
+        periodicity,
+        needsTorque=needsTorque,
+        temperature=1.0,
+    )
+    for numberParticles in [1, 2, 3]:
+        # Set precision to be the same as compiled precision
+        positions = np.random.rand(numberParticles, 3)
+        forces = np.random.rand(numberParticles, 3)
+        torques = np.random.rand(numberParticles, 3)
+        solver.setPositions(positions)
+        args = (forces, torques) if needsTorque else (forces,)
+        mf, mt = solver.Mdot(*args)
+        assert mf.shape == (numberParticles, 3)
+        dwf, dmt = solver.sqrtMdotW()
+        assert dwf.shape == (numberParticles, 3)
+        bothmf, bothmt = solver.hydrodynamicVelocities(*args)
+        assert bothmf.shape == (numberParticles, 3)
+        if needsTorque:
+            assert bothmt.shape == (numberParticles, 3)
+            assert dmt.shape == (numberParticles, 3)
+            assert mt.shape == (numberParticles, 3)

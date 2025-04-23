@@ -90,33 +90,35 @@ namespace uammd_dpstokes{
   //Wrapper to UAMMD's TP and DP hydrodynamic modules
   struct DPStokesUAMMD {
   private:
-    auto computeHydrodynamicDisplacements(bool useTorque){
-      auto force = pd->getForce(uammd::access::gpu, uammd::access::read);
-      auto pos = pd->getPos(uammd::access::gpu, uammd::access::read);
-      auto torque = pd->getTorqueIfAllocated(uammd::access::gpu, uammd::access::read);
-      auto d_torques_ptr = useTorque?torque.raw():nullptr;
+    auto computeHydrodynamicDisplacements(const auto* d_pos,
+					  const uammd::real4* d_force,
+					  const uammd::real4* d_torques,
+					  int numberParticles, real dt, real dtTorque,
+					  cudaStream_t st){
       if(fcm){
-	return fcm->computeHydrodynamicDisplacements(pos.raw(), force.raw(),  d_torques_ptr,
+	return fcm->computeHydrodynamicDisplacements((uammd::real4*)(d_pos),
+						     (uammd::real4*)(d_force),
+						     (uammd::real4*)(d_torques),
 						     numberParticles, 0.0, 0.0, st);
       }
       else if(dpstokes){
-	return dpstokes->Mdot(pos.raw(), force.raw(),
-			      d_torques_ptr, numberParticles, st);
+	return dpstokes->Mdot(reinterpret_cast<const uammd::real4*>(d_pos),
+			      reinterpret_cast<const uammd::real4*>(d_force),
+			      reinterpret_cast<const uammd::real4*>(d_torques),
+			      numberParticles, st);
       }
     }
   public:
     std::shared_ptr<DPStokesSlab> dpstokes;
     std::shared_ptr<FCM> fcm;
-    std::shared_ptr<uammd::System> sys;
-    std::shared_ptr<uammd::ParticleData> pd;
-    int numberParticles;
     cudaStream_t st;
-    thrust::device_vector<uammd::real3> tmp;
+    thrust::device_vector<uammd::real3> tmp3;
+    thrust::device_vector<uammd::real4> force4;
+    thrust::device_vector<uammd::real4> torque4;
+    thrust::device_vector<uammd::real4> stored_positions;
     real zOrigin;
 
-    DPStokesUAMMD(PyParameters pypar, int numberParticles): numberParticles(numberParticles){
-      this->sys = std::make_shared<uammd::System>();
-      this->pd = std::make_shared<uammd::ParticleData>(numberParticles, sys);
+    DPStokesUAMMD(PyParameters pypar){
       if(pypar.mode.compare("periodic")==0){
 	auto par = createFCMParameters(pypar);
 	this->fcm = std::make_shared<FCM>(par);
@@ -131,36 +133,38 @@ namespace uammd_dpstokes{
     }
 
     //Copy positions to UAMMD's ParticleData
-    void setPositions(const real* h_pos){
-      tmp.resize(numberParticles);
-      auto pos = pd->getPos(uammd::access::gpu, uammd::access::write);
-      thrust::copy((uammd::real3*)h_pos, (uammd::real3*)h_pos + numberParticles,
-		   tmp.begin());
-      thrust::transform(thrust::cuda::par.on(st), tmp.begin(), tmp.end(),
-			pos.begin(), Real3ToReal4SubstractOriginZ(zOrigin));
+    void setPositions(const real* d_pos, int numberParticles){
+      stored_positions.resize(numberParticles);
+      thrust::transform(thrust::cuda::par.on(st),
+			reinterpret_cast<const uammd::real3*>(d_pos),
+			reinterpret_cast<const uammd::real3*>(d_pos)+ numberParticles,
+			stored_positions.begin(), Real3ToReal4SubstractOriginZ(zOrigin));
     }
 
     //Compute the hydrodynamic displacements due to a series of forces and/or torques acting on the particles
-    void Mdot(const real* h_forces, const real* h_torques,
+    void Mdot(const real* h_forces,
+	      const real* h_torques,
 	      real* h_MF,
-	      real* h_MT){
-      tmp.resize(numberParticles);
-      bool useTorque = h_torques;//.size() != 0;
-      {
-	auto force = pd->getForce(uammd::access::gpu, uammd::access::write);
-	thrust::copy((uammd::real3*)h_forces, (uammd::real3*)h_forces + numberParticles, tmp.begin());
-	thrust::transform(thrust::cuda::par.on(st),
-			  tmp.begin(), tmp.end(), force.begin(), Real3ToReal4());
-      }
+	      real* h_MT, int numberParticles){
+      force4.resize(numberParticles);
+      bool useTorque = h_torques;
+      force4.resize(numberParticles);
+      thrust::transform(thrust::cuda::par.on(st),
+			reinterpret_cast<const uammd::real3*>(h_forces), reinterpret_cast<const uammd::real3*>(h_forces) + numberParticles,
+			force4.begin(), Real3ToReal4());
       if(useTorque){
-	auto torque = pd->getTorque(uammd::access::gpu, uammd::access::write);
-	thrust::copy((uammd::real3*)h_torques, (uammd::real3*)h_torques + numberParticles, tmp.begin());
-	thrust::transform(thrust::cuda::par, tmp.begin(), tmp.end(), torque.begin(), Real3ToReal4());
+	torque4.resize(numberParticles);
+	thrust::transform(thrust::cuda::par.on(st),
+			  reinterpret_cast<const uammd::real3*>(h_torques), reinterpret_cast<const uammd::real3*>(h_torques) + numberParticles,
+			  torque4.begin(), Real3ToReal4());
       }
-      auto mob = this->computeHydrodynamicDisplacements(useTorque);
-      thrust::copy(mob.first.begin(), mob.first.end(), (uammd::real3*)h_MF);
+      auto mob = this->computeHydrodynamicDisplacements(stored_positions.data().get(),
+							force4.data().get(),
+							useTorque?torque4.data().get():nullptr,
+							numberParticles, 0.0, 0.0, st);
+      thrust::copy(thrust::cuda::par.on(st), mob.first.begin(), mob.first.end(), (uammd::real3*)h_MF);
       if(mob.second.size()){
-	thrust::copy(mob.second.begin(), mob.second.end(), (uammd::real3*)h_MT);
+	thrust::copy(thrust::cuda::par.on(st), mob.second.begin(), mob.second.end(), (uammd::real3*)h_MT);
       }
     }
 
@@ -173,30 +177,28 @@ namespace uammd_dpstokes{
 
   //Initialize the modules with a certain set of parameters
   //Reinitializes if the module was already initialized
-  void DPStokesGlue::initialize(PyParameters pypar, int numberParticles){
-    dpstokes = std::make_shared<DPStokesUAMMD>(pypar, numberParticles);
+  void DPStokesGlue::initialize(PyParameters pypar){
+    dpstokes = std::make_shared<DPStokesUAMMD>(pypar);
   }
 
   //Clears all memory allocated by the module.
   //This leaves the module in an unusable state until initialize is called again.
   void DPStokesGlue::clear(){
-    dpstokes->sys->finish();
     dpstokes.reset();
   }
 
   //Set positions to compute mobility matrix
-  void DPStokesGlue::setPositions(const real* h_pos){
+  void DPStokesGlue::setPositions(const real* h_pos, int numberParticles){
     throwIfInvalid();
-    dpstokes->setPositions(h_pos);
-    this->numberParticles = dpstokes->numberParticles;
+    dpstokes->setPositions(h_pos, numberParticles);
   }
 
   //Compute the dot product of the mobility matrix with the forces and/or torques acting on the previously provided positions
   void DPStokesGlue::Mdot(const real* h_forces, const real* h_torques,
 			  real* h_MF,
-			  real* h_MT){
+			  real* h_MT, int numberParticles){
     throwIfInvalid();
-    dpstokes->Mdot(h_forces, h_torques, h_MF, h_MT);
+    dpstokes->Mdot(h_forces, h_torques, h_MF, h_MT, numberParticles);
   }
 
 

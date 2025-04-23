@@ -46,7 +46,7 @@ solver_configs_torques = [
 
 
 def initialize_solver(
-    Solver, periodicity, numberParticles, needsTorque=False, parameters=None, **kwargs
+    Solver, periodicity, needsTorque=False, parameters=None, **kwargs
 ):
     solver = Solver(*periodicity)
     if parameters is not None:
@@ -57,7 +57,6 @@ def initialize_solver(
         temperature=kwargs.get("temperature", 1.0),
         viscosity=1.0,
         hydrodynamicRadius=1.0,
-        numberParticles=numberParticles,
         needsTorque=needsTorque,
     )
     return solver

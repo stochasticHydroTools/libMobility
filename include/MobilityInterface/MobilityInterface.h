@@ -4,9 +4,9 @@
  */
 #ifndef MOBILITYINTERFACE_H
 #define MOBILITYINTERFACE_H
-#include "memory/container.h"
 #include "defines.h"
 #include "lanczos.h"
+#include "memory/container.h"
 #include <random>
 #include <stdexcept>
 #include <vector>
@@ -26,7 +26,6 @@ struct Parameters {
   real viscosity = 1;
   real temperature = 0;
   real tolerance = 1e-4; // Tolerance for Lanczos fluctuations
-  int numberParticles = -1;
   std::uint64_t seed = 0;
   bool needsTorque = false;
 };
@@ -44,7 +43,6 @@ struct Configuration {
 // This is the virtual base class that every solver must inherit from.
 class Mobility {
 private:
-  int numberParticles;
   bool initialized = false;
   std::uint64_t lanczosSeed;
   real lanczosTolerance;
@@ -93,7 +91,6 @@ public:
     if (initialized)
       this->clean();
     this->initialized = true;
-    this->numberParticles = par.numberParticles;
     this->lanczosSeed = par.seed;
     this->lanczosTolerance = par.tolerance;
     this->temperature = par.temperature;
@@ -102,6 +99,9 @@ public:
 
   // Set the positions to construct the mobility operator from
   virtual void setPositions(device_span<const real> positions) = 0;
+
+  // Return the current number of particles in the system
+  virtual uint getNumberParticles() = 0;
 
   // Apply the grand mobility operator (\Omega) to a series of forces (F) and
   // torques (T) to get the resulting linear (V) and angular (W) velocities
@@ -123,41 +123,57 @@ public:
       throw std::runtime_error(
           "[libMobility] You must initialize the base class in order to use "
           "the default stochastic displacement computation");
-    if (not lanczos) {
-      if (this->lanczosSeed ==
-          0) { // If a seed is not provided, get one from random device
-        this->lanczosSeed = std::random_device()();
-      }
-      int numberElements = this->needsTorque ? (2 * this->numberParticles)
-                                             : this->numberParticles;
-      lanczos = std::make_shared<LanczosStochasticVelocities>(
-          numberElements, this->lanczosTolerance, this->lanczosSeed);
-      lanczosOutput.resize(3 * numberElements);
+    const auto numberParticles = this->getNumberParticles();
+    if (numberParticles <= 0)
+      throw std::runtime_error(
+          "[libMobility] The number of particles is not set. Did you "
+          "forget to call setPositions?");
+    if (linear.empty())
+      throw std::runtime_error(
+          "[libMobility] This solver requires linear velocities");
+    if (linear.size() / 3 != numberParticles) {
+      throw std::runtime_error(
+          "[libMobility] The number of linear velocities does not match the "
+          "number of particles");
     }
-    if (this->needsTorque && angular.empty())
+    if (this->needsTorque && linear.size() != angular.size())
       throw std::runtime_error("[libMobility] This solver requires angular "
                                "velocities when configured with torques");
+    const auto numberElements =
+        numberParticles + (this->needsTorque ? numberParticles : 0);
+    if (not lanczos) {
+      // If a seed is not provided, get one from random device
+      if (this->lanczosSeed == 0) {
+        this->lanczosSeed = std::random_device()();
+      } else {
+        // If a seed is provided, use it
+        std::mt19937_64 rng(this->lanczosSeed);
+        this->lanczosSeed = rng();
+      }
+      lanczos = std::make_shared<LanczosStochasticVelocities>(
+          this->lanczosTolerance, this->lanczosSeed);
+    }
+    lanczosOutput.resize(3 * numberElements);
     std::fill(lanczosOutput.begin(), lanczosOutput.end(), 0);
     auto dev = linear.dev;
     lanczos->sqrtMdotW(
-        [this, dev](const real *f, real *mv) {
+        [this, dev, numberParticles](const real *f, real *mv) {
           // Torques are stored at the end of the force array
           // After, results are separated into linear and angular velocities
-          const int N = this->numberParticles;
+          const auto N = numberParticles;
           const real *t = this->needsTorque ? (f + 3 * N) : nullptr;
           real *mt = this->needsTorque ? (mv + 3 * N) : nullptr;
           device_span<const real> s_t({t, t + (t ? (3 * N) : 0)}, dev);
           device_span<real> s_mt({mt, mt + (mt ? (3 * N) : 0)}, dev);
-	  device_span<const real> s_f({f, f + 3 * N}, dev);
-	  device_span<real> s_mv({mv, mv + 3 * N}, dev);
+          device_span<const real> s_f({f, f + 3 * N}, dev);
+          device_span<real> s_mv({mv, mv + 3 * N}, dev);
           Mdot(s_f, s_t, s_mv, s_mt);
         },
-        lanczosOutput.data(), prefactor);
+        lanczosOutput.data(), numberElements, prefactor);
     thrust::copy(lanczosOutput.begin(),
-                 lanczosOutput.begin() + 3 * this->numberParticles,
-                 linear.begin());
+                 lanczosOutput.begin() + 3 * numberParticles, linear.begin());
     if (this->needsTorque)
-      thrust::copy(lanczosOutput.begin() + 3 * this->numberParticles,
+      thrust::copy(lanczosOutput.begin() + 3 * numberParticles,
                    lanczosOutput.end(), angular.begin());
   }
 
@@ -173,8 +189,6 @@ public:
     }
     sqrtMdotW(linear, angular, prefactor);
   }
-
-  int getNumberParticles() const { return this->numberParticles; }
 
   bool getNeedsTorque() const { return this->needsTorque; }
 

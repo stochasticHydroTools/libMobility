@@ -68,7 +68,7 @@ def test_framework(Solver, periodicity, framework, use_torques):
     if use_torques and Solver.__name__ in "PSE":
         pytest.skip("PSE does not support torques")
     numberParticles = 10
-    solver = initialize_solver(Solver, periodicity, numberParticles, use_torques)
+    solver = initialize_solver(Solver, periodicity, use_torques)
     # Set precision to be the same as compiled precision
     precision = np.float32 if Solver.precision == "float" else np.float64
     positions, forces, torques = setup_inputs(

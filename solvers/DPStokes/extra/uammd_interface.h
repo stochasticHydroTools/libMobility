@@ -47,18 +47,18 @@ namespace uammd_dpstokes{
 
     //Initialize the modules with a certain set of parameters
     //Reinitializes if the module was already initialized
-    void initialize(PyParameters pypar, int numberParticles);
+    void initialize(PyParameters pypar);
 
     //Clears all memory allocated by the module.
     //This leaves the module in an unusable state until initialize is called again.
     void clear();
     //Set positions to compute mobility matrix
-    void setPositions(const real* h_pos);
+    void setPositions(const real* h_pos, int numberParticles);
 
     //Compute the dot product of the mobility matrix with the forces and/or torques acting on the previously provided positions
     void Mdot(const real* h_forces, const real* h_torques,
 	      real* h_MF,
-	      real* h_MT);
+	      real* h_MT, int numberParticles);
 
   private:
     void throwIfInvalid();

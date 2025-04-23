@@ -4,9 +4,8 @@ import numpy as np
 from libMobility import *
 from utils import solver_configs_all, get_sane_params
 
-@pytest.mark.parametrize(
-    ("Solver", "periodicity"), solver_configs_all
-)
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_precision(Solver, periodicity):
     # tests that Mdot gives a non-zero result when using the precision that libMobility was compiled in
 
@@ -19,7 +18,6 @@ def test_precision(Solver, periodicity):
         temperature=1.0,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
-        numberParticles=numberParticles,
     )
 
     # Set precision to be the same as compiled precision
@@ -38,9 +36,7 @@ def test_precision(Solver, periodicity):
     ).all(), "Mdot should not come out to be zero when using correct precision."
 
 
-@pytest.mark.parametrize(
-    ("Solver", "periodicity"), solver_configs_all
-)
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_incorrect_precision(Solver, periodicity):
     # libMobility should work even if the inputs have an unexpected precision
 
@@ -53,7 +49,6 @@ def test_incorrect_precision(Solver, periodicity):
         temperature=1.0,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
-        numberParticles=numberParticles,
     )
 
     # Set precision to be opposite from compiled precision

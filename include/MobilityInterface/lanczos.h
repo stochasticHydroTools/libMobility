@@ -15,19 +15,17 @@ class LanczosStochasticVelocities{
   lanczos::Solver lanczos;
   std::vector<real> lanczosNoise;
   real lanczosTolerance;
-  int numberParticles;
   std::mt19937 engine;
 public:
 
-  LanczosStochasticVelocities(int N, real tol, std::uint64_t seed){
-    this->numberParticles = N;
+  LanczosStochasticVelocities(real tol, std::uint64_t seed){
     this->lanczosTolerance = tol;
     engine = std::mt19937{seed};
   }
 
   //Given a functor that applies the mobility operator, returns prefactor*(B dW). Where B is an operator that applies the square root of the provided mobility.
   template<class MobilityDot>
-  void sqrtMdotW(MobilityDot dot, real* result, real prefactor = 1){
+  void sqrtMdotW(MobilityDot dot, real* result, int numberParticles, real prefactor = 1){
     std::normal_distribution<real> dist {0, 1};
     auto gen = [&](){return dist(engine);};
     lanczosNoise.resize(3*numberParticles);

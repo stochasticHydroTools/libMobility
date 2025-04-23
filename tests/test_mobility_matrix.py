@@ -20,7 +20,6 @@ def test_mobility_matrix_linear(
         temperature=0.0,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
-        numberParticles=numberParticles,
         needsTorque=needsTorque,
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
@@ -36,9 +35,7 @@ def test_mobility_matrix_linear(
     ), f"Mobility matrix is not symmetric within {atol}, max diff: {np.max(np.abs(sym))}"
 
 
-@pytest.mark.parametrize(
-    ("Solver", "periodicity"), solver_configs_torques
-)
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
 def test_mobility_matrix_angular(
@@ -53,7 +50,6 @@ def test_mobility_matrix_angular(
         temperature=0.0,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
-        numberParticles=numberParticles,
         needsTorque=needsTorque,
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
@@ -84,7 +80,6 @@ def test_self_mobility_selfmobility(needsTorque):
         temperature=0.0,
         viscosity=viscosity,
         hydrodynamicRadius=hydrodynamicRadius,
-        numberParticles=1,
         needsTorque=needsTorque,
     )
     positions = np.zeros((1, 3), dtype=precision)
@@ -116,7 +111,6 @@ def test_self_mobility_linear_nbody(algorithm):
         temperature=0.0,
         viscosity=viscosity,
         hydrodynamicRadius=hydrodynamicRadius,
-        numberParticles=1,
     )
     positions = np.zeros((1, 3), dtype=precision)
     solver.setPositions(positions)
@@ -140,7 +134,6 @@ def test_self_mobility_angular_nbody(algorithm):
         temperature=0.0,
         viscosity=viscosity,
         hydrodynamicRadius=hydrodynamicRadius,
-        numberParticles=1,
         needsTorque=True,
     )
     positions = np.zeros((1, 3), dtype=precision)
@@ -181,7 +174,6 @@ def test_self_mobility_linear_pse_cubic_box(psi):
         temperature=0.0,
         viscosity=viscosity,
         hydrodynamicRadius=hydrodynamicRadius,
-        numberParticles=1,
         tolerance=1e-6,
     )
     positions = np.zeros((1, 3), dtype=precision)
@@ -220,7 +212,6 @@ def test_pair_mobility_angular_nbody(algorithm):
             temperature=0.0,
             viscosity=viscosity,
             hydrodynamicRadius=hydrodynamicRadius,
-            numberParticles=2,
             needsTorque=True,
         )
         positions = r_vecs[i]
