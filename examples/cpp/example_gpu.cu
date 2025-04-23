@@ -23,7 +23,7 @@ using libmobility::Parameters;
 // The same function can be extended to create any solver.
 // We need it to desambiguate by calling the solver-dependent setParameters
 // function when necessary. For instance, see PSE below
-template <class Solver> auto initializeSolver(Parameters par) {
+template <class Solver> auto initializeSolver(Parameters par, int numberParticles) {
   std::shared_ptr<MobilityBase> solver;
   if (std::is_same<Solver, NBody>::value) {
     auto nbody = std::make_shared<NBody>(
@@ -31,7 +31,7 @@ template <class Solver> auto initializeSolver(Parameters par) {
                       .periodicityY = libmobility::periodicity_mode::open,
                       .periodicityZ = libmobility::periodicity_mode::open});
     nbody->setParametersNBody(
-        {nbody_rpy::algorithm::advise, 1, par.numberParticles});
+        {nbody_rpy::algorithm::advise, 1, numberParticles});
     solver = nbody;
   }
   if (std::is_same<Solver, PSE>::value) {
@@ -81,14 +81,13 @@ int main() {
     Parameters par;
     par.hydrodynamicRadius = {1};
     par.viscosity = 1;
-    par.numberParticles = numberParticles;
     par.tolerance = 1e-4;
     par.temperature = 1.0;
     par.needsTorque = false;
 
     // Create two different solvers
-    auto solver_pse = initializeSolver<PSE>(par);
-    auto solver_nbody = initializeSolver<NBody>(par);
+    auto solver_pse = initializeSolver<PSE>(par, numberParticles);
+    auto solver_nbody = initializeSolver<NBody>(par, numberParticles);
 
     // Compute the displacements
     auto resultNBody = computeMFWithSolver(solver_nbody, pos, forces);
