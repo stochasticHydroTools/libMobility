@@ -78,7 +78,7 @@ inline libmobility::device_span<const real> cast_to_const_real(pyarray_c &arr) {
 template <class Solver>
 auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   size_t N = myself.getNumberParticles();
-  std::array shape = {N,3ul};
+  std::array shape = {N, 3ul};
 
   if (forces.size() < 3 * N and forces.size() > 0) {
     throw std::runtime_error("The forces array must have size 3*N.");
@@ -147,12 +147,19 @@ tolerance : float, optional
 )pbdoc";
 
 template <class Solver> auto call_sqrtMdotW(Solver &solver, real prefactor) {
-  size_t N = solver.getNumberParticles();
-  std::array shape = {N,3ul};
-  auto linear = lp::create_with_framework<real>(shape, last_device, last_framework);
+  const size_t N = solver.getNumberParticles();
+  if (N <= 0) {
+    throw std::runtime_error(
+        "[libMobility] The number of particles is not set. Did you "
+        "forget to call setPositions?");
+  }
+  std::array shape = {N, 3ul};
+  auto linear =
+      lp::create_with_framework<real>(shape, last_device, last_framework);
   auto angular = nb::ndarray<real, nb::c_contig>();
   if (solver.getNeedsTorque()) {
-    angular = lp::create_with_framework<real>(shape, last_device, last_framework);
+    angular =
+        lp::create_with_framework<real>(shape, last_device, last_framework);
     solver.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
   } else {
     auto empty = libmobility::device_span<real>({}, libmobility::device::cpu);
