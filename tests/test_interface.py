@@ -171,3 +171,34 @@ def test_hydrodisp_equivalent(Solver, periodicity, needsTorque):
     assert np.allclose(mf, bothmf, atol=1e-6)
     if needsTorque:
         assert np.allclose(mt, bothmt, atol=1e-6)
+
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
+@pytest.mark.parametrize("needsTorque", [True, False])
+def test_changing_number_particles(Solver, periodicity, needsTorque):
+    if needsTorque and Solver.__name__ == "PSE":
+        pytest.skip("PSE does not support torques")
+
+    solver = initialize_solver(
+        Solver,
+        periodicity,
+        needsTorque=needsTorque,
+        temperature=1.0,
+    )
+    for numberParticles in [1, 2, 3]:
+        # Set precision to be the same as compiled precision
+        positions = np.random.rand(numberParticles, 3)
+        forces = np.random.rand(numberParticles, 3)
+        torques = np.random.rand(numberParticles, 3)
+        solver.setPositions(positions)
+        args = (forces, torques) if needsTorque else (forces,)
+        mf, mt = solver.Mdot(*args)
+        assert mf.shape == (numberParticles, 3)
+        dwf, dmt = solver.sqrtMdotW()
+        assert dwf.shape == (numberParticles, 3)
+        bothmf, bothmt = solver.hydrodynamicVelocities(*args)
+        assert bothmf.shape == (numberParticles, 3)
+        if needsTorque:
+            assert bothmt.shape == (numberParticles, 3)
+            assert dmt.shape == (numberParticles, 3)
+            assert mt.shape == (numberParticles, 3)
