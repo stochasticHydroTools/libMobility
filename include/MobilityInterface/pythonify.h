@@ -138,8 +138,6 @@ viscosity : float
 		Viscosity of the fluid.
 hydrodynamicRadius : float
 		Hydrodynamic radius of the particles.
-numberParticles : int
-		Number of particles in the system.
 needsTorque : bool, optional
 		Whether the solver needs torques. Default is false.
 tolerance : float, optional

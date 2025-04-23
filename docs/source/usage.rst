@@ -69,7 +69,6 @@ A libMobility solver is initialized in three steps:
 		  temperature=0.0,
 		  viscosity=1.0,
 		  hydrodynamicRadius=1.0,
-		  numberParticles=numberParticles,
 		  needsTorque=True,
 		)
 		positions = np.random.rand(numberParticles, 3).astype(precision)
