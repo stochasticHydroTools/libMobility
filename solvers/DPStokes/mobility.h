@@ -119,17 +119,22 @@ public:
 
   void setPositions(device_span<const real> ipositions) override {
     this->numberParticles = ipositions.size() / 3;
-    dpstokes->setPositions(ipositions.data(), this->numberParticles);
+    device_adapter<const real> positions(ipositions, device::cuda);
+    dpstokes->setPositions(positions.data(), this->numberParticles);
   }
 
   uint getNumberParticles() override { return this->numberParticles; }
 
   void Mdot(device_span<const real> iforces, device_span<const real> itorques,
-            device_span<real> linear, device_span<real> angular) override {
+            device_span<real> ilinear, device_span<real> iangular) override {
     if (this->numberParticles <= 0) {
       throw std::runtime_error("[libMobility] Positions are not set. Did you "
                                "forget to call setPositions?");
     }
+    device_adapter<const real> forces(iforces, device::cuda);
+    device_adapter<const real> torques(itorques, device::cuda);
+    device_adapter<real> linear(ilinear, device::cuda);
+    device_adapter<real> angular(iangular, device::cuda);
     if (iforces.size() != 0 && iforces.size() != 3 * this->numberParticles) {
       throw std::runtime_error(
           "[libMobility] The number of forces does not match the "
@@ -140,7 +145,7 @@ public:
           "[libMobility] The number of torques does not match the "
           "number of particles");
     }
-    dpstokes->Mdot(iforces.data(), itorques.data(), linear.data(),
+    dpstokes->Mdot(forces.data(), torques.data(), linear.data(),
                    angular.data(), this->getNumberParticles());
   }
 
