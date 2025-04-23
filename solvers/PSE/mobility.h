@@ -23,7 +23,7 @@ class PSE : public libmobility::Mobility {
   thrust::device_vector<real> positions;
   std::shared_ptr<uammd_pse::UAMMD_PSE_Glue> pse;
   uammd_pse::PyParameters psepar, currentpsepar;
-  int currentNumberParticles = 0;
+  uint currentNumberParticles = 0;
   real temperature;
 
 public:
@@ -44,10 +44,7 @@ public:
       psepar.viscosity = ipar.viscosity;
       psepar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
       psepar.tolerance = ipar.tolerance;
-      this->currentNumberParticles = ipar.numberParticles;
       Mobility::initialize(ipar);
-      pse = std::make_shared<uammd_pse::UAMMD_PSE_Glue>(
-          psepar, this->currentNumberParticles);
     }
     currentpsepar = psepar;
     if (ipar.needsTorque)
@@ -67,35 +64,55 @@ public:
   }
 
   void setPositions(device_span<const real> ipositions) override {
-    int numberParticles = currentNumberParticles;
-    if (numberParticles == 0) {
-      throw std::runtime_error(
-          "[PSE] You must call setParametersPSE() after initialize()");
+    if (ipositions.size() / 3 != this->currentNumberParticles &&
+        ipositions.size() > 0) {
+      this->currentNumberParticles = ipositions.size() / 3;
+      pse = std::make_shared<uammd_pse::UAMMD_PSE_Glue>(
+          currentpsepar, this->currentNumberParticles);
     }
     positions.assign(ipositions.begin(), ipositions.end());
   }
 
+  uint getNumberParticles() override { return this->currentNumberParticles; }
+
   void Mdot(device_span<const real> iforces, device_span<const real> itorques,
             device_span<real> linear, device_span<real> angular) override {
+    if (this->getNumberParticles() <= 0)
+      throw std::runtime_error(
+          "[PSE] The number of particles is not set. Did you "
+          "forget to call setPositions?");
     if (itorques.size())
       throw std::runtime_error("[PSE] Torque is not implemented");
-    if (positions.size() != 3 * currentNumberParticles)
+    if (!pse)
+      throw std::runtime_error("[PSE] PSE is not initialized. Did you "
+                               "forget to call initialize?");
+    if (linear.size() != 3 * currentNumberParticles)
       throw std::runtime_error(
-          "[libMobility] Wrong number of particles in positions. Did you "
-          "forget to call setPositions?");
+          "[libMobility] The number of linear velocities does not match the "
+          "number of particles");
+    if (iforces.size() != 3 * currentNumberParticles)
+      throw std::runtime_error(
+          "[libMobility] The number of forces does not match the "
+          "number of particles");
     pse->computeHydrodynamicDisplacements(positions.data().get(),
                                           iforces.data(), linear.data(), 0, 0);
   }
 
   void sqrtMdotW(device_span<real> linear, device_span<real> angular,
                  real prefactor = 1) override {
+    if (this->getNumberParticles() <= 0)
+      throw std::runtime_error(
+          "[PSE] The number of particles is not set. Did you "
+          "forget to call setPositions?");
     if (angular.size())
       throw std::runtime_error("[PSE] Torque is not implemented");
     if (positions.size() != 3 * currentNumberParticles)
       throw std::runtime_error(
           "[libMobility] Wrong number of particles in positions. Did you "
           "forget to call setPositions?");
-
+    if (!pse)
+      throw std::runtime_error("[libMobility] PSE is not initialized. Did you "
+                               "forget to call initialize?");
     pse->computeHydrodynamicDisplacements(
         positions.data().get(), nullptr, linear.data(), temperature, prefactor);
   }
@@ -105,12 +122,12 @@ public:
                                       device_span<real> linear,
                                       device_span<real> angular,
                                       real prefactor = 1) override {
+    if (this->getNumberParticles() <= 0)
+      throw std::runtime_error(
+          "[PSE] The number of particles is not set. Did you "
+          "forget to call setPositions?");
     if (angular.size())
       throw std::runtime_error("[PSE] Torque is not implemented");
-    if (positions.size() != 3 * currentNumberParticles)
-      throw std::runtime_error(
-          "[libMobility] Wrong number of particles in positions. Did you "
-          "forget to call setPositions?");
     pse->computeHydrodynamicDisplacements(positions.data().get(), forces.data(),
                                           linear.data(), temperature,
                                           prefactor);
@@ -124,8 +141,7 @@ private:
     if (this->temperature != i_par.temperature or
         psepar.viscosity != i_par.viscosity or
         psepar.hydrodynamicRadius != i_par.hydrodynamicRadius[0] or
-        psepar.tolerance != i_par.tolerance or
-        this->currentNumberParticles != i_par.numberParticles)
+        psepar.tolerance != i_par.tolerance)
       return false;
     return true;
   }

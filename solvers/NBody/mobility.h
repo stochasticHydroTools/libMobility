@@ -130,7 +130,7 @@ public:
     const auto numberParticles = this->getNumberParticles();
     int i_Nbatch = (this->Nbatch < 0) ? 1 : this->Nbatch;
     int i_NperBatch = (this->NperBatch < 0) ? numberParticles : this->NperBatch;
-    if (numberParticles == 0)
+    if (numberParticles <= 0)
       throw std::runtime_error(
           "[Mobility] Positions have 0 particles. Did you call "
           "setPositions?");

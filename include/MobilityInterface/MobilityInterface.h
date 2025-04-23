@@ -123,10 +123,15 @@ public:
       throw std::runtime_error(
           "[libMobility] You must initialize the base class in order to use "
           "the default stochastic displacement computation");
+    const auto numberParticles = this->getNumberParticles();
+    if (numberParticles <= 0)
+      throw std::runtime_error(
+          "[libMobility] The number of particles is not set. Did you "
+          "forget to call setPositions?");
     if (linear.empty())
       throw std::runtime_error(
           "[libMobility] This solver requires linear velocities");
-    if (linear.size() / 3 != this->getNumberParticles()) {
+    if (linear.size() / 3 != numberParticles) {
       throw std::runtime_error(
           "[libMobility] The number of linear velocities does not match the "
           "number of particles");
@@ -134,7 +139,6 @@ public:
     if (this->needsTorque && linear.size() != angular.size())
       throw std::runtime_error("[libMobility] This solver requires angular "
                                "velocities when configured with torques");
-    const auto numberParticles = this->getNumberParticles();
     const auto numberElements =
         numberParticles + (this->needsTorque ? numberParticles : 0);
     if (not lanczos) {

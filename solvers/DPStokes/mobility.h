@@ -23,9 +23,8 @@ class DPStokes : public libmobility::Mobility {
   using device = libmobility::device;
   template <class T> using device_span = libmobility::device_span<T>;
   template <class T> using device_adapter = libmobility::device_adapter<T>;
-
+  uint numberParticles = 0;
   Parameters par;
-  int numberParticles;
   std::shared_ptr<DPStokesUAMMD> dpstokes;
   DPStokesParameters dppar;
   real temperature;
@@ -50,7 +49,6 @@ public:
 
   void setParametersDPStokes(DPStokesParameters i_dppar) {
     this->dppar = i_dppar;
-
     if (this->dppar.Lx != this->dppar.Ly)
       throw std::runtime_error("[DPStokes] Only square periodic boxes (Lx = "
                                "Ly) are currently supported.\n");
@@ -59,7 +57,6 @@ public:
   }
 
   void initialize(Parameters ipar) override {
-    this->numberParticles = ipar.numberParticles;
     this->dppar.viscosity = ipar.viscosity;
     this->temperature = ipar.temperature;
     this->lanczosTolerance = ipar.tolerance;
@@ -116,22 +113,35 @@ public:
     this->dppar.nz = floor(nz_actual);
     this->dppar.nz += (int)ceil(nz_actual) % 2;
 
-    dpstokes->initialize(dppar, this->numberParticles);
+    dpstokes->initialize(dppar);
     Mobility::initialize(ipar);
   }
 
   void setPositions(device_span<const real> ipositions) override {
-    dpstokes->setPositions(ipositions.data());
+    this->numberParticles = ipositions.size() / 3;
+    dpstokes->setPositions(ipositions.data(), this->numberParticles);
   }
+
+  uint getNumberParticles() override { return this->numberParticles; }
 
   void Mdot(device_span<const real> iforces, device_span<const real> itorques,
             device_span<real> linear, device_span<real> angular) override {
-    if (dpstokes->numberParticles != this->numberParticles)
+    if (this->numberParticles <= 0) {
+      throw std::runtime_error("[libMobility] Positions are not set. Did you "
+                               "forget to call setPositions?");
+    }
+    if (iforces.size() != 0 && iforces.size() != 3 * this->numberParticles) {
       throw std::runtime_error(
-          "[libMobility] Wrong number of particles in positions. Did you "
-          "forget to call setPositions?");
+          "[libMobility] The number of forces does not match the "
+          "number of particles");
+    }
+    if (itorques.size() != 0 && itorques.size() != 3 * this->numberParticles) {
+      throw std::runtime_error(
+          "[libMobility] The number of torques does not match the "
+          "number of particles");
+    }
     dpstokes->Mdot(iforces.data(), itorques.data(), linear.data(),
-                   angular.data());
+                   angular.data(), this->getNumberParticles());
   }
 
   void clean() override {
