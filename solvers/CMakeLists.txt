@@ -4,4 +4,4 @@ add_subdirectory(NBody)
 add_subdirectory(SelfMobility)
 
 set(INIT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-file(COPY "${INIT_SOURCE_DIR}/__init__.py" DESTINATION ${Python_SITEARCH}/libMobility)
+install(FILES "${INIT_SOURCE_DIR}/__init__.py" DESTINATION ${Python_SITEARCH}/libMobility)
