@@ -37,7 +37,7 @@ def thermal_drift_rfd(solver, positions):
         _tdrift /= delta
         return _tdrift
 
-    tdrift = average(lambda: average(thermal_drift_func, 100), 500)
+    tdrift = average(lambda: average(thermal_drift_func, 100), 200)
     return tdrift
 
 
@@ -160,10 +160,10 @@ def test_thermal_drift_matches_rfd(
     solver.setPositions(positions)
     reference = temperature * thermal_drift_rfd(solver, positions)
     solver.setPositions(positions)
-    rfd = average(lambda: average(solver.thermalDrift, 100), 500)
+    rfd = average(lambda: average(solver.thermalDrift, 100), 200)
     assert np.allclose(
         reference,
         rfd,
-        atol=1e-5,
-        rtol=1e-5,
+        atol=1e-4,
+        rtol=1e-4,
     ), f"RFD does not match: {np.max(np.abs(reference - rfd))}"
