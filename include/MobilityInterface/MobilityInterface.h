@@ -190,6 +190,13 @@ public:
     sqrtMdotW(linear, angular, prefactor);
   }
 
+  virtual void thermalDrift(device_span<real> ilinear, real prefactor = 1) {
+    if (!ilinear.empty()) {
+      device_adapter<real> linear(ilinear, device::cuda);
+      thrust::fill_n(linear.begin(), linear.size(), 0);
+    }
+  }
+
   bool getNeedsTorque() const { return this->needsTorque; }
 
   // Clean any memory allocated by the solver
