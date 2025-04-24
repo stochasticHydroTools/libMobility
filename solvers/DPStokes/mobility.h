@@ -10,6 +10,7 @@ https://doi.org/10.1063/5.0141371
 #include "extra/poly_fits.h"
 #include "extra/uammd_interface.h"
 #include <MobilityInterface/MobilityInterface.h>
+#include <MobilityInterface/random_finite_differences.h>
 #include <cmath>
 #include <vector>
 
@@ -30,6 +31,7 @@ class DPStokes : public libmobility::Mobility {
   real temperature;
   real lanczosTolerance;
   std::string wallmode;
+  std::mt19937 rng;
 
 public:
   DPStokes(Configuration conf) {
@@ -62,7 +64,8 @@ public:
     this->lanczosTolerance = ipar.tolerance;
     this->dppar.mode = this->wallmode;
     this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
-
+    this->rng = std::mt19937(ipar.seed);
+    ipar.seed = rng();
     real h;
     if (ipar.needsTorque) {
       this->dppar.w = 6;
@@ -145,8 +148,39 @@ public:
           "[libMobility] The number of torques does not match the "
           "number of particles");
     }
-    dpstokes->Mdot(forces.data(), torques.data(), linear.data(),
-                   angular.data(), this->getNumberParticles());
+    dpstokes->Mdot(forces.data(), torques.data(), linear.data(), angular.data(),
+                   this->getNumberParticles());
+  }
+
+  void thermalDrift(device_span<real> ilinear, real prefactor = 1) override {
+    if (!ilinear.empty()) {
+      if(ilinear.size() != 3 * this->numberParticles){
+	throw std::runtime_error(
+	    "[libMobility] The number of forces does not match the "
+	    "number of particles");
+      }
+      device_adapter<real> linear(ilinear, device::cuda);
+      if(temperature == 0){
+	thrust::fill(linear.begin(), linear.end(), 0);
+	return;
+      }
+      using device_vector = thrust::device_vector<
+          real, libmobility::allocator::thrust_cached_allocator<real>>;
+      const auto stored_positions =
+          thrust::device_ptr<const real>(dpstokes->getStoredPositions());
+      device_vector original_pos(stored_positions,
+                                 stored_positions + 3 * this->numberParticles);
+      auto mdot = [this](device_span<const real> positions,
+                         device_span<const real> v, device_span<real> result) {
+        this->setPositions(positions);
+        this->Mdot(v, device_span<const real>({}, device::cpu), result,
+                   device_span<real>({}, device::cpu));
+      };
+      uint seed = rng();
+      libmobility::random_finite_differences(mdot, original_pos, linear, seed,
+                                             prefactor*temperature);
+      this->setPositions(original_pos);
+    }
   }
 
   void clean() override {

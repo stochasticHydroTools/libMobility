@@ -55,6 +55,7 @@ namespace uammd_dpstokes{
     //Set positions to compute mobility matrix
     void setPositions(const real* h_pos, int numberParticles);
 
+    const real* getStoredPositions();
     //Compute the dot product of the mobility matrix with the forces and/or torques acting on the previously provided positions
     void Mdot(const real* h_forces, const real* h_torques,
 	      real* h_MF,
