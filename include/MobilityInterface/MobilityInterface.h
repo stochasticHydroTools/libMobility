@@ -10,6 +10,7 @@
 #include <random>
 #include <stdexcept>
 #include <vector>
+
 namespace libmobility {
 
 enum class periodicity_mode {
@@ -50,6 +51,7 @@ private:
   std::vector<real> lanczosOutput;
   real temperature;
   bool needsTorque = false;
+  std::mt19937 rng;
 
 protected:
   Mobility() {};
@@ -90,8 +92,11 @@ public:
     // Clean if the solver was already initialized
     if (initialized)
       this->clean();
+    if (par.seed == 0)
+      par.seed = std::random_device()();
+    this->rng = std::mt19937(par.seed);
     this->initialized = true;
-    this->lanczosSeed = par.seed;
+    this->lanczosSeed = this->rng();
     this->lanczosTolerance = par.tolerance;
     this->temperature = par.temperature;
     this->needsTorque = par.needsTorque;
@@ -142,14 +147,6 @@ public:
     const auto numberElements =
         numberParticles + (this->needsTorque ? numberParticles : 0);
     if (not lanczos) {
-      // If a seed is not provided, get one from random device
-      if (this->lanczosSeed == 0) {
-        this->lanczosSeed = std::random_device()();
-      } else {
-        // If a seed is provided, use it
-        std::mt19937_64 rng(this->lanczosSeed);
-        this->lanczosSeed = rng();
-      }
       lanczos = std::make_shared<LanczosStochasticVelocities>(
           this->lanczosTolerance, this->lanczosSeed);
     }
