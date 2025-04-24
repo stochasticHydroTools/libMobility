@@ -190,7 +190,7 @@ public:
   virtual void thermalDrift(device_span<real> ilinear, real prefactor = 1) {
     if (!ilinear.empty()) {
       device_adapter<real> linear(ilinear, device::cuda);
-      thrust::fill_n(linear.begin(), linear.size(), 0);
+      thrust::fill_n(thrust::cuda::par, linear.begin(), linear.size(), 0);
     }
   }
 
