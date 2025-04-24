@@ -14,13 +14,13 @@
 #include <vector>
 namespace libmobility {
 
-void fill_with_random(device_span<real> iv, uint seed) {
-  device_adapter<real> v(iv, device::cuda);
-  auto cit = thrust::make_counting_iterator<int>(0);
-  thrust::transform(thrust::cuda::par, v.begin(), v.end(), v.begin(),
-                    [seed] __device__(int i) {
-                      Saru saru(seed, i);
-                      return saru.gf(0, 1).x;
+void fill_with_random(device_span<real> input_vector, uint seed) {
+  device_adapter<real> input_vector_cuda(input_vector, device::cuda);
+  auto cit = thrust::make_counting_iterator<uint>(0);
+  thrust::transform(thrust::cuda::par, cit, cit + input_vector_cuda.size(),
+                    input_vector_cuda.begin(), [seed] __device__(uint i) {
+                      Saru rng(seed, i);
+                      return rng.gf(0, 1).x;
                     });
 }
 
