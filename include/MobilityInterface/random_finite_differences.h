@@ -1,4 +1,4 @@
-/*Raul P. Pelaez 2024. Random Finite Differences for computing thermal drift in
+/*Raul P. Pelaez 2025. Random Finite Differences for computing thermal drift in
  * libMobility
  */
 #pragma once
@@ -6,12 +6,10 @@
 #include "defines.h"
 #include "memory/container.h"
 #include "third_party/saruprng.cuh"
-#include <random>
-#include <stdexcept>
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/transform.h>
-#include <vector>
+
 namespace libmobility {
 
 void fill_with_random(device_span<real> input_vector, uint seed) {
@@ -45,17 +43,14 @@ void random_finite_differences(Mdot mdot, device_span<const real> positions,
   device_span<real> noise_span(noise);
   fill_with_random(noise_span, seed);
   thrust::transform(thrust::cuda::par, positions.begin(), positions.end(),
-                    noise.begin(), pos_delta.begin(), _1 + (delta * 0.5) * _2
-
-  );
+                    noise.begin(), pos_delta.begin(), _1 + (delta * 0.5) * _2);
   mdot(pos_delta, noise, Mpd);
   thrust::transform(thrust::cuda::par, positions.begin(), positions.end(),
                     noise.begin(), pos_delta.begin(), _1 - (delta * 0.5) * _2);
   mdot(pos_delta, noise, Mmd);
   device_adapter<real> linear(ilinear, device::cuda);
   thrust::transform(thrust::cuda::par, Mpd.begin(), Mpd.end(), Mmd.begin(),
-                    linear.begin(),
-		    (prefactor / delta) * (_1 - _2));
+                    linear.begin(), (prefactor / delta) * (_1 - _2));
 }
 
 } // namespace libmobility
