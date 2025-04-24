@@ -1,4 +1,4 @@
-/*Raul P. Pelaez 2022. libMobility interface for UAMMD's DPStokes module
+/*Raul P. Pelaez 2022-2025. libMobility interface for UAMMD's DPStokes module
 
 References:
 [1] Computing hydrodynamic interactions in confined doubly periodic geometries
@@ -64,6 +64,9 @@ public:
     this->lanczosTolerance = ipar.tolerance;
     this->dppar.mode = this->wallmode;
     this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
+    if (ipar.seed == 0) {
+      ipar.seed = std::random_device()();
+    }
     this->rng = std::mt19937(ipar.seed);
     ipar.seed = rng();
     real h;
@@ -154,15 +157,15 @@ public:
 
   void thermalDrift(device_span<real> ilinear, real prefactor = 1) override {
     if (!ilinear.empty()) {
-      if(ilinear.size() != 3 * this->numberParticles){
-	throw std::runtime_error(
-	    "[libMobility] The number of forces does not match the "
-	    "number of particles");
+      if (ilinear.size() != 3 * this->numberParticles) {
+        throw std::runtime_error(
+            "[libMobility] The number of forces does not match the "
+            "number of particles");
       }
       device_adapter<real> linear(ilinear, device::cuda);
-      if(temperature == 0){
-	thrust::fill(linear.begin(), linear.end(), 0);
-	return;
+      if (temperature == 0) {
+        thrust::fill(linear.begin(), linear.end(), 0);
+        return;
       }
       using device_vector = thrust::device_vector<
           real, libmobility::allocator::thrust_cached_allocator<real>>;
@@ -178,7 +181,7 @@ public:
       };
       uint seed = rng();
       libmobility::random_finite_differences(mdot, original_pos, linear, seed,
-                                             prefactor*temperature);
+                                             prefactor * temperature);
       this->setPositions(original_pos);
     }
   }
