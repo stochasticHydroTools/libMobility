@@ -167,13 +167,11 @@ def test_no_positions_error(Solver, periodicity):
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("shape", ((4, 6), (3, 1), (1, 4)))
 def test_bad_positions_shape(Solver, periodicity, shape):
-    # Test that the solver raises an error if positions are not 3D
     solver = initialize_solver(Solver, periodicity)
 
     precision = np.float32 if Solver.precision == "float" else np.float64
 
     positions = np.random.rand(*shape).astype(precision)
-    print(positions.shape)
 
     with pytest.raises(RuntimeError):
         solver.setPositions(positions)
