@@ -79,7 +79,6 @@ template <class Solver>
 auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   size_t N = myself.getNumberParticles();
   std::array shape = {N, 3ul};
-
   if (forces.size() < 3 * N and forces.size() > 0) {
     throw std::runtime_error("The forces array must have size 3*N.");
   }
@@ -280,6 +279,33 @@ std::unique_ptr<Solver> call_construct(std::string perx, std::string pery,
   return std::make_unique<Solver>(createConfiguration(perx, pery, perz));
 }
 
+template <class Solver> auto call_thermalDrift(Solver &solver, real prefactor) {
+  const size_t N = solver.getNumberParticles();
+  if (N <= 0) {
+    throw std::runtime_error(
+        "[libMobility] The number of particles is not set. Did you "
+        "forget to call setPositions?");
+  }
+  std::array shape = {N, 3ul};
+  auto linear =
+      lp::create_with_framework<real>(shape, last_device, last_framework);
+  solver.thermalDrift(cast_to_real(linear), prefactor);
+  return linear;
+}
+
+const char *thermaldrift_docstring = R"pbdoc(
+Computes the thermal drift, :math:`k_BT\boldsymbol{\partial}_\boldsymbol{x}\cdot \boldsymbol{\mathcal{M}}`.
+It is required that :py:mod:`setPositions` has been called before calling this function.
+Parameters
+----------
+prefactor : float, optional
+		Prefactor to multiply the result by. Default is 1.0.
+Returns
+-------
+array_like
+		The resulting linear displacements. Shape is (N, 3), where N is the number of particles.
+)pbdoc";
+
 template <typename MODULENAME>
 auto define_module_content(
     py::module_ &m, const char *name, const char *documentation,
@@ -304,6 +330,8 @@ auto define_module_content(
       .def("hydrodynamicVelocities", call_hydrodynamicVelocities<MODULENAME>,
            hydrodynamicvelocities_docstring, "forces"_a = pyarray_c(),
            "torques"_a = pyarray_c(), "prefactor"_a = 1)
+      .def("thermalDrift", call_thermalDrift<MODULENAME>,
+           thermaldrift_docstring, "prefactor"_a = 1)
       .def("clean", &MODULENAME::clean,
            "Frees any memory allocated by the module.")
       .def_prop_ro_static(
