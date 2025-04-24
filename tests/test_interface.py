@@ -165,6 +165,22 @@ def test_no_positions_error(Solver, periodicity):
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
+@pytest.mark.parametrize("shape", ((2, 3), (1, 3), (3, 1), (1, 4)))
+def test_bad_positions_shape(Solver, periodicity, shape):
+    # Test that the solver raises an error if positions are not 3D
+    numberParticles = 1
+    solver = initialize_solver(Solver, periodicity, numberParticles)
+
+    precision = np.float32 if Solver.precision == "float" else np.float64
+
+    positions = np.random.rand(*shape).astype(precision)
+    print(positions.shape)
+
+    with pytest.raises(RuntimeError):
+        solver.setPositions(positions)
+
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("needsTorque", [True, False])
 def test_hydrodisp_equivalent(Solver, periodicity, needsTorque):
     #  Check that calling Mdot is equivalent to calling hydrodynamicVelocities with temperature = 0
