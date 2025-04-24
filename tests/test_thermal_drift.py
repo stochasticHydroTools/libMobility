@@ -25,19 +25,19 @@ def average(function, num_averages):
 def thermal_drift_rfd(solver, positions):
     # RFD works by approxmating kT\partial_q \dot M = 1/\delta \langle M(q+\delta/2 W)W - M(q-\delta/2 W)W \rangle
     # Where delta is a small number, and W is a normal random vector of unit length
-    delta = 1e-4
+    delta = 1e-3
 
     def thermal_drift_func():
-        W = np.random.normal(size=positions.shape)
+        W = np.random.normal(size=positions.shape).astype(positions.dtype)
         solver.setPositions(positions + delta / 2 * W)
         _tdrift = solver.Mdot(W)[0]
         solver.setPositions(positions - delta / 2 * W)
         _tdrift -= solver.Mdot(W)[0]
+        solver.setPositions(positions)
         _tdrift /= delta
         return _tdrift
 
-    tdrift = average(lambda: average(thermal_drift_func, 100), 100)
-    solver.setPositions(positions)
+    tdrift = average(lambda: average(thermal_drift_func, 100), 500)
     return tdrift
 
 
@@ -108,6 +108,37 @@ def test_thermal_drift_is_zero(
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
+def test_thermal_drift_returns_different_numbers(
+    Solver, periodicity, hydrodynamicRadius, numberParticles
+):
+    temperature = 1.2
+    needsTorque = False
+    precision = np.float32 if Solver.precision == "float" else np.float64
+    solver = Solver(*periodicity)
+    parameters = get_sane_params(Solver.__name__, periodicity[2])
+    solver.setParameters(**parameters)
+    solver.initialize(
+        temperature=temperature,
+        viscosity=1.0,
+        hydrodynamicRadius=hydrodynamicRadius,
+        needsTorque=needsTorque,
+    )
+    positions = np.asarray(
+        generate_positions_in_box(parameters, numberParticles).astype(precision) * 0.8
+    )
+    solver.setPositions(positions)
+    rfd1 = solver.thermalDrift()
+    if np.all(rfd1 == 0):
+        pytest.skip("RFD is zero, skipping test")
+    rfd2 = solver.thermalDrift()
+    assert np.any(
+        np.abs(rfd1 - rfd2) > 1e-5
+    ), f"RFD is not different: {np.max(np.abs(rfd1 - rfd2))}"
+
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
+@pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
+@pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
 def test_thermal_drift_matches_rfd(
     Solver, periodicity, hydrodynamicRadius, numberParticles
 ):
@@ -126,9 +157,10 @@ def test_thermal_drift_matches_rfd(
     positions = np.asarray(
         generate_positions_in_box(parameters, numberParticles).astype(precision) * 0.8
     )
+    solver.setPositions(positions)
     reference = temperature * thermal_drift_rfd(solver, positions)
     solver.setPositions(positions)
-    rfd = average(lambda: average(solver.thermalDrift, 100), 1000)
+    rfd = average(lambda: average(solver.thermalDrift, 100), 500)
     assert np.allclose(
         reference,
         rfd,
