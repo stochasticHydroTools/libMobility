@@ -185,6 +185,7 @@ public:
       Mdot(forces, torques, linear, angular);
     }
     sqrtMdotW(linear, angular, prefactor);
+    thermalDrift(linear, prefactor);
   }
 
   //Compute the thermal drift, :math:`k_BT\boldsymbol{\partial}_\boldsymbol{x}\cdot \boldsymbol{\mathcal{M}}`.
