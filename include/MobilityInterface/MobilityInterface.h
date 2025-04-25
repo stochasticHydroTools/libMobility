@@ -187,14 +187,9 @@ public:
     sqrtMdotW(linear, angular, prefactor);
   }
 
+  //Compute the thermal drift, :math:`k_BT\boldsymbol{\partial}_\boldsymbol{x}\cdot \boldsymbol{\mathcal{M}}`.
   virtual void thermalDrift(device_span<real> ilinear, real prefactor = 1) {
-    if (!ilinear.empty()) {
-      if (ilinear.dev == device::cpu) {
-        std::fill_n(ilinear.begin(), ilinear.size(), 0);
-      } else {
-        thrust::fill_n(thrust::cuda::par, ilinear.begin(), ilinear.size(), 0);
-      }
-    }
+    // By default, the thermal drift is zero, so this function does nothing
   }
 
   bool getNeedsTorque() const { return this->needsTorque; }
