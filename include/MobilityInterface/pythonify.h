@@ -308,7 +308,7 @@ forces : array_like, optional
 torques : array_like, optional
 		Torques acting on the particles. The solver must have been initialized with needsTorque=True.
 prefactor : float, optional
-		Prefactor to multiply the result by. Default is 1.0.
+		Prefactor to multiplylp the result by. Default is 1.0.d
 
 Returns
 -------
