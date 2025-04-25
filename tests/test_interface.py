@@ -52,6 +52,30 @@ def test_returns_mf(Solver, periodicity):
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
+def test_returns_mt(Solver, periodicity):
+
+    numberParticles = 1
+    solver = initialize_solver(Solver, periodicity, needsTorque=True)
+
+    # Set precision to be the same as compiled precision
+    precision = np.float32 if Solver.precision == "float" else np.float64
+    positions = np.random.rand(numberParticles, 3).astype(precision)
+    torques = np.random.rand(numberParticles, 3).astype(precision)
+    solver.setPositions(positions)
+    _, mt = solver.Mdot(torques=torques)
+    assert mt.shape == torques.shape
+
+    torques = torques.reshape(numberParticles * 3)
+    _, mt = solver.Mdot(torques=torques)
+    assert mt.shape == torques.shape
+
+    position = positions.reshape(numberParticles * 3)
+    solver.setPositions(position)
+    _, mt = solver.Mdot(torques=torques)
+    assert mt.shape == torques.shape
+
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
 def test_returns_mf_mt(Solver, periodicity):
     numberParticles = 1
     parameters = get_sane_params(Solver.__name__, periodicity[2])
