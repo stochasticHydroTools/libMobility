@@ -156,34 +156,35 @@ public:
   }
 
   void thermalDrift(device_span<real> ilinear, real prefactor = 1) override {
-    if (!ilinear.empty()) {
-      if (ilinear.size() != 3 * this->numberParticles) {
-        throw std::runtime_error(
-            "[libMobility] The number of forces does not match the "
-            "number of particles");
-      }
-      device_adapter<real> linear(ilinear, device::cuda);
-      if (temperature == 0) {
-        thrust::fill(linear.begin(), linear.end(), 0);
-        return;
-      }
-      using device_vector = thrust::device_vector<
-          real, libmobility::allocator::thrust_cached_allocator<real>>;
-      const auto stored_positions =
-          thrust::device_ptr<const real>(dpstokes->getStoredPositions());
-      device_vector original_pos(stored_positions,
-                                 stored_positions + 3 * this->numberParticles);
-      auto mdot = [this](device_span<const real> positions,
-                         device_span<const real> v, device_span<real> result) {
-        this->setPositions(positions);
-        this->Mdot(v, device_span<const real>({}, device::cpu), result,
-                   device_span<real>({}, device::cpu));
-      };
-      uint seed = rng();
-      libmobility::random_finite_differences(mdot, original_pos, linear, seed,
-                                             prefactor * temperature);
-      this->setPositions(original_pos);
+    if (temperature == 0 || prefactor == 0) {
+      return;
     }
+    if (ilinear.size() != 3 * this->numberParticles) {
+      throw std::runtime_error(
+          "[libMobility] The number of forces does not match the "
+          "number of particles");
+    }
+    device_adapter<real> linear(ilinear, device::cuda);
+    using device_vector = thrust::device_vector<
+        real, libmobility::allocator::thrust_cached_allocator<real>>;
+    const auto stored_positions =
+        thrust::device_ptr<const real>(dpstokes->getStoredPositions());
+    device_vector original_pos(stored_positions,
+                               stored_positions + 3 * this->numberParticles);
+    auto mdot = [this](device_span<const real> positions,
+                       device_span<const real> v, device_span<real> result) {
+      this->setPositions(positions);
+      this->Mdot(v, device_span<const real>({}, device::cpu), result,
+                 device_span<real>({}, device::cpu));
+    };
+    uint seed = rng();
+    device_vector thermal_drift(3 * this->numberParticles, 0);
+    libmobility::random_finite_differences(mdot, original_pos, thermal_drift,
+                                           seed, prefactor * temperature);
+    this->setPositions(original_pos);
+    thrust::transform(thrust::cuda::par, thermal_drift.begin(),
+                      thermal_drift.end(), linear.begin(), linear.begin(),
+                      thrust::plus<real>());
   }
 
   void clean() override {
