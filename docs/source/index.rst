@@ -1,7 +1,8 @@
 libMobility: GPU Solvers for Hydrodynamic Mobility
 ==================================================
 
-libMobility is a C++ library with Python bindings offering several GPU solvers that can compute the action of the hydrodynamic mobility (at the RPY/FCM level) of a group of particles (in different geometries) with forces and torques acting on them.
+libMobility is a C++ library with Python bindings offering several GPU solvers that can compute the action of the hydrodynamic mobility (at the RPY/FCM level) of a group of particles (in different geometries and boundary conditions) with forces and torques acting on them. The solvers are written in C++ and wrapped in Python.
+
 
 Functionality
 -------------
@@ -10,7 +11,7 @@ Given a group of forces, :math:`\boldsymbol{F}`, and torques, :math:`\boldsymbol
 
 .. math::
 
-   \begin{bmatrix}d\boldsymbol{X}\\d\boldsymbol{\tau}\end{bmatrix} = \boldsymbol{\mathcal{M}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{T}\end{bmatrix}dt + \text{prefactor}\sqrt{2 k_B T \boldsymbol{\mathcal{M}}}d\boldsymbol{W}
+   \begin{bmatrix}d\boldsymbol{X}\\d\boldsymbol{\tau}\end{bmatrix} = \boldsymbol{\mathcal{M}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{T}\end{bmatrix}dt + \text{prefactor}\sqrt{2 k_B T \boldsymbol{\mathcal{M}}}d\boldsymbol{W} +  \begin{\bmatrix}k_BT\boldsymbol{\partial}_\boldsymbol{X}\cdot \boldsymbol{\mathcal{M}}\\ \boldsymbol{0}\end{bmatrix}dt
 
 Where:
 
@@ -22,6 +23,8 @@ Where:
 - :math:`\text{prefactor}` is a user-provided prefactor
 - :math:`d\boldsymbol{W}` is a collection of i.i.d Weiner processes
 - :math:`T` is the temperature
+- :math:`k_B` is the Boltzmann constant
+- :math:`\boldsymbol{\partial}_\boldsymbol{X}` is the gradient operator with respect to the positions
 
 Solver Capabilities
 -------------------
@@ -30,7 +33,8 @@ Each solver in libMobility allows computation of:
 
 - The deterministic term
 - The stochastic term
-- Both terms simultaneously
+- The thermal drift term
+- All terms simultaneously
 
 Interfaces
 ----------
