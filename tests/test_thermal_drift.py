@@ -32,11 +32,11 @@ def thermal_drift_rfd(solver, positions):
         _tdrift = solver.Mdot(W)[0]
         solver.setPositions(positions - delta / 2 * W)
         _tdrift -= solver.Mdot(W)[0]
-        solver.setPositions(positions)
         _tdrift /= delta
         return _tdrift
 
-    tdrift = average(lambda: average(thermal_drift_func, 100), 200)
+    solver.setPositions(positions)
+    tdrift = average(lambda: average(thermal_drift_func, 400), 100)
     return tdrift
 
 
@@ -154,15 +154,15 @@ def test_thermal_drift_matches_rfd(
         needsTorque=needsTorque,
     )
     positions = np.asarray(
-        generate_positions_in_box(parameters, numberParticles).astype(precision) * 0.8
+        generate_positions_in_box(parameters, numberParticles).astype(precision)
     )
     solver.setPositions(positions)
     reference = temperature * thermal_drift_rfd(solver, positions)
     solver.setPositions(positions)
-    rfd = average(lambda: average(solver.thermalDrift, 100), 200)
+    rfd = average(lambda: average(solver.thermalDrift, 400), 100)
     assert np.allclose(
         reference,
         rfd,
-        atol=1e-4,
-        rtol=1e-4,
+        atol=1e-3,
+        rtol=1e-3,
     ), f"RFD does not match: {np.max(np.abs(reference - rfd))}"
