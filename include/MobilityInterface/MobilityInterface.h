@@ -167,11 +167,14 @@ public:
           Mdot(s_f, s_t, s_mv, s_mt);
         },
         lanczosOutput.data(), numberElements, prefactor);
-    thrust::copy(lanczosOutput.begin(),
-                 lanczosOutput.begin() + 3 * numberParticles, linear.begin());
+    thrust::transform(thrust::cuda::par, lanczosOutput.begin(),
+                      lanczosOutput.begin() + 3 * numberParticles,
+                      linear.begin(), linear.begin(), thrust::plus<real>());
     if (this->needsTorque)
-      thrust::copy(lanczosOutput.begin() + 3 * numberParticles,
-                   lanczosOutput.end(), angular.begin());
+      thrust::transform(thrust::cuda::par,
+                        lanczosOutput.begin() + 3 * numberParticles,
+                        lanczosOutput.end(), angular.begin(), angular.begin(),
+                        thrust::plus<real>());
   }
 
   // Equivalent to calling Mdot, then stochasticDisplacements, and then thermal
