@@ -174,8 +174,8 @@ public:
                    lanczosOutput.end(), angular.begin());
   }
 
-  // Equivalent to calling Mdot and then stochasticDisplacements, can be faster
-  // in some solvers
+  // Equivalent to calling Mdot, then stochasticDisplacements, and then thermal
+  // drift. Can be faster in some solvers
   virtual void hydrodynamicVelocities(device_span<const real> forces,
                                       device_span<const real> torques,
                                       device_span<real> linear,
