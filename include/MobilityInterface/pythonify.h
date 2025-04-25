@@ -182,19 +182,19 @@ tolerance : float, optional
 )pbdoc";
 
 template <class Solver>
-auto call_sqrtMdotW(Solver &solver, real prefactor) {
-  size_t N = solver.getNumberParticles();
+auto call_sqrtMdotW(Solver &myself, real prefactor) {
+  size_t N = myself.getNumberParticles();
 
   auto linear =
       lp::create_with_framework<real>(last_shape, last_device, last_framework);
   auto angular = nb::ndarray<real, nb::c_contig>();
-  if (solver.getNeedsTorque()) {
+  if (myself.getNeedsTorque()) {
     angular = lp::create_with_framework<real>(last_shape, last_device,
                                               last_framework);
-    solver.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
+    myself.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
   } else {
     auto empty = libmobility::device_span<real>({}, libmobility::device::cpu);
-    solver.sqrtMdotW(cast_to_real(linear), empty, prefactor);
+    myself.sqrtMdotW(cast_to_real(linear), empty, prefactor);
   }
   return std::make_pair(linear, angular);
 }

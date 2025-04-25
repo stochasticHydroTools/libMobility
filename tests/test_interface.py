@@ -108,9 +108,9 @@ def test_returns_hydrodisp(Solver, periodicity):
         Solver, periodicity, parameters=parameters, temperature=1.0, needsTorque=False
     )
 
-    shapes = [[(3,), (1, 3)], [(1, 3), (3,)], [(1, 3), (1, 3)], [(3,), (3,)]]
+    shapes = [(3,), (1, 3), (1, 3), (3,)]
 
-    for f_shapes, t_shapes in shapes:
+    for f_shapes in shapes:
         # Set precision to be the same as compiled precision
         precision = np.float32 if Solver.precision == "float" else np.float64
         positions = generate_positions_in_box(parameters, numberParticles)
