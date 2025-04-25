@@ -138,22 +138,19 @@ public:
           "setPositions?");
     using device_vector = thrust::device_vector<
         real, libmobility::allocator::thrust_cached_allocator<real>>;
-    device_vector posZ(positions.size());
+    device_vector posZ(positions);
     if (wallHeight != 0) { // shifts positions so the wall is at z=0 since the
                            // kernels are programmed as such.
       using namespace thrust::placeholders;
       auto index_3 = thrust::make_transform_iterator(
           thrust::make_counting_iterator(0), _1 * 3);
-      auto ipositionZ =
+      auto iposition =
           thrust::make_permutation_iterator(positions.begin() + 2, index_3);
       auto opositionZ =
           thrust::make_permutation_iterator(posZ.begin() + 2, index_3);
-      thrust::transform(thrust::cuda::par, ipositionZ,
-                        ipositionZ + numberParticles, opositionZ,
+      thrust::transform(thrust::cuda::par, iposition,
+                        iposition + numberParticles, opositionZ,
                         _1 - wallHeight);
-    } else {
-      thrust::copy(thrust::cuda::par, positions.begin(), positions.end(),
-                   posZ.begin());
     }
     device_span<const real> pos(posZ);
     nbody_rpy::callBatchedNBody(pos, forces, torques, linear, angular, i_Nbatch,
@@ -161,6 +158,7 @@ public:
                                 transRotMobility, hydrodynamicRadius, algorithm,
                                 kernel);
   }
+
   void thermalDrift(device_span<real> ilinear, real prefactor = 1) override {
     if (temperature == 0 || prefactor == 0) {
       return;
