@@ -78,6 +78,40 @@ inline libmobility::device_span<const real> cast_to_const_real(pyarray_c &arr) {
   return {{arr.data(), arr.size()}, dev};
 }
 
+auto check_array_shapes(pyarray_c &arr) {
+  if (arr.size() == 0) {
+    return std::vector<size_t>{};
+  }
+
+  if (arr.size() % 3 != 0) {
+    throw std::runtime_error(
+        "[libMobility] The input arrays for positions, forces, and torques "
+        "must each have total size 3*N.");
+  }
+
+  int N = arr.size() / 3;
+  int err = 0;
+  if (arr.ndim() == 1 && arr.shape(0) != 3 * N)
+    err = 1;
+  else if (arr.ndim() == 2 && arr.shape(1) != 3)
+    err = 1;
+  else if (arr.ndim() != 1 && arr.ndim() != 2)
+    err = 1;
+
+  if (err) {
+    throw std::runtime_error(
+        "[libMobility] The input arrays for positions, forces, and torques "
+        "must each have shape (N, 3) or (3*N).");
+  }
+
+  std::vector<size_t> shape(arr.ndim());
+  for (size_t i = 0; i < arr.ndim(); ++i) {
+    shape[i] = arr.shape(i);
+  }
+
+  return shape;
+}
+
 template <class Solver>
 auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   size_t N = myself.getNumberParticles();
@@ -95,7 +129,8 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   int device = f.empty() ? torques.device_type() : forces.device_type();
   if (device == nb::device::none::value) device = nb::device::cpu::value;
   last_device = device;
-  auto mf = lp::create_with_framework<real>(last_shape, device, framework);
+  auto f_shape = check_array_shapes(forces);
+  auto mf = lp::create_with_framework<real>(f_shape, device, framework);
   auto mt = nb::ndarray<real, nb::c_contig>();
   if (!t.empty()) {
     if (!myself.getNeedsTorque()) {
@@ -103,7 +138,8 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
           "The solver was configured without torques. Set "
           "needsTorque to true when initializing if you want to use torques");
     }
-    mt = lp::create_with_framework<real>(last_shape, device, framework);
+    auto t_shape = check_array_shapes(torques);
+    mt = lp::create_with_framework<real>(t_shape, device, framework);
   }
   return std::make_tuple(f, t, mf, mt);
 }
@@ -235,37 +271,26 @@ void call_setPositions(Solver &myself, pyarray_c &pos) {
   last_device = pos.device_type();
   myself.setPositions(cast_to_const_real(pos));
 
-  if (pos.size() % 3 != 0) {
-    throw std::runtime_error(
-        "[libMobility] The positions array must have total size 3*N.");
-  }
-
-  int N = pos.size() / 3;
-  int err = 0;
-  if (pos.ndim() == 1 && pos.shape(0) != 3 * N)
-    err = 1;
-  else if (pos.ndim() == 2 && pos.shape(1) != 3)
-    err = 1;
-  else if (pos.ndim() != 1 && pos.ndim() != 2)
-    err = 1;
-
-  if (err) {
-    throw std::runtime_error(
-        "[libMobility] The positions array must have shape (N, 3) or (3*N).");
-  }
-
+  last_shape = check_array_shapes(pos);
   myself.setPositions(cast_to_const_real(pos));
-
-  last_shape.resize(pos.ndim());
-  for (size_t i = 0; i < pos.ndim(); ++i) {
-    last_shape[i] = pos.shape(i);
-  }
 }
 
 template <class Solver>
 auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,
                                  pyarray_c &torques, real prefactor) {
   auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
+
+  if (forces.size() == 0)  // must check because this can be called without
+                           // forces (for sqrtMdotW)
+  {
+    mf = lp::create_with_framework<real>(last_shape, last_device,
+                                         last_framework);
+  }
+  if (myself.getNeedsTorque() && torques.size() == 0) {
+    mt = lp::create_with_framework<real>(last_shape, last_device,
+                                         last_framework);
+  }
+
   auto mf_ptr = cast_to_real(mf);
   auto mt_ptr = cast_to_real(mt);
   myself.hydrodynamicVelocities(f, t, mf_ptr, mt_ptr, prefactor);
@@ -290,7 +315,7 @@ forces : array_like, optional
 torques : array_like, optional
 		Torques acting on the particles. The solver must have been initialized with needsTorque=True.
 prefactor : float, optional
-		Prefactor to multiply the result by. Default is 1.0.
+		Prefactor to multiplylp the result by. Default is 1.0.d
 
 Returns
 -------
