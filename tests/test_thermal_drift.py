@@ -23,8 +23,7 @@ def average(function, num_averages):
 
 
 def thermal_drift_rfd(solver, positions):
-    # RFD works by approxmating kT\partial_q \dot M = 1/\delta \langle M(q+\delta/2 W)W - M(q-\delta/2 W)W \rangle
-    # Where delta is a small number, and W is a normal random vector of unit length
+    # RFD works by approximating kT\partial_q \dot M = 1/\delta \langle M(q+\delta/2 W)W - M(q-\delta/2 W)W \rangle
     delta = 1e-3
 
     def thermal_drift_func():
