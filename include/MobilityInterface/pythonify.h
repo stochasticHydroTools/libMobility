@@ -223,14 +223,12 @@ array_like
 
 template <class Solver>
 auto call_mdot(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
-  auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
-  std::cout << f.size() << " " << t.size() << " " << mf.size() << " "
-            << mt.size() << std::endl;
-  int N = myself.getNumberParticles();
-  auto mf_ptr = cast_to_real(mf);
-  auto mt_ptr = cast_to_real(mt);
-  myself.Mdot(f, t, mf_ptr, mt_ptr);
-  return std::make_pair(mf, mt);
+    auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
+    int N = myself.getNumberParticles();
+    auto mf_ptr = cast_to_real(mf);
+    auto mt_ptr = cast_to_real(mt);
+    myself.Mdot(f, t, mf_ptr, mt_ptr);
+    return std::make_pair(mf, mt);
 }
 
 const char *mdot_docstring = R"pbdoc(
