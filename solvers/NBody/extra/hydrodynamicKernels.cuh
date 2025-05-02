@@ -176,39 +176,39 @@ public:
     }
 
   // Computes M(ri, rj)*vj
-  static __device__ real3 dotProduct_UF(real3 rij, real r, real3 vj, real rh)
+  static __device__ real3 dotProduct_UF(real3 rij, real r, real3 fj, real rh)
   {
       const real2 c12 = RPY_UF(r, rh);
       const real f = c12.x;
       const real gdivr2 = c12.y;
-      const real gv = gdivr2 * dot(rij, vj);
-      const real3 Mv_t = f * vj + (r > real(0) ? gv * rij : real3());
+      const real gv = gdivr2 * dot(rij, fj);
+      const real3 Mv_t = f * fj + (r > real(0) ? gv * rij : real3());
       return Mv_t;
   }
 
-  static __device__ real3 dotProduct_WT(real3 rij, real r, real3 vj, real rh)
+  static __device__ real3 dotProduct_WT(real3 rij, real r, real3 tj, real rh)
   {
       const real2 c12 = RPY_WT(r, rh);
       const real f = c12.x;
       const real gdivr2 = c12.y;
-      const real gv = gdivr2 * dot(rij, vj);
-      const real3 Mv_t = f * vj + (r > real(0) ? gv * rij : real3());
+      const real gv = gdivr2 * dot(rij, tj);
+      const real3 Mv_t = f * tj + (r > real(0) ? gv * rij : real3());
       return Mv_t;
   }
 
-  static __device__ real3 dotProduct_UT(real3 rij, real r, real3 vj, real rh)
+  static __device__ real3 dotProduct_UT(real3 rij, real r, real3 tj, real rh)
   {
       const real3 m = RPY_UT(rij, r, rh); // (M_xy, M_xz, M_yz)
-      const real3 Mv_t = {m.x * vj.y + m.y * vj.z, -m.x * vj.x + m.z * vj.z,
-                          -m.y * vj.x - m.z * vj.y};
+      const real3 Mv_t = {m.x * tj.y + m.y * tj.z, -m.x * tj.x + m.z * tj.z,
+                          -m.y * tj.x - m.z * tj.y};
       return Mv_t;
   }
 
-  static __device__ real3 dotProduct_WF(real3 rij, real r, real3 vj, real rh)
+  static __device__ real3 dotProduct_WF(real3 rij, real r, real3 fj, real rh)
   {
       const real3 m = RPY_WF(rij, r, rh); // (M_xy, M_xz, M_yz)
-      const real3 Mv_t = {m.x * vj.y + m.y * vj.z, -m.x * vj.x + m.z * vj.z,
-                          -m.y * vj.x - m.z * vj.y};
+      const real3 Mv_t = {m.x * fj.y + m.y * fj.z, -m.x * fj.x + m.z * fj.z,
+                          -m.y * fj.x - m.z * fj.y};
       return Mv_t;
   }
 };
@@ -427,25 +427,25 @@ public:
     return result;
   }
 
-  static __device__ real3 dotProduct_UF(real3 rij, real r, real3 vj, real hj, real rh) {
+  static __device__ real3 dotProduct_UF(real3 rij, real r, real3 fj, real hj, real rh) {
     const real2 c12 = RPY_UF(r, rh);
     const real f = c12.x;
     const real gdivr2 = c12.y;
-    const real gv = gdivr2 * dot(rij, vj);
-    real3 Mv_t = f * vj + (r > real(0) ? gv * rij : real3());
+    const real gv = gdivr2 * dot(rij, fj);
+    real3 Mv_t = f * fj + (r > real(0) ? gv * rij : real3());
     rij.z += 2 * hj;
-    Mv_t += wallCorrection_UF(rij / rh, (r == 0), hj / rh, vj);
+    Mv_t += wallCorrection_UF(rij / rh, (r == 0), hj / rh, fj);
     return Mv_t;
   }
 
-  static __device__ real3 dotProduct_WT(real3 rij, real r, real3 vj, real hj, real rh) {
+  static __device__ real3 dotProduct_WT(real3 rij, real r, real3 tj, real hj, real rh) {
     const real2 c12 = RPY_WT(r, rh);
     const real f = c12.x;
     const real gdivr2 = c12.y;
-    const real gv = gdivr2 * dot(rij, vj);
-    real3 Mv_t = f * vj + (r > real(0) ? gv * rij : real3());
+    const real gv = gdivr2 * dot(rij, tj);
+    real3 Mv_t = f * tj + (r > real(0) ? gv * rij : real3());
     rij.z += 2 * hj;
-    Mv_t += wallCorrection_WT(rij / rh, (r == 0), hj / rh, vj);
+    Mv_t += wallCorrection_WT(rij / rh, (r == 0), hj / rh, tj);
     return Mv_t;
   }
 
@@ -455,22 +455,22 @@ public:
   // calling loop. so, we call wallCorrection_UT with R = -rij = pj - pi and h =
   // pi.z, i.e. we flip the order of the (ij) arguments so that we get M_{UT,
   // ij}
- static  __device__ real3 dotProduct_UT(real3 rij, real r, real3 vj, real hi, real rh) {
+ static  __device__ real3 dotProduct_UT(real3 rij, real r, real3 tj, real hi, real rh) {
     const real3 m = RPY_UT(rij, r, rh); // (M_xy, M_xz, M_yz)
-    real3 Mv_t = {m.x * vj.y + m.y * vj.z, -m.x * vj.x + m.z * vj.z,
-                  -m.y * vj.x - m.z * vj.y};
+    real3 Mv_t = {m.x * tj.y + m.y * tj.z, -m.x * tj.x + m.z * tj.z,
+                  -m.y * tj.x - m.z * tj.y};
     rij = -1 * rij;
     rij.z += 2 * hi;
-    Mv_t += wallCorrection_UT(rij / rh, (r == 0), hi / rh, vj);
+    Mv_t += wallCorrection_UT(rij / rh, (r == 0), hi / rh, tj);
     return Mv_t;
   }
 
-  static __device__ real3 dotProduct_WF(real3 rij, real r, real3 vj, real hj, real rh) {
+  static __device__ real3 dotProduct_WF(real3 rij, real r, real3 fj, real hj, real rh) {
     const real3 m = RPY_WF(rij, r, rh); // (M_xy, M_xz, M_yz)
-    real3 Mv_t = {m.x * vj.y + m.y * vj.z, -m.x * vj.x + m.z * vj.z,
-                  -m.y * vj.x - m.z * vj.y};
+    real3 Mv_t = {m.x * fj.y + m.y * fj.z, -m.x * fj.x + m.z * fj.z,
+                  -m.y * fj.x - m.z * fj.y};
     rij.z += 2 * hj;
-    Mv_t += wallCorrection_WF(rij / rh, (r == 0), hj / rh, vj);
+    Mv_t += wallCorrection_WF(rij / rh, (r == 0), hj / rh, fj);
     return Mv_t;
   }
 };
