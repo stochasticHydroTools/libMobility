@@ -166,14 +166,13 @@ public:
 
         if constexpr (Policy::useUF)
             result.MF += c.t0 * dotProduct_UF(rij, r, fj, c.rh);
-        if constexpr (Policy::useWT)
-            result.MF += c.r0 * dotProduct_WT(rij, r, fj, c.rh);
         if constexpr (Policy::useUT)
             result.MF += c.rt0 * dotProduct_UT(rij, r, tj, c.rh);
+        if constexpr (Policy::useWT)
+            result.MT += c.r0 * dotProduct_WT(rij, r, tj, c.rh);
         if constexpr (Policy::useWF)
-            result.MF += c.rt0 * dotProduct_WF(rij, r, tj, c.rh);
-
-    return result;
+            result.MT += c.rt0 * dotProduct_WF(rij, r, fj, c.rh);
+        return result;
     }
 
   // Computes M(ri, rj)*vj
@@ -418,12 +417,12 @@ public:
 
       if constexpr (Policy::useUF)
           result.MF += bij * c.t0 * dotProduct_UF(rij, r, fj, pj.z, c.rh);
-      if constexpr (Policy::useWT)
-          result.MF += bij * c.r0 * dotProduct_WT(rij, r, fj, pj.z, c.rh);
       if constexpr (Policy::useUT)
           result.MF += bij * c.rt0 * dotProduct_UT(rij, r, tj, pi.z, c.rh);
+      if constexpr (Policy::useWT)
+          result.MT += bij * c.r0 * dotProduct_WT(rij, r, tj, pj.z, c.rh);
       if constexpr (Policy::useWF)
-          result.MF += bij * c.rt0 * dotProduct_WF(rij, r, tj, pj.z, c.rh);
+          result.MT += bij * c.rt0 * dotProduct_WF(rij, r, fj, pj.z, c.rh);
 
     return result;
   }
