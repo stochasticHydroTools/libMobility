@@ -78,7 +78,7 @@ inline libmobility::device_span<const real> cast_to_const_real(pyarray_c &arr) {
   return {{arr.data(), arr.size()}, dev};
 }
 
-auto check_array_shapes(pyarray_c &arr) {
+auto check_and_get_shape(pyarray_c &arr) {
   if (arr.size() == 0) {
     return std::vector<size_t>{};
   }
@@ -269,9 +269,6 @@ template <class Solver>
 void call_setPositions(Solver &myself, pyarray_c &pos) {
   last_framework = lp::get_framework(pos);
   last_device = pos.device_type();
-  myself.setPositions(cast_to_const_real(pos));
-
-  last_shape = check_and_get_shape(pos);
   myself.setPositions(cast_to_const_real(pos));
 }
 
