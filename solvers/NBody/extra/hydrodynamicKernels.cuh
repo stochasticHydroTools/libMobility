@@ -26,6 +26,46 @@ namespace nbody_rpy {
         const bool hasTorque;
     };
 
+    struct ForcesOnlyOpen
+    {
+        static constexpr bool useUF = true;
+        static constexpr bool useWT = false;
+        static constexpr bool useUT = false;
+        static constexpr bool useWF = false;
+    };
+
+    struct TorquesOnlyOpen
+    {
+        static constexpr bool useUF = false;
+        static constexpr bool useWT = true;
+        static constexpr bool useUT = false;
+        static constexpr bool useWF = false;
+    };
+
+    struct ForcesOnlyWall
+    {
+        static constexpr bool useUF = true;
+        static constexpr bool useWT = false;
+        static constexpr bool useUT = false;
+        static constexpr bool useWF = true;
+    };
+
+    struct TorquesOnlyWall
+    {
+        static constexpr bool useUF = false;
+        static constexpr bool useWT = true;
+        static constexpr bool useUT = true;
+        static constexpr bool useWF = false;
+    };
+
+    struct ForcesAndTorques
+    {
+        static constexpr bool useUF = true;
+        static constexpr bool useWT = true;
+        static constexpr bool useUT = true;
+        static constexpr bool useWF = true;
+    };
+
     struct mdot_result
     {
         real3 MF = real3(0, 0, 0);
@@ -117,21 +157,23 @@ __device__ real3 RPY_WF(real3 rij, real r, real rh) {
 class OpenBoundary {
 
 public:
+    template <typename Policy>
     static __device__ mdot_result dotProduct(real3 pi, real3 pj, real3 fj, real3 tj, Constants &c)
     {
         mdot_result result;
         real3 rij = make_real3(pi) - make_real3(pj);
         const real r = sqrt(dot(rij, rij));
 
-        result.MF += c.t0 * dotProduct_UF(rij, r, fj, c.rh);
-        if (c.hasTorque)
-        {
+        if constexpr (Policy::useUF)
+            result.MF += c.t0 * dotProduct_UF(rij, r, fj, c.rh);
+        if constexpr (Policy::useWT)
+            result.MF += c.r0 * dotProduct_WT(rij, r, fj, c.rh);
+        if constexpr (Policy::useUT)
             result.MF += c.rt0 * dotProduct_UT(rij, r, tj, c.rh);
-            result.MT += c.rt0 * dotProduct_WF(rij, r, fj, c.rh);
-            result.MT += c.r0 * dotProduct_WT(rij, r, tj, c.rh);
-        }
+        if constexpr (Policy::useWF)
+            result.MF += c.rt0 * dotProduct_WF(rij, r, tj, c.rh);
 
-        return result;
+    return result;
     }
 
   // Computes M(ri, rj)*vj
@@ -356,11 +398,12 @@ class BottomWall {
 
 public:
 
+  template <typename Policy>
   static __device__ mdot_result dotProduct(real3 pi, real3 pj, real3 fj, real3 tj, Constants &c)
   {
-      mdot_result result;
       // implements damping from Appendix 1 in [2] so the matrix is positive
       // definite when a particle overlaps the wall
+      mdot_result result;
       real bi = min(pi.z / c.rh, real(1.0));
       bi = max(bi, real(0.0));
       real bj = min(pj.z / c.rh, real(1.0));
@@ -373,16 +416,16 @@ public:
       real3 rij = make_real3(pi) - make_real3(pj);
       const real r = sqrt(dot(rij, rij));
 
-      result.MF += bij * c.t0 * dotProduct_UF(rij, r, fj, pj.z, c.rh);
-      if (c.hasTorque)
-      {
-          // note: dotProduct_UT is correct with argument pi.z: see note on dotProduct_UT
+      if constexpr (Policy::useUF)
+          result.MF += bij * c.t0 * dotProduct_UF(rij, r, fj, pj.z, c.rh);
+      if constexpr (Policy::useWT)
+          result.MF += bij * c.r0 * dotProduct_WT(rij, r, fj, pj.z, c.rh);
+      if constexpr (Policy::useUT)
           result.MF += bij * c.rt0 * dotProduct_UT(rij, r, tj, pi.z, c.rh);
-          result.MT += bij * c.rt0 * dotProduct_WF(rij, r, fj, pj.z, c.rh);
-          result.MT += bij * c.r0 * dotProduct_WT(rij, r, tj, pj.z, c.rh);
-      }
+      if constexpr (Policy::useWF)
+          result.MF += bij * c.rt0 * dotProduct_WF(rij, r, tj, pj.z, c.rh);
 
-      return result;
+    return result;
   }
 
   static __device__ real3 dotProduct_UF(real3 rij, real r, real3 vj, real hj, real rh) {
