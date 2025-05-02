@@ -129,7 +129,7 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   int device = f.empty() ? torques.device_type() : forces.device_type();
   if (device == nb::device::none::value) device = nb::device::cpu::value;
   last_device = device;
-  auto f_shape = check_array_shapes(forces);
+  auto f_shape = check_and_get_shape(forces);
   auto mf = lp::create_with_framework<real>(f_shape, device, framework);
   auto mt = nb::ndarray<real, nb::c_contig>();
   if (!t.empty()) {
@@ -138,7 +138,7 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
           "The solver was configured without torques. Set "
           "needsTorque to true when initializing if you want to use torques");
     }
-    auto t_shape = check_array_shapes(torques);
+    auto t_shape = check_and_get_shape(torques);
     mt = lp::create_with_framework<real>(t_shape, device, framework);
   }
   return std::make_tuple(f, t, mf, mt);
@@ -271,7 +271,7 @@ void call_setPositions(Solver &myself, pyarray_c &pos) {
   last_device = pos.device_type();
   myself.setPositions(cast_to_const_real(pos));
 
-  last_shape = check_array_shapes(pos);
+  last_shape = check_and_get_shape(pos);
   myself.setPositions(cast_to_const_real(pos));
 }
 
@@ -315,7 +315,7 @@ forces : array_like, optional
 torques : array_like, optional
 		Torques acting on the particles. The solver must have been initialized with needsTorque=True.
 prefactor : float, optional
-		Prefactor to multiplylp the result by. Default is 1.0.d
+		Prefactor to multiply the result by. Default is 1.0.
 
 Returns
 -------
