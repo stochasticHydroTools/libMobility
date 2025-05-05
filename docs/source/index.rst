@@ -23,7 +23,7 @@ Where:
 - :math:`d\boldsymbol{W}` is a collection of i.i.d Weiner processes
 - :math:`T` is the temperature
 - :math:`k_B` is the Boltzmann constant
-- :math:`\boldsymbol{\partial}_\boldsymbol{X}` is the gradient operator with respect to the positions
+- :math:`\boldsymbol{\partial}_\boldsymbol{X}\cdot` is the divergence with respect to the positions
 
 Solver Capabilities
 -------------------
