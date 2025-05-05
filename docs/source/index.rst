@@ -1,8 +1,7 @@
 libMobility: GPU Solvers for Hydrodynamic Mobility
 ==================================================
 
-libMobility is a C++ library with Python bindings offering several GPU solvers that can compute the action of the hydrodynamic mobility (at the RPY/FCM level) of a group of particles (in different geometries and boundary conditions) with forces and torques acting on them. The solvers are written in C++ and wrapped in Python.
-
+libMobility is a GPU-based software library implemented in C++ and usable from Python via bindings. It offers several solvers to compute the action of the hydrodynamic mobility (at the RPY/FCM level) of a group of particles (in different geometries and boundary conditions) with forces and torques acting on them.
 
 Functionality
 -------------
