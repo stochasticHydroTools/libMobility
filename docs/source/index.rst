@@ -6,7 +6,7 @@ libMobility is a GPU-based software library implemented in C++ and usable from P
 Functionality
 -------------
 
-Given a group of forces, :math:`\boldsymbol{F}`, and torques, :math:`\boldsymbol{\tau}`, acting on a group of positions, :math:`\boldsymbol{X}` and directions :math:`\boldsymbol{\tau}`, the libMobility solvers can compute:
+Given a group of forces, :math:`\boldsymbol{F}`, and torques, :math:`\boldsymbol{\tau}`, acting on a group of positions, :math:`\boldsymbol{X}` and directions :math:`\boldsymbol{\theta}`, the libMobility solvers can compute:
 
 .. math::
 
@@ -15,7 +15,7 @@ Given a group of forces, :math:`\boldsymbol{F}`, and torques, :math:`\boldsymbol
 Where:
 
 - :math:`d\boldsymbol{X}` are the linear displacements
-- :math:`d\boldsymbol{\tau}` are the angular displacements
+- :math:`d\boldsymbol{\theta}` are the angular displacements
 - :math:`\boldsymbol{\mathcal{M}}` is the grand mobility tensor
 - :math:`\boldsymbol{F}` are the forces
 - :math:`\boldsymbol{T}` are the torques
