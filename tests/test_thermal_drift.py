@@ -183,7 +183,7 @@ def test_thermal_drift_matches_rfd(
         rfd_m,
         atol=1e-3,
         rtol=1e-3,
-    ), f"Linear RFD does not match: {np.max(np.abs(reference - rfd))}"
+    ), f"Linear RFD does not match: {np.max(np.abs(reference_m - rfd_m))}"
     if reference_d is not None and rfd_d is not None:
         assert np.allclose(
             reference_d,
