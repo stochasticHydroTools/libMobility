@@ -159,7 +159,8 @@ public:
                                 kernel);
   }
 
-  void thermalDrift(device_span<real> ilinear, real prefactor = 1) override {
+  void thermalDrift(device_span<real> ilinear, device_span<real> iangular,
+                    real prefactor = 1) override {
     if (temperature == 0 || prefactor == 0) {
       return;
     }
@@ -171,7 +172,15 @@ public:
           "[libMobility] The number of forces does not match the "
           "number of particles");
     }
-    device_adapter<real> linear(ilinear, device::cuda);
+    if (this->getNeedsTorque() && iangular.size() != 3 * numberParticles) {
+      throw std::runtime_error(
+          "[libMobility] The number of torques does not match the "
+          "number of particles");
+    }
+    if (!this->getNeedsTorque() && iangular.size() != 0) {
+      throw std::runtime_error("[libMobility] Received torques but the solver "
+                               "was initialized with needsTorque=False");
+    }
     using device_vector = thrust::device_vector<
         real, libmobility::allocator::thrust_cached_allocator<real>>;
     const auto stored_positions =
@@ -179,19 +188,29 @@ public:
     device_vector original_pos(stored_positions,
                                stored_positions + 3 * numberParticles);
     auto mdot = [this](device_span<const real> positions,
-                       device_span<const real> v, device_span<real> result) {
+                       device_span<const real> v, device_span<real> result_m,
+                       device_span<real> result_d) {
       this->setPositions(positions);
-      this->Mdot(v, device_span<const real>({}, device::cpu), result,
-                 device_span<real>({}, device::cpu));
+      this->Mdot(v, device_span<const real>(), result_m, result_d);
     };
     uint seed = rng();
-    device_vector thermal_drift(3 * numberParticles, 0);
-    libmobility::random_finite_differences(mdot, original_pos, thermal_drift,
-                                           seed, prefactor * temperature);
+    device_vector thermal_drift_m(ilinear.size(), 0);
+    device_vector thermal_drift_d(iangular.size(), 0);
+
+    libmobility::random_finite_differences(mdot, original_pos, thermal_drift_m,
+                                           thermal_drift_d, seed,
+                                           prefactor * temperature);
+    device_adapter<real> linear(ilinear, device::cuda);
     this->setPositions(original_pos);
-    thrust::transform(thrust::cuda::par, thermal_drift.begin(),
-                      thermal_drift.end(), linear.begin(), linear.begin(),
+    thrust::transform(thrust::cuda::par, thermal_drift_m.begin(),
+                      thermal_drift_m.end(), linear.begin(), linear.begin(),
                       thrust::plus<real>());
+    if (this->getNeedsTorque()) {
+      device_adapter<real> angular(iangular, device::cuda);
+      thrust::transform(thrust::cuda::par, thermal_drift_d.begin(),
+                        thermal_drift_d.end(), angular.begin(), angular.begin(),
+                        thrust::plus<real>());
+    }
   }
 };
 #endif

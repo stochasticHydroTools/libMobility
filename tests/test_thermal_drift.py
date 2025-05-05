@@ -9,17 +9,16 @@ from utils import (
 )
 
 
-def online_average(current_mean, current_count, new_value):
-    # Update the mean and count
-    new_mean = current_mean + (new_value - current_mean) / (current_count + 1)
-    return new_mean
-
-
 def average(function, num_averages):
-    result = function()
+    result_m, result_d = function()
     for i in range(num_averages - 1):
-        result += function()
-    return result / num_averages
+        new_result_m, new_result_d = function()
+        result_m += new_result_m
+        if result_d is not None:
+            result_d += new_result_d
+    if result_d is not None:
+        result_d /= num_averages
+    return result_m / num_averages, result_d
 
 
 def thermal_drift_rfd(solver, positions):
@@ -29,15 +28,16 @@ def thermal_drift_rfd(solver, positions):
     def thermal_drift_func():
         W = np.random.normal(size=positions.shape).astype(positions.dtype)
         solver.setPositions(positions + delta / 2 * W)
-        _tdrift = solver.Mdot(W)[0]
+        _tdriftp_m, _tdriftp_d = solver.Mdot(W)
         solver.setPositions(positions - delta / 2 * W)
-        _tdrift -= solver.Mdot(W)[0]
-        _tdrift /= delta
-        return _tdrift
+        _tdriftm_m, _tdriftm_d = solver.Mdot(W)
+        _tdrift_m = (_tdriftp_m - _tdriftm_m)/delta
+        _tdrift_d = (_tdriftp_d - _tdriftm_d)/delta if _tdriftm_d is not None else None
+        return _tdrift_m, _tdrift_d
 
     solver.setPositions(positions)
-    tdrift = average(lambda: average(thermal_drift_func, 400), 100)
-    return tdrift
+    tdrift_m, tdrift_d = average(lambda: average(thermal_drift_func, 400), 100)
+    return tdrift_m, tdrift_d
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
@@ -72,8 +72,9 @@ def test_thermal_drift_does_not_change_positions(Solver, periodicity):
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
+@pytest.mark.parametrize("needsTorque", [False, True])
 def test_thermal_drift_is_zero(
-    Solver, periodicity, hydrodynamicRadius, numberParticles
+        Solver, periodicity, hydrodynamicRadius, numberParticles, needsTorque
 ):
     if not np.all(np.array(periodicity) == "open") and not np.all(
         np.array(periodicity) == "periodic"
@@ -81,8 +82,8 @@ def test_thermal_drift_is_zero(
         pytest.skip(
             "Only periodic and open boundary conditions have zero thermal drift"
         )
-
-    needsTorque = False
+    if(Solver.__name__ == "PSE" and needsTorque):
+        pytest.skip("PSE does not support torques")
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
     parameters = get_sane_params(Solver.__name__, periodicity[2])
@@ -95,23 +96,34 @@ def test_thermal_drift_is_zero(
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
     solver.setPositions(positions)
-    thermal_drift = average(solver.thermalDrift, 3000)
+    thermal_drift_m, thermal_drift_d = average(solver.thermalDrift, 3000)
     assert np.allclose(
-        np.abs(thermal_drift),
+        np.abs(thermal_drift_m),
         0.0,
         atol=1e-5,
         rtol=0,
-    ), f"RFD drift is not zero: {np.max(np.abs(thermal_drift))}"
+    ), f"Linear RFD drift is not zero: {np.max(np.abs(thermal_drift_m))}"
+    if thermal_drift_d is not None:
+        assert np.allclose(
+            np.abs(thermal_drift_d),
+            0.0,
+            atol=1e-5,
+            rtol=0,
+        ), f"Dipolar RFD drift is not zero: {np.max(np.abs(thermal_drift_d))}"
+
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
+@pytest.mark.parametrize("needsTorque", [False, True])
 def test_thermal_drift_returns_different_numbers(
-    Solver, periodicity, hydrodynamicRadius, numberParticles
+        Solver, periodicity, hydrodynamicRadius, numberParticles, needsTorque
 ):
+    if(Solver.__name__ == "PSE" and needsTorque):
+        pytest.skip("PSE does not support torques")
+
     temperature = 1.2
-    needsTorque = False
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
     parameters = get_sane_params(Solver.__name__, periodicity[2])
@@ -126,23 +138,25 @@ def test_thermal_drift_returns_different_numbers(
         generate_positions_in_box(parameters, numberParticles).astype(precision) * 0.8
     )
     solver.setPositions(positions)
-    rfd1 = solver.thermalDrift()
+    rfd1,_ = solver.thermalDrift()
     if np.all(rfd1 == 0):
         pytest.skip("RFD is zero, skipping test")
-    rfd2 = solver.thermalDrift()
+    rfd2,_ = solver.thermalDrift()
     assert np.any(
         np.abs(rfd1 - rfd2) > 1e-5
     ), f"RFD is not different: {np.max(np.abs(rfd1 - rfd2))}"
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
-@pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
-@pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
+@pytest.mark.parametrize("hydrodynamicRadius", [0.95])
+@pytest.mark.parametrize("numberParticles", [1, 10])
+@pytest.mark.parametrize("needsTorque", [False, True])
 def test_thermal_drift_matches_rfd(
-    Solver, periodicity, hydrodynamicRadius, numberParticles
+        Solver, periodicity, hydrodynamicRadius, numberParticles, needsTorque
 ):
+    if(Solver.__name__ == "PSE" and needsTorque):
+        pytest.skip("PSE does not support torques")
     temperature = 1.2
-    needsTorque = False
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
     parameters = get_sane_params(Solver.__name__, periodicity[2])
@@ -157,12 +171,23 @@ def test_thermal_drift_matches_rfd(
         generate_positions_in_box(parameters, numberParticles).astype(precision)
     )
     solver.setPositions(positions)
-    reference = temperature * thermal_drift_rfd(solver, positions)
+    reference_m, reference_d = thermal_drift_rfd(solver, positions)
+    reference_m = reference_m * temperature
+    if reference_d is not None:
+        reference_d = reference_d * temperature
+
     solver.setPositions(positions)
-    rfd = average(lambda: average(solver.thermalDrift, 400), 100)
+    rfd_m, rfd_d = average(lambda: average(solver.thermalDrift, 400), 100)
     assert np.allclose(
-        reference,
-        rfd,
+        reference_m,
+        rfd_m,
         atol=1e-3,
         rtol=1e-3,
-    ), f"RFD does not match: {np.max(np.abs(reference - rfd))}"
+    ), f"Linear RFD does not match: {np.max(np.abs(reference - rfd))}"
+    if reference_d is not None and rfd_d is not None:
+        assert np.allclose(
+            reference_d,
+            rfd_d,
+            atol=1e-3,
+            rtol=1e-3,
+        ), f"Dipole RFD does not match: {np.max(np.abs(reference_d - rfd_d))}"

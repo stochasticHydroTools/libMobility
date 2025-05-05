@@ -289,8 +289,13 @@ template <class Solver> auto call_thermalDrift(Solver &solver, real prefactor) {
   std::array shape = {N, 3ul};
   auto linear =
       lp::create_with_framework<real>(shape, last_device, last_framework);
-  solver.thermalDrift(cast_to_real(linear), prefactor);
-  return linear;
+  auto angular = nb::ndarray<real, nb::c_contig>();
+  if (solver.getNeedsTorque()) {
+    angular =
+        lp::create_with_framework<real>(shape, last_device, last_framework);
+  }
+  solver.thermalDrift(cast_to_real(linear), cast_to_real(angular), prefactor);
+  return std::make_pair(linear, angular);
 }
 
 const char *thermaldrift_docstring = R"pbdoc(
@@ -304,6 +309,8 @@ Returns
 -------
 array_like
 		The resulting linear displacements. Shape is (N, 3), where N is the number of particles.
+array_like
+		The resulting angular displacements. Shape is (N, 3), where N is the number of particles. This array will be empty if the solver was initialized with needsTorque=False.
 )pbdoc";
 
 template <typename MODULENAME>

@@ -188,11 +188,14 @@ public:
       Mdot(forces, torques, linear, angular);
     }
     sqrtMdotW(linear, angular, prefactor);
-    thermalDrift(linear, prefactor);
+    thermalDrift(linear, angular, prefactor);
   }
 
-  //Compute the thermal drift, :math:`k_BT\boldsymbol{\partial}_\boldsymbol{x}\cdot \boldsymbol{\mathcal{M}}`.
-  virtual void thermalDrift(device_span<real> ilinear, real prefactor = 1) {
+  // Compute the thermal drift,
+  // :math:`k_BT\boldsymbol{\partial}_\boldsymbol{x}\cdot
+  // \boldsymbol{\mathcal{M}}`.
+  virtual void thermalDrift(device_span<real> ilinear,
+                            device_span<real> angular, real prefactor = 1) {
     // By default, the thermal drift is zero, so this function does nothing
   }
 

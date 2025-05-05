@@ -29,28 +29,38 @@ void fill_with_random(device_span<real> input_vector, uint seed) {
 // unit length
 template <typename Mdot>
 void random_finite_differences(Mdot mdot, device_span<const real> positions,
-                               device_span<real> ilinear, uint seed,
+                               device_span<real> ilinear,
+                               device_span<real> iangular, uint seed,
                                real prefactor = 1) {
   constexpr real delta = 1e-3;
   const uint N = ilinear.size() / 3;
   using device_vector =
       thrust::device_vector<real, allocator::thrust_cached_allocator<real>>;
   using namespace thrust::placeholders;
-  device_vector noise(N * 3);
-  device_vector pos_delta(N * 3);
-  device_vector Mpd(N * 3, 0);
-  device_vector Mmd(N * 3, 0);
+  device_vector noise(ilinear.size());
+  device_vector pos_delta(positions.size());
+  device_vector Mpd_m(ilinear.size(), 0);
+  device_vector Mmd_m(ilinear.size(), 0);
+  device_vector Mpd_d(iangular.size(), 0);
+  device_vector Mmd_d(iangular.size(), 0);
   device_span<real> noise_span(noise);
   fill_with_random(noise_span, seed);
   thrust::transform(thrust::cuda::par, positions.begin(), positions.end(),
                     noise.begin(), pos_delta.begin(), _1 + (delta * 0.5) * _2);
-  mdot(pos_delta, noise, Mpd);
+  mdot(pos_delta, noise, Mpd_m, Mpd_d);
   thrust::transform(thrust::cuda::par, positions.begin(), positions.end(),
                     noise.begin(), pos_delta.begin(), _1 - (delta * 0.5) * _2);
-  mdot(pos_delta, noise, Mmd);
+  mdot(pos_delta, noise, Mmd_m, Mmd_d);
   device_adapter<real> linear(ilinear, device::cuda);
-  thrust::transform(thrust::cuda::par, Mpd.begin(), Mpd.end(), Mmd.begin(),
-                    linear.begin(), (prefactor / delta) * (_1 - _2));
+  thrust::transform(thrust::cuda::par, Mpd_m.begin(), Mpd_m.end(),
+                    Mmd_m.begin(), linear.begin(),
+                    (prefactor / delta) * (_1 - _2));
+  if (iangular.size() > 0) {
+    device_adapter<real> angular(iangular, device::cuda);
+    thrust::transform(thrust::cuda::par, Mpd_d.begin(), Mpd_d.end(),
+                      Mmd_d.begin(), angular.begin(),
+                      (prefactor / delta) * (_1 - _2));
+  }
 }
 
 } // namespace libmobility
