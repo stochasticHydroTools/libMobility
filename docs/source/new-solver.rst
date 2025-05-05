@@ -20,7 +20,7 @@ A new solver must add a directory under the "solvers" folder, which must be the 
           // ...
       };
 
-   Every pure virtual function in ``libmobility::Mobility`` must be overridden and defined. Non pure virtual functions offer default functionality that must be overriden if necessary (for instance, the thermal drift defaults to zero).
+   Functions that are not purely virtual offer default behavior that can be overridden. For example, :math:`\sqrt{\boldsymbol{\mathcal{M}}}d\boldsymbol{W}` defaults to using the iterative Lancozs algorithm and the thermal drift defaults to returning zero. Confined solvers that have a non-zero thermal drift, such as NBody with a bottom wall and DPStokes, override the function to provide a thermal drift.
 
 2. **python_wrapper.cu**
    
