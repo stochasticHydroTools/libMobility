@@ -298,7 +298,6 @@ class BottomWall {
       correction.y += vj.y * (-invZi3 * real(0.3125)); // 15/48 = 0.3125
       correction.z += vj.z * (-invZi3 * real(0.125));  // 3/24 = 0.125
     } else {                                           // C4*vj in [1].
-      real h_hat = hj / rij.z;
       real invR = rsqrt(dot(rij, rij));
       real invR3 = invR * invR * invR;
       real3 e = rij * invR;

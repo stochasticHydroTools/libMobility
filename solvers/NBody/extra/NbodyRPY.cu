@@ -162,7 +162,6 @@ __global__ void computeRPYBatchedNaiveBlockGPU(
   const int tid = blockIdx.x;
   if (tid >= Nbatches * NperBatch)
     return;
-  const bool haveTorque = torque != nullptr;
   real3 pi = make_real3(pos[tid]);
   extern __shared__ real3 sharedMemory[];
   real3 MF = real3();
