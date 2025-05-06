@@ -99,6 +99,24 @@ def test_returns_sqrtM(Solver, periodicity):
     assert sqrtmw.shape == positions.shape
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
+def test_returns_thermal_drift(Solver, periodicity):
+    numberParticles = 1
+    parameters = get_sane_params(Solver.__name__, periodicity[2])
+    solver = initialize_solver(
+        Solver, periodicity, parameters=parameters, temperature=1.0
+    )
+
+    positions = generate_positions_in_box(parameters, numberParticles)
+    solver.setPositions(positions)
+    sqrtmw, _ = solver.thermalDrift()
+    assert sqrtmw.shape == positions.shape
+
+    positions = positions.reshape(numberParticles * 3)
+    solver.setPositions(positions)
+    sqrtmw, _ = solver.thermalDrift()
+    assert sqrtmw.shape == positions.shape
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_hydrodisp(Solver, periodicity):
     numberParticles = 1
     parameters = get_sane_params(Solver.__name__, periodicity[2])
