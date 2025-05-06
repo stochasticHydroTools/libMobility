@@ -196,7 +196,8 @@ public:
   // \boldsymbol{\mathcal{M}}`.
   virtual void thermalDrift(device_span<real> ilinear,
                             device_span<real> angular, real prefactor = 1) {
-    // For open and periodic solvers the thermal drift is zero, so this function does nothing by default.
+    // For open and periodic solvers the thermal drift is zero, so this function
+    // does nothing by default.
   }
 
   bool getNeedsTorque() const { return this->needsTorque; }
