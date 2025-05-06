@@ -118,7 +118,7 @@ public:
   // Where dW is a vector of Gaussian random numbers If the solver does not
   // provide a stochastic displacement implementation, the Lanczos algorithm
   // will be used automatically
-  virtual void sqrtMdotW(device_span<real> linear, device_span<real> angular,
+  virtual void sqrtMdotW(device_span<real> ilinear, device_span<real> iangular,
                          real prefactor = 1) {
     if (this->temperature == 0)
       return;
@@ -133,6 +133,8 @@ public:
       throw std::runtime_error(
           "[libMobility] The number of particles is not set. Did you "
           "forget to call setPositions?");
+    device_adapter<real> linear(ilinear, device::cpu);
+    device_adapter<real> angular(iangular, device::cpu);
     if (linear.empty())
       throw std::runtime_error(
           "[libMobility] This solver requires linear velocities");
@@ -167,14 +169,13 @@ public:
           Mdot(s_f, s_t, s_mv, s_mt);
         },
         lanczosOutput.data(), numberElements, prefactor);
-    thrust::transform(thrust::cuda::par, lanczosOutput.begin(),
-                      lanczosOutput.begin() + 3 * numberParticles,
-                      linear.begin(), linear.begin(), thrust::plus<real>());
+    std::transform(lanczosOutput.begin(),
+                   lanczosOutput.begin() + 3 * numberParticles, linear.begin(),
+                   linear.begin(), thrust::plus<real>());
     if (this->needsTorque)
-      thrust::transform(thrust::cuda::par,
-                        lanczosOutput.begin() + 3 * numberParticles,
-                        lanczosOutput.end(), angular.begin(), angular.begin(),
-                        thrust::plus<real>());
+      std::transform(lanczosOutput.begin() + 3 * numberParticles,
+                     lanczosOutput.end(), angular.begin(), angular.begin(),
+                     thrust::plus<real>());
   }
 
   // Equivalent to calling Mdot, then stochasticDisplacements, and then thermal
