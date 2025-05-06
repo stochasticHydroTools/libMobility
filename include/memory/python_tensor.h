@@ -32,7 +32,7 @@ auto create_array(std::array<size_t, N> shape = {}, bool is_cuda = false) {
       std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<size_t>());
   if (!is_cuda) {
     using alloc = allocator::host_cached_allocator<T>;
-    auto *v = new std::vector<T, alloc>(total_size);
+    auto *v = new std::vector<T, alloc>(total_size, T{});
     nb::capsule del(v, [](void *v) noexcept {
       delete static_cast<std::vector<T, alloc> *>(v);
     });
@@ -43,6 +43,7 @@ auto create_array(std::array<size_t, N> shape = {}, bool is_cuda = false) {
 
     using alloc = allocator::device_cached_allocator<T>;
     T *v = alloc().allocate(total_size);
+    thrust::fill_n(thrust::cuda::par, v, total_size, T{});
     nb::capsule deleter(v, [](void *v) noexcept {
       alloc().deallocate(static_cast<T *>(v), 0);
     });

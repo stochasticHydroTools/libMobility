@@ -1,4 +1,4 @@
-/*Raul P. Pelaez 2022. libMobility interface for UAMMD's DPStokes module
+/*Raul P. Pelaez 2022-2025. libMobility interface for UAMMD's DPStokes module
 
 References:
 [1] Computing hydrodynamic interactions in confined doubly periodic geometries
@@ -10,6 +10,7 @@ https://doi.org/10.1063/5.0141371
 #include "extra/poly_fits.h"
 #include "extra/uammd_interface.h"
 #include <MobilityInterface/MobilityInterface.h>
+#include <MobilityInterface/random_finite_differences.h>
 #include <cmath>
 #include <vector>
 
@@ -30,6 +31,7 @@ class DPStokes : public libmobility::Mobility {
   real temperature;
   real lanczosTolerance;
   std::string wallmode;
+  std::mt19937 rng;
 
 public:
   DPStokes(Configuration conf) {
@@ -62,7 +64,11 @@ public:
     this->lanczosTolerance = ipar.tolerance;
     this->dppar.mode = this->wallmode;
     this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
-
+    if (ipar.seed == 0) {
+      ipar.seed = std::random_device()();
+    }
+    this->rng = std::mt19937(ipar.seed);
+    ipar.seed = rng();
     real h;
     if (ipar.needsTorque) {
       this->dppar.w = 6;
@@ -145,8 +151,58 @@ public:
           "[libMobility] The number of torques does not match the "
           "number of particles");
     }
-    dpstokes->Mdot(forces.data(), torques.data(), linear.data(),
-                   angular.data(), this->getNumberParticles());
+    dpstokes->Mdot(forces.data(), torques.data(), linear.data(), angular.data(),
+                   this->getNumberParticles());
+  }
+
+  void thermalDrift(device_span<real> ilinear, device_span<real> iangular,
+                    real prefactor = 1) override {
+    if (temperature == 0 || prefactor == 0) {
+      return;
+    }
+    if (ilinear.size() != 3 * this->numberParticles) {
+      throw std::runtime_error(
+          "[libMobility] The number of forces does not match the "
+          "number of particles");
+    }
+    if (this->getNeedsTorque() && iangular.size() != 3 * numberParticles) {
+      throw std::runtime_error(
+          "[libMobility] The number of torques does not match the "
+          "number of particles");
+    }
+    if (!this->getNeedsTorque() && iangular.size() != 0) {
+      throw std::runtime_error("[libMobility] Received torques but the solver "
+                               "was initialized with needsTorque=False");
+    }
+    device_adapter<real> linear(ilinear, device::cuda);
+    using device_vector = thrust::device_vector<
+        real, libmobility::allocator::thrust_cached_allocator<real>>;
+    const auto stored_positions =
+        thrust::device_ptr<const real>(dpstokes->getStoredPositions());
+    device_vector original_pos(stored_positions,
+                               stored_positions + 3 * this->numberParticles);
+    auto mdot = [this](device_span<const real> positions,
+                       device_span<const real> v, device_span<real> result_m,
+                       device_span<real> result_d) {
+      this->setPositions(positions);
+      this->Mdot(v, device_span<const real>(), result_m, result_d);
+    };
+    uint seed = rng();
+    device_vector thermal_drift_m(ilinear.size(), 0);
+    device_vector thermal_drift_d(iangular.size(), 0);
+    libmobility::random_finite_differences(mdot, original_pos, thermal_drift_m,
+                                           thermal_drift_d, seed,
+                                           prefactor * temperature);
+    this->setPositions(original_pos);
+    thrust::transform(thrust::cuda::par, thermal_drift_m.begin(),
+                      thermal_drift_m.end(), linear.begin(), linear.begin(),
+                      thrust::plus<real>());
+    if (this->getNeedsTorque()) {
+      device_adapter<real> angular(iangular, device::cuda);
+      thrust::transform(thrust::cuda::par, thermal_drift_d.begin(),
+                        thermal_drift_d.end(), angular.begin(), angular.begin(),
+                        thrust::plus<real>());
+    }
   }
 
   void clean() override {

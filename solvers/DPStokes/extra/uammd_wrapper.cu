@@ -116,6 +116,7 @@ namespace uammd_dpstokes{
     thrust::device_vector<uammd::real4> force4;
     thrust::device_vector<uammd::real4> torque4;
     thrust::device_vector<uammd::real4> stored_positions;
+    thrust::device_vector<uammd::real3> stored_positions_real3;
     real zOrigin;
 
     DPStokesUAMMD(PyParameters pypar){
@@ -134,11 +135,16 @@ namespace uammd_dpstokes{
 
     //Copy positions to UAMMD's ParticleData
     void setPositions(const real* d_pos, int numberParticles){
-      stored_positions.resize(numberParticles);
-      thrust::transform(thrust::cuda::par.on(st),
-			reinterpret_cast<const uammd::real3*>(d_pos),
-			reinterpret_cast<const uammd::real3*>(d_pos)+ numberParticles,
-			stored_positions.begin(), Real3ToReal4SubstractOriginZ(zOrigin));
+      stored_positions_real3.resize(numberParticles);
+      // Copy onto stored_positions_real3
+      thrust::copy(thrust::cuda::par.on(st),
+		   reinterpret_cast<const uammd::real3*>(d_pos),
+		   reinterpret_cast<const uammd::real3*>(d_pos) + numberParticles,
+		   stored_positions_real3.begin());
+    }
+
+    const real* getStoredPositions(){
+      return reinterpret_cast<const real*>(stored_positions_real3.data().get());
     }
 
     //Compute the hydrodynamic displacements due to a series of forces and/or torques acting on the particles
@@ -158,6 +164,10 @@ namespace uammd_dpstokes{
 			  reinterpret_cast<const uammd::real3*>(h_torques), reinterpret_cast<const uammd::real3*>(h_torques) + numberParticles,
 			  torque4.begin(), Real3ToReal4());
       }
+      stored_positions.resize(numberParticles);
+      thrust::transform(thrust::cuda::par.on(st),
+			stored_positions_real3.begin(), stored_positions_real3.end(),
+			stored_positions.begin(), Real3ToReal4SubstractOriginZ(zOrigin));
       auto mob = this->computeHydrodynamicDisplacements(stored_positions.data().get(),
 							force4.data().get(),
 							useTorque?torque4.data().get():nullptr,
@@ -191,6 +201,12 @@ namespace uammd_dpstokes{
   void DPStokesGlue::setPositions(const real* h_pos, int numberParticles){
     throwIfInvalid();
     dpstokes->setPositions(h_pos, numberParticles);
+  }
+
+  //Get the positions of the particles in the system
+  const real* DPStokesGlue::getStoredPositions(){
+    throwIfInvalid();
+    return dpstokes->getStoredPositions();
   }
 
   //Compute the dot product of the mobility matrix with the forces and/or torques acting on the previously provided positions

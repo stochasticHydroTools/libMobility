@@ -73,7 +73,7 @@ public:
 	    "number of forces");
       int numberParticles = iforces.size() / 3;
       for (int i = 0; i < 3 * numberParticles; i++) {
-        linear[i] += forces[i] * linearMobility;
+        linear[i] = forces[i] * linearMobility;
       }
     }
     if (!itorques.empty()) {
@@ -87,7 +87,7 @@ public:
 	    "[libMobility] The number of angular velocities does not match the "
 	    "number of torques");
       for (int i = 0; i < 3 * numberParticles; i++) {
-        angular[i] += torques[i] * angularMobility;
+        angular[i] = torques[i] * angularMobility;
       }
     }
   }

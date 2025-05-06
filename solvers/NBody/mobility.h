@@ -5,6 +5,7 @@
 #define MOBILITY_NBODY_H
 #include "extra/interface.h"
 #include <MobilityInterface/MobilityInterface.h>
+#include <MobilityInterface/random_finite_differences.h>
 #include <cmath>
 #include <optional>
 #include <type_traits>
@@ -31,6 +32,9 @@ class NBody : public libmobility::Mobility {
   // Batched functionality configuration
   int Nbatch;
   int NperBatch;
+
+  real temperature;
+  std::mt19937 rng;
 
 public:
   NBody(Configuration conf) {
@@ -101,6 +105,13 @@ public:
                                     hydrodynamicRadius * hydrodynamicRadius);
     this->rotMobility = 1.0 / (8 * M_PI * ipar.viscosity * hydrodynamicRadius *
                                hydrodynamicRadius * hydrodynamicRadius);
+    this->temperature = ipar.temperature;
+    if (ipar.seed == 0) {
+      ipar.seed = std::random_device()();
+    }
+    this->rng = std::mt19937(ipar.seed);
+    ipar.seed = rng();
+
     Mobility::initialize(ipar);
   }
 
@@ -112,15 +123,6 @@ public:
     if (i_NperBatch * i_Nbatch != numberParticles)
       throw std::runtime_error("[Mobility] Invalid batch parameters for NBody. "
                                "If in doubt, use the defaults.");
-    if (wallHeight != 0) { // shifts positions so the wall is at z=0 since the
-                           // kernels are programmed as such.
-      auto index_3 = thrust::make_transform_iterator(
-          thrust::make_counting_iterator(0), thrust::placeholders::_1 * 3);
-      auto positionZ =
-          thrust::make_permutation_iterator(positions.begin() + 2, index_3);
-      thrust::transform(positionZ, positionZ + numberParticles, positionZ,
-                        thrust::placeholders::_1 - wallHeight);
-    }
   }
 
   uint getNumberParticles() override { return this->positions.size() / 3; }
@@ -134,12 +136,81 @@ public:
       throw std::runtime_error(
           "[Mobility] Positions have 0 particles. Did you call "
           "setPositions?");
-    device_span<const real> pos{{positions.data().get(), positions.size()},
-                                libmobility::device::cuda};
+    using device_vector = thrust::device_vector<
+        real, libmobility::allocator::thrust_cached_allocator<real>>;
+    device_vector posZ(positions);
+    if (wallHeight != 0) { // shifts positions so the wall is at z=0 since the
+                           // kernels are programmed as such.
+      using namespace thrust::placeholders;
+      auto index_3 = thrust::make_transform_iterator(
+          thrust::make_counting_iterator(0), _1 * 3);
+      auto iposition =
+          thrust::make_permutation_iterator(positions.begin() + 2, index_3);
+      auto opositionZ =
+          thrust::make_permutation_iterator(posZ.begin() + 2, index_3);
+      thrust::transform(thrust::cuda::par, iposition,
+                        iposition + numberParticles, opositionZ,
+                        _1 - wallHeight);
+    }
+    device_span<const real> pos(posZ);
     nbody_rpy::callBatchedNBody(pos, forces, torques, linear, angular, i_Nbatch,
                                 i_NperBatch, transMobility, rotMobility,
                                 transRotMobility, hydrodynamicRadius, algorithm,
                                 kernel);
+  }
+
+  void thermalDrift(device_span<real> ilinear, device_span<real> iangular,
+                    real prefactor = 1) override {
+    if (temperature == 0 || prefactor == 0) {
+      return;
+    }
+    if (this->kernel == nbody_rpy::kernel_type::open_rpy)
+      return; // No wall, no thermal drift
+    const auto numberParticles = this->getNumberParticles();
+    if (ilinear.size() != 3 * numberParticles) {
+      throw std::runtime_error(
+          "[libMobility] The number of forces does not match the "
+          "number of particles");
+    }
+    if (this->getNeedsTorque() && iangular.size() != 3 * numberParticles) {
+      throw std::runtime_error(
+          "[libMobility] The number of torques does not match the "
+          "number of particles");
+    }
+    if (!this->getNeedsTorque() && iangular.size() != 0) {
+      throw std::runtime_error("[libMobility] Received torques but the solver "
+                               "was initialized with needsTorque=False");
+    }
+    using device_vector = thrust::device_vector<
+        real, libmobility::allocator::thrust_cached_allocator<real>>;
+    const auto stored_positions =
+        thrust::device_ptr<const real>(positions.data());
+    device_vector original_pos(stored_positions,
+                               stored_positions + 3 * numberParticles);
+    auto mdot = [this](device_span<const real> positions,
+                       device_span<const real> v, device_span<real> result_m,
+                       device_span<real> result_d) {
+      this->setPositions(positions);
+      this->Mdot(v, device_span<const real>(), result_m, result_d);
+    };
+    uint seed = rng();
+    device_vector thermal_drift_m(ilinear.size(), 0);
+    device_vector thermal_drift_d(iangular.size(), 0);
+
+    libmobility::random_finite_differences(mdot, original_pos, thermal_drift_m,
+                                           thermal_drift_d, seed,
+                                           prefactor * temperature);
+    device_adapter<real> linear(ilinear, device::cuda);
+    this->setPositions(original_pos);
+    thrust::transform(thrust::cuda::par, thermal_drift_m.begin(),
+                      thermal_drift_m.end(), linear.begin(), linear.begin(),
+                      thrust::plus<real>());
+    if (this->getNeedsTorque()) {
+      device_adapter<real> angular(iangular, device::cuda);
+      thrust::transform(thrust::cuda::par, thermal_drift_d.begin(),
+                        thermal_drift_d.end(), angular.begin(), angular.begin(),
+                        thrust::plus<real>());
+    }
   }
 };
 #endif

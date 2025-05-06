@@ -10,6 +10,7 @@
 #include <random>
 #include <stdexcept>
 #include <vector>
+
 namespace libmobility {
 
 enum class periodicity_mode {
@@ -50,6 +51,7 @@ private:
   std::vector<real> lanczosOutput;
   real temperature;
   bool needsTorque = false;
+  std::mt19937 rng;
 
 protected:
   Mobility() {};
@@ -90,8 +92,11 @@ public:
     // Clean if the solver was already initialized
     if (initialized)
       this->clean();
+    if (par.seed == 0)
+      par.seed = std::random_device()();
+    this->rng = std::mt19937(par.seed);
     this->initialized = true;
-    this->lanczosSeed = par.seed;
+    this->lanczosSeed = this->rng();
     this->lanczosTolerance = par.tolerance;
     this->temperature = par.temperature;
     this->needsTorque = par.needsTorque;
@@ -113,7 +118,7 @@ public:
   // Where dW is a vector of Gaussian random numbers If the solver does not
   // provide a stochastic displacement implementation, the Lanczos algorithm
   // will be used automatically
-  virtual void sqrtMdotW(device_span<real> linear, device_span<real> angular,
+  virtual void sqrtMdotW(device_span<real> ilinear, device_span<real> iangular,
                          real prefactor = 1) {
     if (this->temperature == 0)
       return;
@@ -128,6 +133,8 @@ public:
       throw std::runtime_error(
           "[libMobility] The number of particles is not set. Did you "
           "forget to call setPositions?");
+    device_adapter<real> linear(ilinear, device::cpu);
+    device_adapter<real> angular(iangular, device::cpu);
     if (linear.empty())
       throw std::runtime_error(
           "[libMobility] This solver requires linear velocities");
@@ -142,14 +149,6 @@ public:
     const auto numberElements =
         numberParticles + (this->needsTorque ? numberParticles : 0);
     if (not lanczos) {
-      // If a seed is not provided, get one from random device
-      if (this->lanczosSeed == 0) {
-        this->lanczosSeed = std::random_device()();
-      } else {
-        // If a seed is provided, use it
-        std::mt19937_64 rng(this->lanczosSeed);
-        this->lanczosSeed = rng();
-      }
       lanczos = std::make_shared<LanczosStochasticVelocities>(
           this->lanczosTolerance, this->lanczosSeed);
     }
@@ -170,15 +169,17 @@ public:
           Mdot(s_f, s_t, s_mv, s_mt);
         },
         lanczosOutput.data(), numberElements, prefactor);
-    thrust::copy(lanczosOutput.begin(),
-                 lanczosOutput.begin() + 3 * numberParticles, linear.begin());
+    std::transform(lanczosOutput.begin(),
+                   lanczosOutput.begin() + 3 * numberParticles, linear.begin(),
+                   linear.begin(), thrust::plus<real>());
     if (this->needsTorque)
-      thrust::copy(lanczosOutput.begin() + 3 * numberParticles,
-                   lanczosOutput.end(), angular.begin());
+      std::transform(lanczosOutput.begin() + 3 * numberParticles,
+                     lanczosOutput.end(), angular.begin(), angular.begin(),
+                     thrust::plus<real>());
   }
 
-  // Equivalent to calling Mdot and then stochasticDisplacements, can be faster
-  // in some solvers
+  // Equivalent to calling Mdot, then stochasticDisplacements, and then thermal
+  // drift. Can be faster in some solvers
   virtual void hydrodynamicVelocities(device_span<const real> forces,
                                       device_span<const real> torques,
                                       device_span<real> linear,
@@ -188,6 +189,16 @@ public:
       Mdot(forces, torques, linear, angular);
     }
     sqrtMdotW(linear, angular, prefactor);
+    thermalDrift(linear, angular, prefactor);
+  }
+
+  // Compute the thermal drift,
+  // :math:`k_BT\boldsymbol{\partial}_\boldsymbol{x}\cdot
+  // \boldsymbol{\mathcal{M}}`.
+  virtual void thermalDrift(device_span<real> ilinear,
+                            device_span<real> angular, real prefactor = 1) {
+    // For open and periodic solvers the thermal drift is zero, so this function
+    // does nothing by default.
   }
 
   bool getNeedsTorque() const { return this->needsTorque; }

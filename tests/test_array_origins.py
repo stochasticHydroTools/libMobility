@@ -64,7 +64,8 @@ def setup_inputs(framework, use_torques, numberParticles, precision):
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("framework", ["numpy", "torch", "cupy", "jax", "tensorflow"])
 @pytest.mark.parametrize("use_torques", [False, True])
-def test_framework(Solver, periodicity, framework, use_torques):
+@pytest.mark.parametrize("method", ["Mdot", "thermalDrift", "sqrtMdotW", "hydrodynamicVelocities"])
+def test_framework(Solver, periodicity, framework, use_torques, method):
     if use_torques and Solver.__name__ in "PSE":
         pytest.skip("PSE does not support torques")
     numberParticles = 10
@@ -75,7 +76,16 @@ def test_framework(Solver, periodicity, framework, use_torques):
         framework, use_torques, numberParticles, precision
     )
     solver.setPositions(positions)
-    mf, mt = solver.Mdot(forces, torques)
+    if method == "thermalDrift":
+        mf, mt = solver.thermalDrift()
+    elif method == "Mdot":
+        mf, mt = solver.Mdot(forces, torques)
+    elif method == "sqrtMdotW":
+        mf, mt = solver.sqrtMdotW()
+    elif method == "hydrodynamicVelocities":
+        mf, mt = solver.hydrodynamicVelocities(forces, torques)
+    else:
+        raise ValueError(f"Unknown method: {method}")
     assert type(mf) == type(positions)
     if use_torques:
         assert type(mt) == type(positions)
