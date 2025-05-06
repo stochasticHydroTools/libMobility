@@ -336,13 +336,12 @@ auto call_thermalDrift(Solver &solver, real prefactor) {
         "[libMobility] The number of particles is not set. Did you "
         "forget to call setPositions?");
   }
-  std::array shape = {N, 3ul};
   auto linear =
-      lp::create_with_framework<real>(shape, last_device, last_framework);
+      lp::create_with_framework<real>(last_shape, last_device, last_framework);
   auto angular = nb::ndarray<real, nb::c_contig>();
   if (solver.getNeedsTorque()) {
-    angular =
-        lp::create_with_framework<real>(shape, last_device, last_framework);
+    angular = lp::create_with_framework<real>(last_shape, last_device,
+                                              last_framework);
   }
   solver.thermalDrift(cast_to_real(linear), cast_to_real(angular), prefactor);
   return std::make_pair(linear, angular);
