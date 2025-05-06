@@ -232,6 +232,8 @@ void call_initialize(Solver &myself, real T, real eta, real a, bool needsTorque,
 }
 
 template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
+  last_framework = lp::get_framework(pos);
+  last_device = pos.device_type();
   myself.setPositions(cast_to_const_real(pos));
 }
 
