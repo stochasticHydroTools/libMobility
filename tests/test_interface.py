@@ -31,7 +31,7 @@ def test_contiguous(Solver, periodicity):
 def test_returns_mf(Solver, periodicity):
 
     numberParticles = 2
-    solver = initialize_solver(Solver, periodicity, numberParticles)
+    solver = initialize_solver(Solver, periodicity)
 
     # Set precision to be the same as compiled precision
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -82,7 +82,6 @@ def test_returns_mf_mt(Solver, periodicity):
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_sqrtM(Solver, periodicity):
-
     numberParticles = 1
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver = initialize_solver(
@@ -98,7 +97,6 @@ def test_returns_sqrtM(Solver, periodicity):
     solver.setPositions(positions)
     sqrtmw, _ = solver.sqrtMdotW()
     assert sqrtmw.shape == positions.shape
-
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_hydrodisp(Solver, periodicity):
