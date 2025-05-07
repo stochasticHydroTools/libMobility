@@ -10,6 +10,7 @@
 #include <nanobind/ndarray.h>
 #include <numeric>
 #include <vector>
+#include "allocator.h"
 namespace libmobility {
 namespace python {
 namespace nb = nanobind;
