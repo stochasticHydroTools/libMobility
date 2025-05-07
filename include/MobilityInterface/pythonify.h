@@ -60,12 +60,12 @@ inline auto createConfiguration(std::string perx, std::string pery,
 
 inline libmobility::device get_device(pyarray_c &arr) {
   switch (arr.device_type()) {
-    case nb::device::cpu::value:
-      return libmobility::device::cpu;
-    case nb::device::cuda::value:
-      return libmobility::device::cuda;
-    default:
-      return libmobility::device::unknown;
+  case nb::device::cpu::value:
+    return libmobility::device::cpu;
+  case nb::device::cuda::value:
+    return libmobility::device::cuda;
+  default:
+    return libmobility::device::unknown;
   }
 }
 inline libmobility::device_span<real> cast_to_real(pyarray_c &arr) {
@@ -82,13 +82,11 @@ auto check_and_get_shape(pyarray_c &arr) {
   if (arr.size() == 0) {
     return std::vector<size_t>{};
   }
-
   if (arr.size() % 3 != 0) {
     throw std::runtime_error(
         "[libMobility] The input arrays for positions, forces, and torques "
         "must each have total size 3*N.");
   }
-
   int N = arr.size() / 3;
   int err = 0;
   if (arr.ndim() == 1 && arr.shape(0) != 3 * N)
@@ -97,7 +95,6 @@ auto check_and_get_shape(pyarray_c &arr) {
     err = 1;
   else if (arr.ndim() != 1 && arr.ndim() != 2)
     err = 1;
-
   if (err) {
     throw std::runtime_error(
         "[libMobility] The input arrays for positions, forces, and torques "
@@ -122,7 +119,8 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   auto framework = lp::get_framework(forces);
   last_framework = framework;
   int device = f.empty() ? torques.device_type() : forces.device_type();
-  if (device == nb::device::none::value) device = nb::device::cpu::value;
+  if (device == nb::device::none::value)
+    device = nb::device::cpu::value;
   last_device = device;
   auto f_shape = check_and_get_shape(forces);
   auto mf = lp::create_with_framework<real>(f_shape, device, framework);
@@ -176,8 +174,7 @@ tolerance : float, optional
 		Tolerance, used for approximate methods and also for Lanczos (default fluctuation computation). Default is 1e-4.
 )pbdoc";
 
-template <class Solver>
-auto call_sqrtMdotW(Solver &myself, real prefactor) {
+template <class Solver> auto call_sqrtMdotW(Solver &myself, real prefactor) {
   size_t N = myself.getNumberParticles();
 
   auto linear =
@@ -260,8 +257,7 @@ void call_initialize(Solver &myself, real T, real eta, real a, bool needsTorque,
   myself.initialize(par);
 }
 
-template <class Solver>
-void call_setPositions(Solver &myself, pyarray_c &pos) {
+template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
   last_shape = check_and_get_shape(pos);
   last_framework = lp::get_framework(pos);
   last_device = pos.device_type();
@@ -273,8 +269,8 @@ auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,
                                  pyarray_c &torques, real prefactor) {
   auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
 
-  if (forces.size() == 0)  // must check because this can be called without
-                           // forces (for sqrtMdotW)
+  if (forces.size() == 0) // must check because this can be called without
+                          // forces (for sqrtMdotW)
   {
     mf = lp::create_with_framework<real>(last_shape, last_device,
                                          last_framework);
@@ -324,8 +320,7 @@ std::unique_ptr<Solver> call_construct(std::string perx, std::string pery,
   return std::make_unique<Solver>(createConfiguration(perx, pery, perz));
 }
 
-template <class Solver>
-auto call_thermalDrift(Solver &solver, real prefactor) {
+template <class Solver> auto call_thermalDrift(Solver &solver, real prefactor) {
   const size_t N = solver.getNumberParticles();
   if (N <= 0) {
     throw std::runtime_error(
@@ -393,14 +388,14 @@ auto define_module_content(
   return solver;
 }
 
-#define MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(MODULENAME, EXTRA, documentation) \
-  NB_MODULE(MODULENAME, m) {                                                 \
-    auto solver = define_module_content<MODULENAME>(                         \
-        m, MOBILITYSTR(MODULENAME), documentation,                           \
-        [](py::class_<MODULENAME> &solver) { EXTRA });                       \
+#define MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(MODULENAME, EXTRA, documentation)   \
+  NB_MODULE(MODULENAME, m) {                                                   \
+    auto solver = define_module_content<MODULENAME>(                           \
+        m, MOBILITYSTR(MODULENAME), documentation,                             \
+        [](py::class_<MODULENAME> &solver) { EXTRA });                         \
   }
 
-#define MOBILITY_PYTHONIFY(MODULENAME, documentation) \
+#define MOBILITY_PYTHONIFY(MODULENAME, documentation)                          \
   MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(MODULENAME, {}, documentation)
 
 #endif
