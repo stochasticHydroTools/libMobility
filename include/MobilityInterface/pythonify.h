@@ -103,12 +103,7 @@ auto check_and_get_shape(pyarray_c &arr) {
         "[libMobility] The input arrays for positions, forces, and torques "
         "must each have shape (N, 3) or (3*N).");
   }
-
-  std::vector<size_t> shape(arr.ndim());
-  for (size_t i = 0; i < arr.ndim(); ++i) {
-    shape[i] = arr.shape(i);
-  }
-
+  std::vector<size_t> shape(arr.shape_ptr(), arr.shape_ptr() + arr.ndim());
   return shape;
 }
 
