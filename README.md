@@ -8,7 +8,7 @@ In particular, given a group of forces, $\boldsymbol{F}$, and torques, $\boldsym
 
 $$\begin{bmatrix}d\boldsymbol{X}\\
 d\boldsymbol{\tau}\end{bmatrix} = \boldsymbol{\mathcal{\Omega}}\begin{bmatrix}\boldsymbol{F}\\
-\boldsymbol{T}\end{bmatrix}dt + \text{prefactor}\sqrt{2 k_B T \boldsymbol{\mathcal{\Omega}}}d\boldsymbol{W}$$  
+\boldsymbol{T}\end{bmatrix}dt + \text{prefactor}\sqrt{2 k_B T \boldsymbol{\mathcal{\Omega}}}d\boldsymbol{W} + \begin{\bmatrix}k_BT\boldsymbol{\partial}_\boldsymbol{X}\cdot \boldsymbol{\mathcal{M}}\\ \boldsymbol{0}\end{bmatrix}dt$$  
 
 
 Where $d\boldsymbol{X}$ are the linear displacements, $\boldsymbol{d\tau}$ are the angular displacements, $\boldsymbol{\mathcal{\Omega}}$ is the grand mobility tensor, $\boldsymbol{F}$ are the forces, $\boldsymbol{T}$ are the torques, $\text{prefactor}$ is an user provided prefactor and $d\boldsymbol{W}$ is a collection of i.i.d Weinner processes and $T$ is the temperature.
@@ -34,46 +34,6 @@ This repository is organized into the following directories:
 - **tests/**: Contains the tests for the library.  
 
 
-
-
-<!-- ## The libMobility interface -->
-
-<!-- Each solver is encased in a single class which is default constructible (no arguments required for its constructor).   -->
-<!-- Each solver provides the following set of functions (called the same in C++ and python and described here in a kind of language agnostic way):   -->
-<!--   * **[Constructor] (configuration)**: The solver constructors must be provided with a series of system-related parameters (see below).   -->
-<!--   * **initialize(parameters)**: Initializes the module according to the parameters (see below).   -->
-<!--   * **setParameters[SolverName]([extra parameters])**: Some modules might need special parameters, in these instances this function must also be called. Check the README for each module and its mobility.h file.   -->
-<!--   * **setPositions(positions)**: Sets the positions to compute the mobility of.   -->
-<!--   * **Mdot(forces, result)**: Computes the deterministic hydrodynamic displacements, i.e applies the mobility operator.  -->
-<!--   * **sqrtMdotW(result, prefactor = 1)**: Computes the stochastic displacements and multiplies them by the provided prefactor. The computation will be skipped if prefactor is 0. -->
-
-<!--   * **hydrodynamicVelocities(forces = null, result, prefactor = 1)**: Equivalent to calling Mdot followed by sqrtMdotW (some algorithms might benefit from doing these operations together, e.g., solvers based on fluctuating hydrodynamics).   -->
-
-<!--   * **clean()**: Cleans any memory allocated by the module. The initialization function must be called again in order to use the module again.   -->
-<!-- The many examples in this repository offer more insight about the interface and how to use them. See cpp/example.cpp or python/example.py.   -->
-<!-- An equal sign denotes defaults.   -->
-
-<!-- ### Data format -->
-<!-- Positions, forces, and the results provided by the functions are packed in a 3*numberParticles contiguous array containing ```[x_1, y_1, z_1, x_2,...z_N]```. -->
-
-
-<!-- ### Parameters -->
-<!-- The valid parameters accepted by the interface are:   -->
-<!--   * **temperature**. In units of energy (AKA k_BT).   -->
-<!--   * **hydrodynamicRadius**: The hydrodynamic radii of the particles. Note that many solvers only allow for all particles having the same radius, in those cases this vector should be of size one.   -->
-<!--   * **viscosity**: The fluid viscosity.   -->
-<!--   * **tolerance = 1e-4**: Tolerance for the Lanczos algorithm.   -->
-<!--   * **numberParticles**: The number of particles   -->
-
-<!-- An equal sign denotes default values.   -->
-
-<!-- ### Configuration parameters -->
-<!-- At contruction, solvers must be provided with the following information: -->
-<!--   * **periodicityX**, **periodicityY**, **periodicityZ**: The periodicity, can be any of "periodic", "open", "single_wall", "two_walls", "unspecified".   -->
-  
-<!-- The solvers constructor will check the provided configuration and throw an error if something invalid is requested of it (for instance, the PSE solver will complain if open boundaries are chosen). -->
-
-
 ## Installation
 
 You can install libMobility latest release through our conda channel:
@@ -95,9 +55,3 @@ Calling
 	help(SolverName)
 ```
 will provide more in depth information about the solver.  
-
-## C++ Usage
-
-In order to use a module called SolverName, the header solvers/SolverName/mobility.h must be included.  
-If the module has been compiled correctly the definitions required for the functions in mobility.h will be available at `libMobility_[SolverName].so` and installed to `$CMAKE_INSTALL_PREFIX/lib`.  
-An example is available in `cpp/example.cpp`.  
