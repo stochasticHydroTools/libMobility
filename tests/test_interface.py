@@ -30,7 +30,7 @@ def test_contiguous(Solver, periodicity):
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_mf(Solver, periodicity):
 
-    numberParticles = 1
+    numberParticles = 2
     solver = initialize_solver(Solver, periodicity)
 
     # Set precision to be the same as compiled precision
@@ -39,10 +39,16 @@ def test_returns_mf(Solver, periodicity):
     forces = np.random.rand(numberParticles, 3).astype(precision)
     solver.setPositions(positions)
     mf, _ = solver.Mdot(forces)
-    assert mf.shape == (numberParticles, 3)
-    forces = forces.reshape(3 * numberParticles)
+    assert mf.shape == forces.shape
+
+    forces = forces.reshape(numberParticles * 3)
     mf, _ = solver.Mdot(forces)
-    assert mf.shape == (numberParticles, 3)
+    assert mf.shape == forces.shape
+
+    position = positions.reshape(numberParticles * 3)
+    solver.setPositions(position)
+    mf, _ = solver.Mdot(forces)
+    assert mf.shape == forces.shape
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
@@ -53,25 +59,29 @@ def test_returns_mf_mt(Solver, periodicity):
         Solver, periodicity, needsTorque=True, parameters=parameters
     )
 
-    # Set precision to be the same as compiled precision
-    precision = np.float32 if Solver.precision == "float" else np.float64
-    positions = generate_positions_in_box(parameters, numberParticles)
-    forces = np.random.rand(numberParticles, 3).astype(precision)
-    torques = np.random.rand(numberParticles, 3).astype(precision)
-    solver.setPositions(positions)
-    u, w = solver.Mdot(forces, torques)
-    assert u.shape == (numberParticles, 3)
-    assert w.shape == (numberParticles, 3)
-    forces = forces.reshape(3 * numberParticles)
-    torques = torques.reshape(3 * numberParticles)
-    u, w = solver.Mdot(forces, torques)
-    assert u.shape == (numberParticles, 3)
-    assert w.shape == (numberParticles, 3)
+    shapes = [[(3,), (1, 3)], [(1, 3), (3,)], [(1, 3), (1, 3)], [(3,), (3,)]]
+
+    for f_shapes, t_shapes in shapes:
+        # Set precision to be the same as compiled precision
+        precision = np.float32 if Solver.precision == "float" else np.float64
+        positions = generate_positions_in_box(parameters, numberParticles)
+        forces = np.random.rand(*f_shapes).astype(precision)
+        torques = np.random.rand(*t_shapes).astype(precision)
+
+        solver.setPositions(positions)
+        u, w = solver.Mdot(forces, torques)
+        assert u.shape == forces.shape
+        assert w.shape == torques.shape
+
+        positions = positions.reshape(numberParticles * 3)
+        solver.setPositions(positions)
+        u, w = solver.Mdot(forces, torques)
+        assert u.shape == forces.shape
+        assert w.shape == torques.shape
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_sqrtM(Solver, periodicity):
-
     numberParticles = 1
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver = initialize_solver(
@@ -81,25 +91,90 @@ def test_returns_sqrtM(Solver, periodicity):
     positions = generate_positions_in_box(parameters, numberParticles)
     solver.setPositions(positions)
     sqrtmw, _ = solver.sqrtMdotW()
-    assert sqrtmw.shape == (numberParticles, 3)
+    assert sqrtmw.shape == positions.shape
 
+    positions = positions.reshape(numberParticles * 3)
+    solver.setPositions(positions)
+    sqrtmw, _ = solver.sqrtMdotW()
+    assert sqrtmw.shape == positions.shape
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
+def test_returns_thermal_drift(Solver, periodicity):
+    numberParticles = 1
+    parameters = get_sane_params(Solver.__name__, periodicity[2])
+    solver = initialize_solver(
+        Solver, periodicity, parameters=parameters, temperature=1.0
+    )
+
+    positions = generate_positions_in_box(parameters, numberParticles)
+    solver.setPositions(positions)
+    sqrtmw, _ = solver.thermalDrift()
+    assert sqrtmw.shape == positions.shape
+
+    positions = positions.reshape(numberParticles * 3)
+    solver.setPositions(positions)
+    sqrtmw, _ = solver.thermalDrift()
+    assert sqrtmw.shape == positions.shape
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_hydrodisp(Solver, periodicity):
     numberParticles = 1
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver = initialize_solver(
-        Solver, periodicity, parameters=parameters, temperature=1.0
+        Solver, periodicity, parameters=parameters, temperature=1.0, needsTorque=False
     )
-    # Set precision to be the same as compiled precision
-    precision = np.float32 if Solver.precision == "float" else np.float64
-    positions = generate_positions_in_box(parameters, numberParticles)
-    forces = np.random.rand(numberParticles, 3).astype(precision)
-    solver.setPositions(positions)
-    sqrtmw, _ = solver.hydrodynamicVelocities()
-    assert sqrtmw.shape == (numberParticles, 3)
-    sqrtmw, _ = solver.hydrodynamicVelocities(forces)
-    assert sqrtmw.shape == (numberParticles, 3)
+
+    shapes = [(3,), (1, 3), (1, 3), (3,)]
+
+    for f_shapes in shapes:
+        # Set precision to be the same as compiled precision
+        precision = np.float32 if Solver.precision == "float" else np.float64
+        positions = generate_positions_in_box(parameters, numberParticles)
+        forces = np.random.rand(*f_shapes).astype(precision)
+        solver.setPositions(positions)
+        v, _ = solver.hydrodynamicVelocities()
+        assert v.shape == positions.shape
+        v, _ = solver.hydrodynamicVelocities(forces)
+        assert v.shape == forces.shape
+
+        positions = positions.reshape(numberParticles * 3)
+        solver.setPositions(positions)
+        v, _ = solver.hydrodynamicVelocities()
+        assert v.shape == positions.shape
+        v, _ = solver.hydrodynamicVelocities(forces)
+        assert v.shape == forces.shape
+
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
+def test_returns_hydrodisp_torques(Solver, periodicity):
+    numberParticles = 1
+    parameters = get_sane_params(Solver.__name__, periodicity[2])
+    solver = initialize_solver(
+        Solver, periodicity, parameters=parameters, temperature=1.0, needsTorque=True
+    )
+
+    shapes = [[(3,), (1, 3)], [(1, 3), (3,)], [(1, 3), (1, 3)], [(3,), (3,)]]
+
+    for f_shapes, t_shapes in shapes:
+        # Set precision to be the same as compiled precision
+        precision = np.float32 if Solver.precision == "float" else np.float64
+        positions = generate_positions_in_box(parameters, numberParticles)
+        forces = np.random.rand(*f_shapes).astype(precision)
+        torques = np.random.rand(*t_shapes).astype(precision)
+        solver.setPositions(positions)
+        v, _ = solver.hydrodynamicVelocities()
+        assert v.shape == positions.shape
+        v, w = solver.hydrodynamicVelocities(forces, torques)
+        assert v.shape == forces.shape
+        assert w.shape == torques.shape
+
+        positions = positions.reshape(numberParticles * 3)
+        solver.setPositions(positions)
+        v, _ = solver.hydrodynamicVelocities()
+        assert v.shape == positions.shape
+        v, w = solver.hydrodynamicVelocities(forces, torques)
+        assert v.shape == forces.shape
+        assert w.shape == torques.shape
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
@@ -142,6 +217,19 @@ def test_no_positions_error(Solver, periodicity):
 
     with pytest.raises(RuntimeError):
         u, _ = solver.hydrodynamicVelocities()
+
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
+@pytest.mark.parametrize("shape", ((4, 6), (3, 1), (1, 4)))
+def test_bad_positions_shape(Solver, periodicity, shape):
+    solver = initialize_solver(Solver, periodicity)
+
+    precision = np.float32 if Solver.precision == "float" else np.float64
+
+    positions = np.random.rand(*shape).astype(precision)
+
+    with pytest.raises(RuntimeError):
+        solver.setPositions(positions)
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)

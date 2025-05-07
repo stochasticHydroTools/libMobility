@@ -29,6 +29,7 @@ using Configuration = libmobility::Configuration;
 
 static lp::framework last_framework = lp::framework::numpy;
 static int last_device = nb::device::cpu::value;
+static std::vector<size_t> last_shape;
 
 inline auto string2Periodicity(std::string per) {
   using libmobility::periodicity_mode;
@@ -75,10 +76,36 @@ inline libmobility::device_span<const real> cast_to_const_real(pyarray_c &arr) {
   return {{arr.data(), arr.size()}, dev};
 }
 
+auto check_and_get_shape(pyarray_c &arr) {
+  if (arr.size() == 0) {
+    return std::vector<size_t>{};
+  }
+  if (arr.size() % 3 != 0) {
+    throw std::runtime_error(
+        "[libMobility] The input arrays for positions, forces, and torques "
+        "must each have total size 3*N.");
+  }
+  int N = arr.size() / 3;
+  int err = 0;
+  if (arr.ndim() == 1 && arr.shape(0) != 3 * N)
+    err = 1;
+  else if (arr.ndim() == 2 && arr.shape(1) != 3)
+    err = 1;
+  else if (arr.ndim() != 1 && arr.ndim() != 2)
+    err = 1;
+  if (err) {
+    throw std::runtime_error(
+        "[libMobility] The input arrays for positions, forces, and torques "
+        "must each have shape (N, 3) or (3*N).");
+  }
+  std::vector<size_t> shape(arr.shape_ptr(), arr.shape_ptr() + arr.ndim());
+  return shape;
+}
+
 template <class Solver>
 auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   size_t N = myself.getNumberParticles();
-  std::array shape = {N, 3ul};
+
   if (forces.size() < 3 * N and forces.size() > 0) {
     throw std::runtime_error("The forces array must have size 3*N.");
   }
@@ -93,7 +120,8 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   if (device == nb::device::none::value)
     device = nb::device::cpu::value;
   last_device = device;
-  auto mf = lp::create_with_framework<real>(shape, device, framework);
+  auto f_shape = check_and_get_shape(forces);
+  auto mf = lp::create_with_framework<real>(f_shape, device, framework);
   auto mt = nb::ndarray<real, nb::c_contig>();
   if (!t.empty()) {
     if (!myself.getNeedsTorque()) {
@@ -101,7 +129,8 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
           "The solver was configured without torques. Set "
           "needsTorque to true when initializing if you want to use torques");
     }
-    mt = lp::create_with_framework<real>(shape, device, framework);
+    auto t_shape = check_and_get_shape(torques);
+    mt = lp::create_with_framework<real>(t_shape, device, framework);
   }
   return std::make_tuple(f, t, mf, mt);
 }
@@ -143,24 +172,19 @@ tolerance : float, optional
 		Tolerance, used for approximate methods and also for Lanczos (default fluctuation computation). Default is 1e-4.
 )pbdoc";
 
-template <class Solver> auto call_sqrtMdotW(Solver &solver, real prefactor) {
-  const size_t N = solver.getNumberParticles();
-  if (N <= 0) {
-    throw std::runtime_error(
-        "[libMobility] The number of particles is not set. Did you "
-        "forget to call setPositions?");
-  }
-  std::array shape = {N, 3ul};
+template <class Solver> auto call_sqrtMdotW(Solver &myself, real prefactor) {
+  size_t N = myself.getNumberParticles();
+
   auto linear =
-      lp::create_with_framework<real>(shape, last_device, last_framework);
+      lp::create_with_framework<real>(last_shape, last_device, last_framework);
   auto angular = nb::ndarray<real, nb::c_contig>();
-  if (solver.getNeedsTorque()) {
-    angular =
-        lp::create_with_framework<real>(shape, last_device, last_framework);
-    solver.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
+  if (myself.getNeedsTorque()) {
+    angular = lp::create_with_framework<real>(last_shape, last_device,
+                                              last_framework);
+    myself.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
   } else {
     auto empty = libmobility::device_span<real>({}, libmobility::device::cpu);
-    solver.sqrtMdotW(cast_to_real(linear), empty, prefactor);
+    myself.sqrtMdotW(cast_to_real(linear), empty, prefactor);
   }
   return std::make_pair(linear, angular);
 }
@@ -232,6 +256,7 @@ void call_initialize(Solver &myself, real T, real eta, real a, bool needsTorque,
 }
 
 template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
+  last_shape = check_and_get_shape(pos);
   last_framework = lp::get_framework(pos);
   last_device = pos.device_type();
   myself.setPositions(cast_to_const_real(pos));
@@ -241,6 +266,18 @@ template <class Solver>
 auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,
                                  pyarray_c &torques, real prefactor) {
   auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
+
+  if (forces.size() == 0) // must check because this can be called without
+                          // forces (for sqrtMdotW)
+  {
+    mf = lp::create_with_framework<real>(last_shape, last_device,
+                                         last_framework);
+  }
+  if (myself.getNeedsTorque() && torques.size() == 0) {
+    mt = lp::create_with_framework<real>(last_shape, last_device,
+                                         last_framework);
+  }
+
   auto mf_ptr = cast_to_real(mf);
   auto mt_ptr = cast_to_real(mt);
   myself.hydrodynamicVelocities(f, t, mf_ptr, mt_ptr, prefactor);
@@ -288,13 +325,12 @@ template <class Solver> auto call_thermalDrift(Solver &solver, real prefactor) {
         "[libMobility] The number of particles is not set. Did you "
         "forget to call setPositions?");
   }
-  std::array shape = {N, 3ul};
   auto linear =
-      lp::create_with_framework<real>(shape, last_device, last_framework);
+      lp::create_with_framework<real>(last_shape, last_device, last_framework);
   auto angular = nb::ndarray<real, nb::c_contig>();
   if (solver.getNeedsTorque()) {
-    angular =
-        lp::create_with_framework<real>(shape, last_device, last_framework);
+    angular = lp::create_with_framework<real>(last_shape, last_device,
+                                              last_framework);
   }
   solver.thermalDrift(cast_to_real(linear), cast_to_real(angular), prefactor);
   return std::make_pair(linear, angular);
@@ -319,7 +355,6 @@ template <typename MODULENAME>
 auto define_module_content(
     py::module_ &m, const char *name, const char *documentation,
     const std::function<void(py::class_<MODULENAME> &)> &extra_code) {
-
   auto solver = py::class_<MODULENAME>(m, name, documentation);
 
   solver

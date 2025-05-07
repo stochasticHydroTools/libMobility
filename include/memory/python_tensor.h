@@ -25,8 +25,8 @@ static const std::map<framework, std::string> framework_names = {
     {framework::jax, "jax"},
     {framework::tensorflow, "tensorflow"}};
 
-template <typename Framework, typename T, size_t N>
-auto create_array(std::array<size_t, N> shape = {}, bool is_cuda = false) {
+template <typename Framework, typename T>
+auto create_array(std::vector<size_t> shape = {}, bool is_cuda = false) {
   nb::ndarray<T, nb::c_contig> gen_array;
   const size_t total_size =
       std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<size_t>());
@@ -68,7 +68,8 @@ template <typename pyarray> inline framework get_framework(pyarray &a) {
 }
 
 template <typename T>
-inline auto create_with_framework(auto shape, int device_type, framework f) {
+inline auto create_with_framework(std::vector<size_t> shape, int device_type,
+                                  framework f) {
   bool is_cuda = device_type == nb::device::cuda::value;
   bool is_cpu = device_type == nb::device::cpu::value;
   if (!is_cpu && !is_cuda) {
