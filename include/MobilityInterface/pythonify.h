@@ -128,8 +128,8 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
 
     if (!f.empty())
     {
-        auto f_shape = check_array_shapes(forces);
-        mf = lp::create_with_framework<real>(f_shape, device, framework);
+      auto f_shape = check_and_get_shape(forces);
+      mf = lp::create_with_framework<real>(f_shape, device, framework);
     }
 
     if (!t.empty())
@@ -140,7 +140,7 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
                 "The solver was configured without torques. Set "
                 "needsTorque to true when initializing if you want to use torques");
         }
-        auto t_shape = check_array_shapes(torques);
+        auto t_shape = check_and_get_shape(torques);
         mt = lp::create_with_framework<real>(t_shape, device, framework);
     }
   return std::make_tuple(f, t, mf, mt);
