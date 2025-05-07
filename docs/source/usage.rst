@@ -3,7 +3,7 @@ Usage
 
 .. hint:: See the :ref:`solvers` section for a list of available solvers.
 
-.. info:: libMobility can compute the thermal drift term, which in general can be approximated using Random Finite Differences (RFD)  
+.. hint:: libMobility can compute the thermal drift term, which in general can be approximated using Random Finite Differences (RFD)  
 
 	.. math::
 
