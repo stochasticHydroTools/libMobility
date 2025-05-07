@@ -11,7 +11,7 @@ d\boldsymbol{\tau}\end{bmatrix} = \boldsymbol{\mathcal{M}}\begin{bmatrix}\boldsy
 \boldsymbol{T}\end{bmatrix}dt + \text{prefactor}\sqrt{2 k_B T \boldsymbol{\mathcal{M}}}d\boldsymbol{W} +  k_BT\boldsymbol{\partial}_\boldsymbol{X}\cdot \boldsymbol{\mathcal{M}}dt$$  
 
 
-Where $d\boldsymbol{X}$ are the linear displacements, $\boldsymbol{d\tau}$ are the angular displacements, $\boldsymbol{\mathcal{\Omega}}$ is the grand mobility tensor, $\boldsymbol{F}$ are the forces, $\boldsymbol{T}$ are the torques, $\text{prefactor}$ is an user provided prefactor and $d\boldsymbol{W}$ is a collection of i.i.d Weinner processes and $T$ is the temperature.
+Where $d\boldsymbol{X}$ are the linear displacements, $\boldsymbol{d\tau}$ are the angular displacements, $\boldsymbol{\mathcal{M}}$ is the grand mobility tensor, $\boldsymbol{F}$ are the forces, $\boldsymbol{T}$ are the torques, $\text{prefactor}$ is an user provided prefactor and $d\boldsymbol{W}$ is a collection of i.i.d Weinner processes and $T$ is the temperature.
 
 Each solver in libMobility allows to compute either the deterministic term, the stochastic term, or both at the same time.  
 
