@@ -155,7 +155,7 @@ public:
     device_span<const real> pos(posZ);
     nbody_rpy::callBatchedNBody(pos, forces, torques, linear, angular, i_Nbatch,
                                 i_NperBatch, transMobility, rotMobility,
-                                transRotMobility, hydrodynamicRadius, algorithm,
+                                transRotMobility, hydrodynamicRadius, this->getNeedsTorque(), algorithm,
                                 kernel);
   }
 

@@ -152,12 +152,18 @@ namespace uammd_dpstokes{
 	      const real* h_torques,
 	      real* h_MF,
 	      real* h_MT, int numberParticles){
-      force4.resize(numberParticles);
       bool useTorque = h_torques;
+      bool givenForces = h_forces;
       force4.resize(numberParticles);
-      thrust::transform(thrust::cuda::par.on(st),
-			reinterpret_cast<const uammd::real3*>(h_forces), reinterpret_cast<const uammd::real3*>(h_forces) + numberParticles,
-			force4.begin(), Real3ToReal4());
+      if(givenForces){
+        thrust::transform(
+            thrust::cuda::par.on(st),
+            reinterpret_cast<const uammd::real3*>(h_forces),
+            reinterpret_cast<const uammd::real3*>(h_forces) + numberParticles,
+            force4.begin(), Real3ToReal4());
+      } else {
+        thrust::fill(thrust::cuda::par.on(st), force4.begin(), force4.end(), uammd::make_real4(0, 0, 0, 0));
+      }
       if(useTorque){
 	torque4.resize(numberParticles);
 	thrust::transform(thrust::cuda::par.on(st),
@@ -172,10 +178,12 @@ namespace uammd_dpstokes{
 							force4.data().get(),
 							useTorque?torque4.data().get():nullptr,
 							numberParticles, 0.0, 0.0, st);
+    if(givenForces){
       thrust::copy(thrust::cuda::par.on(st), mob.first.begin(), mob.first.end(), (uammd::real3*)h_MF);
-      if(mob.second.size()){
-	thrust::copy(thrust::cuda::par.on(st), mob.second.begin(), mob.second.end(), (uammd::real3*)h_MT);
-      }
+    }
+    if(mob.second.size()){
+      thrust::copy(thrust::cuda::par.on(st), mob.second.begin(), mob.second.end(), (uammd::real3*)h_MT);
+    }
     }
 
     ~DPStokesUAMMD(){
