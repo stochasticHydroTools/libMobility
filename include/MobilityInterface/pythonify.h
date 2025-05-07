@@ -5,17 +5,15 @@ from a class (called className) that inherits from libmobility::Mobility.
 python (accompanied by the default documentation of the mobility interface.
  */
 #ifndef MOBILITY_PYTHONIFY_H
+#include "MobilityInterface/MobilityInterface.h"
+#include "memory/python_tensor.h"
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/unique_ptr.h>
 #include <nanobind/stl/vector.h>
-
 #include <stdexcept>
-
-#include "MobilityInterface/MobilityInterface.h"
-#include "memory/python_tensor.h"
 namespace nb = nanobind;
 using namespace nb::literals;
 namespace py = nb;
