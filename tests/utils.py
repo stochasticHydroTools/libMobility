@@ -46,7 +46,7 @@ solver_configs_torques = [
 
 
 def initialize_solver(
-    Solver, periodicity, needsTorque=False, parameters=None, **kwargs
+    Solver, periodicity, includeAngular=False, parameters=None, **kwargs
 ):
     solver = Solver(*periodicity)
     if parameters is not None:
@@ -57,14 +57,14 @@ def initialize_solver(
         temperature=kwargs.get("temperature", 1.0),
         viscosity=1.0,
         hydrodynamicRadius=1.0,
-        needsTorque=needsTorque,
+        includeAngular=includeAngular,
     )
     return solver
 
 
-def compute_M(solver, numberParticles, needsTorque):
+def compute_M(solver, numberParticles, includeAngular):
     precision = np.float32 if solver.precision == "float" else np.float64
-    if needsTorque:
+    if includeAngular:
         size = 6 * numberParticles
     else:
         size = 3 * numberParticles
@@ -72,7 +72,7 @@ def compute_M(solver, numberParticles, needsTorque):
     I = np.identity(size, dtype=precision)
     for i in range(0, size):
         forces = I[0 : 3 * numberParticles, i].copy()
-        if needsTorque:
+        if includeAngular:
             torques = I[3 * numberParticles :, i].copy()
             linear, angular = solver.Mdot(forces, torques)
             M[:, i] = np.concatenate(
