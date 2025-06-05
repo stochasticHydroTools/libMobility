@@ -45,12 +45,14 @@ __global__ void computeRPYBatchedFastGPU(const vecType *pos,
   extern __shared__ char shMem[];
   vecType *shPos = (vecType *)(shMem);
   vecType *shForce = nullptr;
-  if (forces) {
-      shForce = (vecType *)(shMem + blockDim.x * sizeof(vecType));
-  }
   vecType *shTorque = nullptr;
-  if (torques) {
+  if (forces && torques) {
+    shForce = (vecType *)(shMem + blockDim.x * sizeof(vecType));
     shTorque = (vecType *)(shMem + 2 * blockDim.x * sizeof(vecType));
+  } else if (forces) {
+    shForce = (vecType *)(shMem + blockDim.x * sizeof(vecType));
+  } else {
+    shTorque = (vecType *)(shMem + blockDim.x * sizeof(vecType));
   }
 
   const real3 pi = active ? make_real3(pos[id]) : real3();
@@ -103,7 +105,10 @@ void computeRPYBatchedFast(const vecType *pos, const vecType *force,
   int minBlockSize = std::max(nearestWarpMultiple, 32);
   int Nthreads = std::min(std::min(minBlockSize, N), 256);
   int Nblocks = (N + Nthreads - 1) / Nthreads;
-  int sharedMemoryFactor = torque != nullptr ? 3 : 2;
+  int sharedMemoryFactor = 1;  // always allocate shared memory for positions
+  // allocate shared memory for forces & torques separately if provided
+  sharedMemoryFactor += force != nullptr;
+  sharedMemoryFactor += torque != nullptr;
   computeRPYBatchedFastGPU<HydrodynamicKernel, vecType>
       <<<Nblocks, Nthreads, sharedMemoryFactor * Nthreads * sizeof(real3)>>>(
           pos, force, torque, Mv, Mw, constants, blocks, Nbatches, NperBatch);
@@ -129,18 +134,14 @@ __global__ void computeRPYBatchedNaiveGPU(const vecType *pos,
       break;
     real3 pj = make_real3(pos[i]);
     const real3 fj = forces ? make_real3(forces[i]) : real3();
-    // real3 fj = make_real3(forces[i]);
     const real3 tj = torques ? make_real3(torques[i]) : real3();
-    mdot_result dot = HydrodynamicKernel::dotProduct(pi, pj, fj, tj, constants, blocks);
-    if(forces)
-      MF += dot.MF;
-    if (torques)
-      MT += dot.MT;
+    mdot_result dot =
+        HydrodynamicKernel::dotProduct(pi, pj, fj, tj, constants, blocks);
+    MF += dot.MF;
+    MT += dot.MT;
   }
-  if(forces)
-    Mv[tid] = MF;
-  if (Mw)
-    Mw[tid] = MT;
+  if (Mv) Mv[tid] = MF;
+  if (Mw) Mw[tid] = MT;
 }
 
 template <class HydrodynamicKernel, class vecType>
@@ -181,24 +182,18 @@ __global__ void computeRPYBatchedNaiveBlockGPU(
     MF += dot.MF;
     MT += dot.MT;
   }
-  if(forces)
-    sharedMemory[threadIdx.x] = MF;
-  if (torque)
-    sharedMemory[threadIdx.x + blockDim.x] = MT;
+  if (Mv) sharedMemory[threadIdx.x] = MF;
+  if (Mw) sharedMemory[threadIdx.x + blockDim.x] = MT;
   __syncthreads();
   if (threadIdx.x == 0) {
     auto MFTot = real3();
     auto MTTot = real3();
     for (int i = 0; i < blockDim.x; i++) {
-      if(forces)
-        MFTot += sharedMemory[i];
-      if (torque)
-        MTTot += sharedMemory[i + blockDim.x];
+      if (Mv) MFTot += sharedMemory[i];
+      if (Mw) MTTot += sharedMemory[i + blockDim.x];
     }
-    if(forces)
-      Mv[tid] = MFTot;
-    if (torque)
-      Mw[tid] = MTTot;
+    if (Mv) Mv[tid] = MFTot;
+    if (Mw) Mw[tid] = MTTot;
   }
 }
 
