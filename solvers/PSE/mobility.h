@@ -47,7 +47,7 @@ public:
       Mobility::initialize(ipar);
     }
     currentpsepar = psepar;
-    if (ipar.needsTorque)
+    if (ipar.includeAngular)
       throw std::runtime_error("[PSE] Torque is not implemented");
   }
 

@@ -70,7 +70,7 @@ public:
     this->rng = std::mt19937(ipar.seed);
     ipar.seed = rng();
     real h;
-    if (ipar.needsTorque) {
+    if (ipar.includeAngular) {
       this->dppar.w = 6;
       this->dppar.w_d = 6;
       this->dppar.beta = 1.327 * this->dppar.w;
@@ -165,14 +165,14 @@ public:
           "[libMobility] The number of forces does not match the "
           "number of particles");
     }
-    if (this->getNeedsTorque() && iangular.size() != 3 * numberParticles) {
+    if (this->getIncludeAngular() && iangular.size() != 3 * numberParticles) {
       throw std::runtime_error(
           "[libMobility] The number of torques does not match the "
           "number of particles");
     }
-    if (!this->getNeedsTorque() && iangular.size() != 0) {
+    if (!this->getIncludeAngular() && iangular.size() != 0) {
       throw std::runtime_error("[libMobility] Received torques but the solver "
-                               "was initialized with needsTorque=False");
+                               "was initialized with includeAngular=False");
     }
     device_adapter<real> linear(ilinear, device::cuda);
     using device_vector = thrust::device_vector<
@@ -197,7 +197,7 @@ public:
     thrust::transform(thrust::cuda::par, thermal_drift_m.begin(),
                       thermal_drift_m.end(), linear.begin(), linear.begin(),
                       thrust::plus<real>());
-    if (this->getNeedsTorque()) {
+    if (this->getIncludeAngular()) {
       device_adapter<real> angular(iangular, device::cuda);
       thrust::transform(thrust::cuda::par, thermal_drift_d.begin(),
                         thermal_drift_d.end(), angular.begin(), angular.begin(),

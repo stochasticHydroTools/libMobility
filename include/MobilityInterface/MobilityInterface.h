@@ -28,7 +28,7 @@ struct Parameters {
   real temperature = 0;
   real tolerance = 1e-4; // Tolerance for Lanczos fluctuations
   std::uint64_t seed = 0;
-  bool needsTorque = false;
+  bool includeAngular = false;
 };
 
 // A list of parameters that cannot be changed by reinitializing a solver and/or
@@ -50,7 +50,7 @@ private:
   std::shared_ptr<LanczosStochasticVelocities> lanczos;
   std::vector<real> lanczosOutput;
   real temperature;
-  bool needsTorque = false;
+  bool includeAngular = false;
   std::mt19937 rng;
 
 protected:
@@ -99,7 +99,7 @@ public:
     this->lanczosSeed = this->rng();
     this->lanczosTolerance = par.tolerance;
     this->temperature = par.temperature;
-    this->needsTorque = par.needsTorque;
+    this->includeAngular = par.includeAngular;
   }
 
   // Set the positions to construct the mobility operator from
@@ -143,11 +143,11 @@ public:
           "[libMobility] The number of linear velocities does not match the "
           "number of particles");
     }
-    if (this->needsTorque && linear.size() != angular.size())
-      throw std::runtime_error("[libMobility] This solver requires angular "
-                               "velocities when configured with torques");
+    // if (this->needsTorque && linear.size() != angular.size())
+      // throw std::runtime_error("[libMobility] This solver requires angular "
+                              //  "velocities when configured with torques");
     const auto numberElements =
-        numberParticles + (this->needsTorque ? numberParticles : 0);
+        numberParticles + (this->includeAngular ? numberParticles : 0);
     if (not lanczos) {
       lanczos = std::make_shared<LanczosStochasticVelocities>(
           this->lanczosTolerance, this->lanczosSeed);
@@ -160,8 +160,8 @@ public:
           // Torques are stored at the end of the force array
           // After, results are separated into linear and angular velocities
           const auto N = numberParticles;
-          const real *t = this->needsTorque ? (f + 3 * N) : nullptr;
-          real *mt = this->needsTorque ? (mv + 3 * N) : nullptr;
+          const real *t = this->includeAngular ? (f + 3 * N) : nullptr;
+          real *mt = this->includeAngular ? (mv + 3 * N) : nullptr;
           device_span<const real> s_t({t, t + (t ? (3 * N) : 0)}, dev);
           device_span<real> s_mt({mt, mt + (mt ? (3 * N) : 0)}, dev);
           device_span<const real> s_f({f, f + 3 * N}, dev);
@@ -172,7 +172,7 @@ public:
     std::transform(lanczosOutput.begin(),
                    lanczosOutput.begin() + 3 * numberParticles, linear.begin(),
                    linear.begin(), thrust::plus<real>());
-    if (this->needsTorque)
+    if (this->includeAngular)
       std::transform(lanczosOutput.begin() + 3 * numberParticles,
                      lanczosOutput.end(), angular.begin(), angular.begin(),
                      thrust::plus<real>());
@@ -201,7 +201,7 @@ public:
     // does nothing by default.
   }
 
-  bool getNeedsTorque() const { return this->needsTorque; }
+  bool getIncludeAngular() const { return this->includeAngular; }
 
   // Clean any memory allocated by the solver
   virtual void clean() {
