@@ -141,16 +141,7 @@ public:
     device_adapter<const real> torques(itorques, device::cuda);
     device_adapter<real> linear(ilinear, device::cuda);
     device_adapter<real> angular(iangular, device::cuda);
-    if (iforces.size() != 0 && iforces.size() != 3 * this->numberParticles) {
-      throw std::runtime_error(
-          "[libMobility] The number of forces does not match the "
-          "number of particles");
-    }
-    if (itorques.size() != 0 && itorques.size() != 3 * this->numberParticles) {
-      throw std::runtime_error(
-          "[libMobility] The number of torques does not match the "
-          "number of particles");
-    }
+
     dpstokes->Mdot(forces.data(), torques.data(), linear.data(), angular.data(),
                    this->getNumberParticles());
   }
