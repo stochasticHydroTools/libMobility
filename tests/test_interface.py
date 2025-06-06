@@ -27,8 +27,9 @@ def test_contiguous(Solver, periodicity):
     solver.setPositions(positions)
 
 
+# without includeAngular=True, Mdot should return only linear forces
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
-def test_returns_mf(Solver, periodicity):
+def test_includeAngular_false_returns_linear(Solver, periodicity):
 
     numberParticles = 2
     solver = initialize_solver(Solver, periodicity)
@@ -38,21 +39,24 @@ def test_returns_mf(Solver, periodicity):
     positions = np.random.rand(numberParticles, 3).astype(precision)
     forces = np.random.rand(numberParticles, 3).astype(precision)
     solver.setPositions(positions)
-    mf, _ = solver.Mdot(forces)
+    mf, mt = solver.Mdot(forces)
     assert mf.shape == forces.shape
+    assert mt is None
 
     forces = forces.reshape(numberParticles * 3)
-    mf, _ = solver.Mdot(forces)
+    mf, mt = solver.Mdot(forces)
     assert mf.shape == forces.shape
+    assert mt is None
 
     position = positions.reshape(numberParticles * 3)
     solver.setPositions(position)
-    mf, _ = solver.Mdot(forces)
+    mf, mt = solver.Mdot(forces)
     assert mf.shape == forces.shape
+    assert mt is None
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
-def test_returns_mt(Solver, periodicity):
+def test_torques_returns_both(Solver, periodicity):
 
     numberParticles = 1
     solver = initialize_solver(Solver, periodicity, includeAngular=True)
@@ -61,18 +65,50 @@ def test_returns_mt(Solver, periodicity):
     precision = np.float32 if Solver.precision == "float" else np.float64
     positions = np.random.rand(numberParticles, 3).astype(precision)
     torques = np.random.rand(numberParticles, 3).astype(precision)
+
     solver.setPositions(positions)
-    _, mt = solver.Mdot(torques=torques)
+    mf, mt = solver.Mdot(torques=torques)
     assert mt.shape == torques.shape
+    assert mf.shape == torques.shape
 
     torques = torques.reshape(numberParticles * 3)
-    _, mt = solver.Mdot(torques=torques)
+    mf, mt = solver.Mdot(torques=torques)
     assert mt.shape == torques.shape
+    assert mf.shape == torques.shape
 
     position = positions.reshape(numberParticles * 3)
     solver.setPositions(position)
-    _, mt = solver.Mdot(torques=torques)
+    mf, mt = solver.Mdot(torques=torques)
     assert mt.shape == torques.shape
+    assert mf.shape == torques.shape
+
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
+def test_forces_with_includeAngular_returns_both(Solver, periodicity):
+
+    numberParticles = 1
+    solver = initialize_solver(Solver, periodicity, includeAngular=True)
+
+    # Set precision to be the same as compiled precision
+    precision = np.float32 if Solver.precision == "float" else np.float64
+    positions = np.random.rand(numberParticles, 3).astype(precision)
+    forces = np.random.rand(numberParticles, 3).astype(precision)
+
+    solver.setPositions(positions)
+    mf, mt = solver.Mdot(forces=forces)
+    assert mt.shape == forces.shape
+    assert mf.shape == forces.shape
+
+    forces = forces.reshape(numberParticles * 3)
+    mf, mt = solver.Mdot(forces=forces)
+    assert mt.shape == forces.shape
+    assert mf.shape == forces.shape
+
+    position = positions.reshape(numberParticles * 3)
+    solver.setPositions(position)
+    mf, mt = solver.Mdot(forces=forces)
+    assert mt.shape == forces.shape
+    assert mf.shape == forces.shape
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
