@@ -129,8 +129,8 @@ def test_returns_mf_mt(Solver, periodicity):
     )
 
     def check_results(mf, mt, fvec, tvec):
-        assert mt.shape == fvec.shape
-        assert mf.shape == tvec.shape
+        assert mf.shape == fvec.shape
+        assert mt.shape == tvec.shape
         assert np.linalg.norm(mf) > 0
         assert np.linalg.norm(mt) > 0
 
