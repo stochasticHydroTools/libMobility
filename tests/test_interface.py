@@ -311,6 +311,32 @@ def test_bad_positions_shape(Solver, periodicity, shape):
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
+def test_bad_force_shape(Solver, periodicity):
+    numberParticles = 5
+    solver = initialize_solver(Solver, periodicity)
+
+    precision = np.float32 if solver.precision == "float" else np.float64
+    forces = np.random.rand(3 * (numberParticles - 1)).astype(precision)
+
+    for n_wrong in [numberParticles - 1, numberParticles + 1]:
+        forces = np.random.rand(3 * n_wrong).astype(precision)
+        with pytest.raises(RuntimeError):
+            solver.Mdot(forces=forces)
+
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
+def test_bad_torque_shape(Solver, periodicity):
+    numberParticles = 5
+    solver = initialize_solver(Solver, periodicity, includeAngular=True)
+    precision = np.float32 if solver.precision == "float" else np.float64
+
+    for n_wrong in [numberParticles - 1, numberParticles + 1]:
+        torques = np.random.rand(3 * n_wrong).astype(precision)
+        with pytest.raises(RuntimeError):
+            solver.Mdot(torques=torques)
+
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("includeAngular", [True, False])
 def test_hydrodisp_equivalent(Solver, periodicity, includeAngular):
     #  Check that calling Mdot is equivalent to calling hydrodynamicVelocities with temperature = 0
