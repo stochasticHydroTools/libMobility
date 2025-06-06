@@ -44,8 +44,7 @@ nb.initialize(
     temperature=1.0,
     viscosity=1 / (6 * np.pi),
     hydrodynamicRadius=1.0,
-    numberParticles=numberParticles,
-    needsTorque=False,
+    includeAngular=False,
 )
 nb.setPositions(pos)
 
