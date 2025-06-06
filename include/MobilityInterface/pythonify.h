@@ -209,9 +209,9 @@ prefactor : float, optional
 Returns
 -------
 array_like
-		The resulting linear fluctuations. Shape is (N, 3), where N is the number of particles.
+		The resulting linear fluctuations. Returned shape will be the same shape as the positions.
 array_like
-		The resulting angular fluctuations. Shape is (N, 3), where N is the number of particles.
+		The resulting angular fluctuations. Returned shape will be the same shape as the positions.
 
 
 )pbdoc";
@@ -236,16 +236,16 @@ At least one of the forces or torques must be provided.
 Parameters
 ----------
 forces : array_like, optional
-		Forces acting on the particles. Must have shape (N, 3), where N is the number of particles.
+		Forces acting on the particles. Must have shape (N, 3) or (3N), where N is the number of particles.
 torques : array_like, optional
-		Torques acting on the particles. Must have shape (N, 3), where N is the number of particles. The solver must have been initialized with includeAngular=True.
+		Torques acting on the particles. Must have shape (N, 3) or (3N), where N is the number of particles. The solver must have been initialized with includeAngular=True.
 
 Returns
 -------
 array_like
-		The linear displacements. The result will have the same format as the forces array.
+		The linear displacements. The result will have the same format as the forces (or torques if forces are unspecified).
 array_like
-		The angular displacements. The result will have the same format as the torques array. This array will be empty if the solver was initialized with includeAngular=False.
+		The angular displacements. The result will have the same format as the torques (or forces if torques are unspecified). This will be None if the solver was initialized with includeAngular=False.
 
 )pbdoc";
 
@@ -318,9 +318,9 @@ prefactor : float, optional
 Returns
 -------
 array_like
-		The resulting linear displacements. Shape is (N, 3), where N is the number of particles.
+		The resulting linear displacements. Returned shape will be the same as the input forces if given, or the positions if no forces are given.
 array_like
-		The resulting angular displacements. Shape is (N, 3), where N is the number of particles. This array will be empty if the solver was initialized with includeAngular=False.
+		The resulting angular displacements. Returned shape will be the same as the input torques if given, or the forces/positions if no torques are given. This array will be None if the solver was initialized with includeAngular=False.
 )pbdoc";
 
 template <class Solver>
@@ -357,9 +357,9 @@ prefactor : float, optional
 Returns
 -------
 array_like
-		The resulting linear displacements. Shape is (N, 3), where N is the number of particles.
+		The resulting linear displacements. Returned shape will be the same as the input forces if given, or the positions if no forces are given.
 array_like
-		The resulting angular displacements. Shape is (N, 3), where N is the number of particles. This array will be empty if the solver was initialized with includeAngular=False.
+		The resulting angular displacements. Returned shape will be the same as the input torques if given, or the forces/positions if no torques are given. This array will be None if the solver was initialized with includeAngular=False.
 )pbdoc";
 
 template <typename MODULENAME>
