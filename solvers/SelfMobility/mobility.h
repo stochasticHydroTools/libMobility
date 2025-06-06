@@ -8,7 +8,9 @@
 #ifndef MOBILITY_SELFMOBILITY_H
 #define MOBILITY_SELFMOBILITY_H
 #include <MobilityInterface/MobilityInterface.h>
+
 #include <cmath>
+#include <iostream>
 #include <random>
 #include <vector>
 
@@ -19,7 +21,7 @@ class SelfMobility : public libmobility::Mobility {
   using real = libmobility::real;
   template <class T> using device_span = libmobility::device_span<T>;
   Parameters par;
-  //std::vector<real> positions;
+  // std::vector<real> positions;
   real linearMobility;
   real angularMobility;
   real temperature;
@@ -55,37 +57,29 @@ public:
 
   void setPositions(device_span<const real> ipositions) override {
     this->numberParticles = ipositions.size() / 3;
-    //positions.assign(ipositions.begin(), ipositions.end());
+    // positions.assign(ipositions.begin(), ipositions.end());
   }
 
   uint getNumberParticles() override { return this->numberParticles; }
 
   void Mdot(device_span<const real> iforces, device_span<const real> itorques,
             device_span<real> ilinear, device_span<real> iangular) override {
-    auto forces =
-        libmobility::device_adapter(iforces, libmobility::device::cpu);
-    auto linear =
-        libmobility::device_adapter(ilinear, libmobility::device::cpu);
     if (!iforces.empty()) {
-      if(linear.size() != iforces.size())
-	throw std::runtime_error(
-	    "[libMobility] The number of linear velocities does not match the "
-	    "number of forces");
-      int numberParticles = iforces.size() / 3;
+      int numberParticles = getNumberParticles();
+      auto forces =
+          libmobility::device_adapter(iforces, libmobility::device::cpu);
+      auto linear =
+          libmobility::device_adapter(ilinear, libmobility::device::cpu);
       for (int i = 0; i < 3 * numberParticles; i++) {
         linear[i] = forces[i] * linearMobility;
       }
     }
     if (!itorques.empty()) {
-      int numberParticles = iforces.size() / 3;
+      int numberParticles = getNumberParticles();
       auto torques =
           libmobility::device_adapter(itorques, libmobility::device::cpu);
       auto angular =
           libmobility::device_adapter(iangular, libmobility::device::cpu);
-      if (angular.size() != itorques.size())
-	throw std::runtime_error(
-	    "[libMobility] The number of angular velocities does not match the "
-	    "number of torques");
       for (int i = 0; i < 3 * numberParticles; i++) {
         angular[i] = torques[i] * angularMobility;
       }
@@ -99,15 +93,15 @@ public:
     std::normal_distribution<real> d{0, 1};
     auto linear =
         libmobility::device_adapter(ilinear, libmobility::device::cpu);
-    if(!linear.empty()) {
-      int numberParticles = linear.size() / 3;
+    if (!linear.empty()) {
+      int numberParticles = getNumberParticles();
       for (int i = 0; i < 3 * numberParticles; i++) {
-	real dW = d(rng);
-	linear[i] += prefactor * sqrt(2 * temperature * linearMobility) * dW;
+        real dW = d(rng);
+        linear[i] += prefactor * sqrt(2 * temperature * linearMobility) * dW;
       }
     }
     if (!iangular.empty()) {
-      int numberParticles = iangular.size() / 3;
+      int numberParticles = getNumberParticles();
       auto angular =
           libmobility::device_adapter(iangular, libmobility::device::cpu);
       for (int i = 0; i < 3 * numberParticles; i++) {

@@ -83,7 +83,7 @@ int main() {
     par.viscosity = 1;
     par.tolerance = 1e-4;
     par.temperature = 1.0;
-    par.needsTorque = false;
+    par.includeAngular = false;
 
     // Create two different solvers
     auto solver_pse = initializeSolver<PSE>(par, numberParticles);

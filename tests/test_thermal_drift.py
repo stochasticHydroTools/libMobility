@@ -44,7 +44,7 @@ def thermal_drift_rfd(solver, positions):
 def test_thermal_drift_does_not_change_positions(Solver, periodicity):
     # Compute the Mdot with some random forces, then compute the thermal drift, then compute Mdot again
     # Check that Mdot has not changed
-    needsTorque = False
+    includeAngular = False
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
     parameters = get_sane_params(Solver.__name__, periodicity[2])
@@ -53,7 +53,7 @@ def test_thermal_drift_does_not_change_positions(Solver, periodicity):
         temperature=1.0,
         viscosity=1.0,
         hydrodynamicRadius=1.0,
-        needsTorque=needsTorque,
+        includeAngular=includeAngular,
     )
     positions = generate_positions_in_box(parameters, 10).astype(precision)
     solver.setPositions(positions)
@@ -72,9 +72,9 @@ def test_thermal_drift_does_not_change_positions(Solver, periodicity):
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
-@pytest.mark.parametrize("needsTorque", [False, True])
+@pytest.mark.parametrize("includeAngular", [False, True])
 def test_thermal_drift_is_zero(
-        Solver, periodicity, hydrodynamicRadius, numberParticles, needsTorque
+        Solver, periodicity, hydrodynamicRadius, numberParticles, includeAngular
 ):
     if not np.all(np.array(periodicity) == "open") and not np.all(
         np.array(periodicity) == "periodic"
@@ -82,7 +82,7 @@ def test_thermal_drift_is_zero(
         pytest.skip(
             "Only periodic and open boundary conditions have zero thermal drift"
         )
-    if(Solver.__name__ == "PSE" and needsTorque):
+    if(Solver.__name__ == "PSE" and includeAngular):
         pytest.skip("PSE does not support torques")
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
@@ -92,7 +92,7 @@ def test_thermal_drift_is_zero(
         temperature=1.0,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
-        needsTorque=needsTorque,
+        includeAngular=includeAngular,
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
     solver.setPositions(positions)
@@ -116,11 +116,11 @@ def test_thermal_drift_is_zero(
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
-@pytest.mark.parametrize("needsTorque", [False, True])
+@pytest.mark.parametrize("includeAngular", [False, True])
 def test_thermal_drift_returns_different_numbers(
-        Solver, periodicity, hydrodynamicRadius, numberParticles, needsTorque
+        Solver, periodicity, hydrodynamicRadius, numberParticles, includeAngular
 ):
-    if(Solver.__name__ == "PSE" and needsTorque):
+    if(Solver.__name__ == "PSE" and includeAngular):
         pytest.skip("PSE does not support torques")
 
     temperature = 1.2
@@ -132,7 +132,7 @@ def test_thermal_drift_returns_different_numbers(
         temperature=temperature,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
-        needsTorque=needsTorque,
+        includeAngular=includeAngular,
     )
     positions = np.asarray(
         generate_positions_in_box(parameters, numberParticles).astype(precision) * 0.8
@@ -150,11 +150,11 @@ def test_thermal_drift_returns_different_numbers(
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("hydrodynamicRadius", [0.95])
 @pytest.mark.parametrize("numberParticles", [1, 10])
-@pytest.mark.parametrize("needsTorque", [False, True])
+@pytest.mark.parametrize("includeAngular", [False, True])
 def test_thermal_drift_matches_rfd(
-        Solver, periodicity, hydrodynamicRadius, numberParticles, needsTorque
+        Solver, periodicity, hydrodynamicRadius, numberParticles, includeAngular
 ):
-    if(Solver.__name__ == "PSE" and needsTorque):
+    if(Solver.__name__ == "PSE" and includeAngular):
         pytest.skip("PSE does not support torques")
     temperature = 1.2
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -165,7 +165,7 @@ def test_thermal_drift_matches_rfd(
         temperature=temperature,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
-        needsTorque=needsTorque,
+        includeAngular=includeAngular,
     )
     positions = np.asarray(
         generate_positions_in_box(parameters, numberParticles).astype(precision)

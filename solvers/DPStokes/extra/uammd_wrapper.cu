@@ -148,33 +148,50 @@ namespace uammd_dpstokes{
     }
 
     //Compute the hydrodynamic displacements due to a series of forces and/or torques acting on the particles
-    void Mdot(const real* h_forces,
-	      const real* h_torques,
-	      real* h_MF,
-	      real* h_MT, int numberParticles){
+    void Mdot(const real *h_forces, const real *h_torques, real *h_MF,
+              real *h_MT, int numberParticles, bool includeAngular) {
+      bool givenForces = h_forces;
+      bool givenTorques = h_torques;
       force4.resize(numberParticles);
-      bool useTorque = h_torques;
-      force4.resize(numberParticles);
-      thrust::transform(thrust::cuda::par.on(st),
-			reinterpret_cast<const uammd::real3*>(h_forces), reinterpret_cast<const uammd::real3*>(h_forces) + numberParticles,
-			force4.begin(), Real3ToReal4());
-      if(useTorque){
-	torque4.resize(numberParticles);
-	thrust::transform(thrust::cuda::par.on(st),
-			  reinterpret_cast<const uammd::real3*>(h_torques), reinterpret_cast<const uammd::real3*>(h_torques) + numberParticles,
-			  torque4.begin(), Real3ToReal4());
+      if(givenForces){
+        thrust::transform(
+            thrust::cuda::par.on(st),
+            reinterpret_cast<const uammd::real3*>(h_forces),
+            reinterpret_cast<const uammd::real3*>(h_forces) + numberParticles,
+            force4.begin(), Real3ToReal4());
+      } else {
+        thrust::fill(thrust::cuda::par.on(st), force4.begin(), force4.end(), uammd::make_real4(0, 0, 0, 0));
       }
+
+      if (givenTorques) {
+        torque4.resize(numberParticles);
+        thrust::transform(thrust::cuda::par.on(st),
+                          reinterpret_cast<const uammd::real3 *>(h_torques),
+                          reinterpret_cast<const uammd::real3 *>(h_torques) +
+                              numberParticles,
+                          torque4.begin(), Real3ToReal4());
+      } else if (includeAngular) {
+        // If we are including angular forces but no torques were given, we fill
+        // with zeros to generate angular velocities
+        torque4.resize(numberParticles);
+        thrust::fill(thrust::cuda::par.on(st), torque4.begin(), torque4.end(),
+                     uammd::make_real4(0, 0, 0, 0));
+      }
+
       stored_positions.resize(numberParticles);
       thrust::transform(thrust::cuda::par.on(st),
 			stored_positions_real3.begin(), stored_positions_real3.end(),
 			stored_positions.begin(), Real3ToReal4SubstractOriginZ(zOrigin));
-      auto mob = this->computeHydrodynamicDisplacements(stored_positions.data().get(),
-							force4.data().get(),
-							useTorque?torque4.data().get():nullptr,
-							numberParticles, 0.0, 0.0, st);
-      thrust::copy(thrust::cuda::par.on(st), mob.first.begin(), mob.first.end(), (uammd::real3*)h_MF);
-      if(mob.second.size()){
-	thrust::copy(thrust::cuda::par.on(st), mob.second.begin(), mob.second.end(), (uammd::real3*)h_MT);
+      auto mob = this->computeHydrodynamicDisplacements(
+          stored_positions.data().get(), force4.data().get(),
+          (includeAngular) ? torque4.data().get() : nullptr, numberParticles,
+          0.0, 0.0, st);
+      // always copy linear translation but only angular if needed
+      thrust::copy(thrust::cuda::par.on(st), mob.first.begin(), mob.first.end(),
+                   (uammd::real3 *)h_MF);
+      if (includeAngular) {
+        thrust::copy(thrust::cuda::par.on(st), mob.second.begin(),
+                     mob.second.end(), (uammd::real3 *)h_MT);
       }
     }
 
@@ -210,13 +227,13 @@ namespace uammd_dpstokes{
   }
 
   //Compute the dot product of the mobility matrix with the forces and/or torques acting on the previously provided positions
-  void DPStokesGlue::Mdot(const real* h_forces, const real* h_torques,
-			  real* h_MF,
-			  real* h_MT, int numberParticles){
+  void DPStokesGlue::Mdot(const real *h_forces, const real *h_torques,
+                          real *h_MF, real *h_MT, int numberParticles,
+                          bool includeAngular) {
     throwIfInvalid();
-    dpstokes->Mdot(h_forces, h_torques, h_MF, h_MT, numberParticles);
+    dpstokes->Mdot(h_forces, h_torques, h_MF, h_MT, numberParticles,
+                   includeAngular);
   }
-
 
   void DPStokesGlue::throwIfInvalid(){
     if(not dpstokes){

@@ -104,34 +104,40 @@ auto check_and_get_shape(pyarray_c &arr) {
 
 template <class Solver>
 auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
-  size_t N = myself.getNumberParticles();
-
-  if (forces.size() < 3 * N and forces.size() > 0) {
-    throw std::runtime_error("The forces array must have size 3*N.");
-  }
-  if (torques.size() < 3 * N and torques.size() > 0) {
-    throw std::runtime_error("The torques array must have size 3*N.");
-  }
-  auto f = cast_to_const_real(forces);
-  auto t = cast_to_const_real(torques);
-  auto framework = lp::get_framework(forces);
-  last_framework = framework;
-  int device = f.empty() ? torques.device_type() : forces.device_type();
-  if (device == nb::device::none::value)
-    device = nb::device::cpu::value;
-  last_device = device;
-  auto f_shape = check_and_get_shape(forces);
-  auto mf = lp::create_with_framework<real>(f_shape, device, framework);
-  auto mt = nb::ndarray<real, nb::c_contig>();
-  if (!t.empty()) {
-    if (!myself.getNeedsTorque()) {
-      throw std::runtime_error(
-          "The solver was configured without torques. Set "
-          "needsTorque to true when initializing if you want to use torques");
+    size_t N = myself.getNumberParticles();
+    if (forces.size() > 0 && forces.size() != 3 * N) {
+        throw std::runtime_error("The forces array must have size 3*N.");
     }
-    auto t_shape = check_and_get_shape(torques);
-    mt = lp::create_with_framework<real>(t_shape, device, framework);
-  }
+    if (torques.size() > 0 && torques.size() != 3 * N) {
+        throw std::runtime_error("The torques array must have size 3*N.");
+    }
+
+    auto f = cast_to_const_real(forces);
+    auto t = cast_to_const_real(torques);
+    auto framework = lp::get_framework(forces);
+    last_framework = framework;
+    int device = f.empty() ? torques.device_type() : forces.device_type();
+    if (device == nb::device::none::value)
+        device = nb::device::cpu::value;
+    last_device = device;
+
+    auto mf = nb::ndarray<real, nb::c_contig>();
+    auto mt = nb::ndarray<real, nb::c_contig>();
+
+    auto f_shape = f.empty() ? check_and_get_shape(torques) : check_and_get_shape(forces);
+    mf = lp::create_with_framework<real>(f_shape, device, framework);
+
+    if (!myself.getIncludeAngular()) {
+      if(!t.empty()){
+        throw std::runtime_error("The solver was configured without including angular velocities. "
+          "Set includeAngular to true when initializing if you want to use torques");
+      }
+    } else{
+      // only set mt if includeAngular is true
+      auto t_shape = t.empty() ? f_shape : check_and_get_shape(torques);
+      mt = lp::create_with_framework<real>(t_shape, device, framework);
+    }
+
   return std::make_tuple(f, t, mf, mt);
 }
 
@@ -166,8 +172,8 @@ viscosity : float
 		Viscosity of the fluid.
 hydrodynamicRadius : float
 		Hydrodynamic radius of the particles.
-needsTorque : bool, optional
-		Whether the solver needs torques. Default is false.
+includeAngular : bool, optional
+		Whether the solver will produce angular velocities. Needed if torques are given. Default is false.
 tolerance : float, optional
 		Tolerance, used for approximate methods and also for Lanczos (default fluctuation computation). Default is 1e-4.
 )pbdoc";
@@ -178,7 +184,7 @@ template <class Solver> auto call_sqrtMdotW(Solver &myself, real prefactor) {
   auto linear =
       lp::create_with_framework<real>(last_shape, last_device, last_framework);
   auto angular = nb::ndarray<real, nb::c_contig>();
-  if (myself.getNeedsTorque()) {
+  if (myself.getIncludeAngular()) {
     angular = lp::create_with_framework<real>(last_shape, last_device,
                                               last_framework);
     myself.sqrtMdotW(cast_to_real(linear), cast_to_real(angular), prefactor);
@@ -203,21 +209,21 @@ prefactor : float, optional
 Returns
 -------
 array_like
-		The resulting linear fluctuations. Shape is (N, 3), where N is the number of particles.
+		The resulting linear fluctuations. Returned shape will be the same shape as the positions.
 array_like
-		The resulting angular fluctuations. Shape is (N, 3), where N is the number of particles.
+		The resulting angular fluctuations. Returned shape will be the same shape as the positions.
 
 
 )pbdoc";
 
 template <class Solver>
 auto call_mdot(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
-  auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
-  int N = myself.getNumberParticles();
-  auto mf_ptr = cast_to_real(mf);
-  auto mt_ptr = cast_to_real(mt);
-  myself.Mdot(f, t, mf_ptr, mt_ptr);
-  return std::make_pair(mf, mt);
+    auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
+    int N = myself.getNumberParticles();
+    auto mf_ptr = cast_to_real(mf);
+    auto mt_ptr = cast_to_real(mt);
+    myself.Mdot(f, t, mf_ptr, mt_ptr);
+    return std::make_pair(mf, mt);
 }
 
 const char *mdot_docstring = R"pbdoc(
@@ -230,28 +236,28 @@ At least one of the forces or torques must be provided.
 Parameters
 ----------
 forces : array_like, optional
-		Forces acting on the particles. Must have shape (N, 3), where N is the number of particles.
+		Forces acting on the particles. Must have shape (N, 3) or (3N), where N is the number of particles.
 torques : array_like, optional
-		Torques acting on the particles. Must have shape (N, 3), where N is the number of particles. The solver must have been initialized with needsTorque=True.
+		Torques acting on the particles. Must have shape (N, 3) or (3N), where N is the number of particles. The solver must have been initialized with includeAngular=True.
 
 Returns
 -------
 array_like
-		The linear displacements. The result will have the same format as the forces array.
+		The linear displacements. The result will have the same format as the forces (or torques if forces are unspecified).
 array_like
-		The angular displacements. The result will have the same format as the torques array. This array will be empty if the solver was initialized with needsTorque=False.
+		The angular displacements. The result will have the same format as the torques (or forces if torques are unspecified). This will be None if the solver was initialized with includeAngular=False.
 
 )pbdoc";
 
 template <class Solver>
-void call_initialize(Solver &myself, real T, real eta, real a, bool needsTorque,
+void call_initialize(Solver &myself, real T, real eta, real a, bool includeAngular,
                      real tol) {
   libmobility::Parameters par;
   par.temperature = T;
   par.viscosity = eta;
   par.hydrodynamicRadius = {a};
   par.tolerance = tol;
-  par.needsTorque = needsTorque;
+  par.includeAngular = includeAngular;
   myself.initialize(par);
 }
 
@@ -260,6 +266,11 @@ template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
   last_framework = lp::get_framework(pos);
   last_device = pos.device_type();
   myself.setPositions(cast_to_const_real(pos));
+  last_shape.resize(pos.ndim());
+  for (size_t i = 0; i < pos.ndim(); ++i)
+  {
+      last_shape[i] = pos.shape(i);
+  }
 }
 
 template <class Solver>
@@ -273,7 +284,7 @@ auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,
     mf = lp::create_with_framework<real>(last_shape, last_device,
                                          last_framework);
   }
-  if (myself.getNeedsTorque() && torques.size() == 0) {
+  if (myself.getIncludeAngular() && torques.size() == 0) {
     mt = lp::create_with_framework<real>(last_shape, last_device,
                                          last_framework);
   }
@@ -300,16 +311,16 @@ Parameters
 forces : array_like, optional
 		Forces acting on the particles.
 torques : array_like, optional
-		Torques acting on the particles. The solver must have been initialized with needsTorque=True.
+		Torques acting on the particles. The solver must have been initialized with includeAngular=True.
 prefactor : float, optional
 		Prefactor to multiply the result by. Default is 1.0.
 
 Returns
 -------
 array_like
-		The resulting linear displacements. Shape is (N, 3), where N is the number of particles.
+		The resulting linear displacements. Returned shape will be the same as the input forces if given, or the positions if no forces are given.
 array_like
-		The resulting angular displacements. Shape is (N, 3), where N is the number of particles. This array will be empty if the solver was initialized with needsTorque=False.
+		The resulting angular displacements. Returned shape will be the same as the input torques if given, or the forces/positions if no torques are given. This array will be None if the solver was initialized with includeAngular=False.
 )pbdoc";
 
 template <class Solver>
@@ -328,7 +339,7 @@ template <class Solver> auto call_thermalDrift(Solver &solver, real prefactor) {
   auto linear =
       lp::create_with_framework<real>(last_shape, last_device, last_framework);
   auto angular = nb::ndarray<real, nb::c_contig>();
-  if (solver.getNeedsTorque()) {
+  if (solver.getIncludeAngular()) {
     angular = lp::create_with_framework<real>(last_shape, last_device,
                                               last_framework);
   }
@@ -346,9 +357,9 @@ prefactor : float, optional
 Returns
 -------
 array_like
-		The resulting linear displacements. Shape is (N, 3), where N is the number of particles.
+		The resulting linear displacements. Returned shape will be the same as the input forces if given, or the positions if no forces are given.
 array_like
-		The resulting angular displacements. Shape is (N, 3), where N is the number of particles. This array will be empty if the solver was initialized with needsTorque=False.
+		The resulting angular displacements. Returned shape will be the same as the input torques if given, or the forces/positions if no torques are given. This array will be None if the solver was initialized with includeAngular=False.
 )pbdoc";
 
 template <typename MODULENAME>
@@ -362,7 +373,7 @@ auto define_module_content(
            "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)
       .def("initialize", call_initialize<MODULENAME>, initialize_docstring,
            "temperature"_a, "viscosity"_a, "hydrodynamicRadius"_a,
-           "needsTorque"_a = false, "tolerance"_a = 1e-4)
+           "includeAngular"_a = false, "tolerance"_a = 1e-4)
       .def("setPositions", call_setPositions<MODULENAME>,
            "The module will compute the mobility according to this set of "
            "positions.",

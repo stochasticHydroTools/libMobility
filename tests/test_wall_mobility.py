@@ -43,7 +43,7 @@ def test_self_mobility_linear(Solver, periodicity, tol, ref_file, wallHeight):
 
     xymax = 76.8
     params = get_wall_params(Solver.__name__, wallHeight)
-    needsTorque = False
+    includeAngular = False
 
     ref_dir = "./ref/"
     ref = np.load(ref_dir + ref_file)
@@ -79,7 +79,7 @@ def test_self_mobility_linear(Solver, periodicity, tol, ref_file, wallHeight):
         )
         solver.setPositions(positions)
 
-        M = compute_M(solver, numberParticles, needsTorque)
+        M = compute_M(solver, numberParticles, includeAngular)
         M /= normMat
         allM[i] = M
 
@@ -126,7 +126,7 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol, wallHeight):
 
     xymax = 76.8
     params = get_wall_params(Solver.__name__, wallHeight)
-    needsTorque = False
+    includeAngular = False
 
     ref_dir = "./ref/"
     ref = np.load(ref_dir + ref_file)
@@ -170,7 +170,7 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol, wallHeight):
             )
             solver.setPositions(positions)
 
-            M = compute_M(solver, numberParticles, needsTorque)
+            M = compute_M(solver, numberParticles, includeAngular)
             M /= normMat
             allM[i][k] = M
 
@@ -201,7 +201,7 @@ def test_self_mobility_angular(Solver, periodicity, ref_file, wallHeight):
     hydrodynamicRadius = 1.0
     eta = 1 / 4 / np.sqrt(np.pi)
 
-    needsTorque = True
+    includeAngular = True
     tol = 1e-6
 
     ref_dir = "./ref/"
@@ -216,7 +216,7 @@ def test_self_mobility_angular(Solver, periodicity, ref_file, wallHeight):
         temperature=0,
         viscosity=eta,
         hydrodynamicRadius=hydrodynamicRadius,
-        needsTorque=needsTorque,
+        includeAngular=includeAngular,
     )
 
     nHeights = len(refHeights)
@@ -236,7 +236,7 @@ def test_self_mobility_angular(Solver, periodicity, ref_file, wallHeight):
         )
         solver.setPositions(positions)
 
-        M = compute_M(solver, numberParticles, needsTorque)
+        M = compute_M(solver, numberParticles, includeAngular)
         M /= normMat
         allM[i] = M
 
@@ -265,7 +265,7 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file, offset, wallHeight
     params = get_wall_params(Solver.__name__, wallHeight)
     hydrodynamicRadius = 1.0
     eta = 1 / 4 / np.sqrt(np.pi)
-    needsTorque = True
+    includeAngular = True
 
     tol = 1e-6
 
@@ -282,7 +282,7 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file, offset, wallHeight
         temperature=0,
         viscosity=eta,
         hydrodynamicRadius=hydrodynamicRadius,
-        needsTorque=needsTorque,
+        includeAngular=includeAngular,
     )
 
     nHeights = len(refHeights)
@@ -319,7 +319,7 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file, offset, wallHeight
             )
             solver.setPositions(positions)
 
-            M = compute_M(solver, nP, needsTorque)
+            M = compute_M(solver, nP, includeAngular)
             M /= normMat
             allM[i, k] = M
 
