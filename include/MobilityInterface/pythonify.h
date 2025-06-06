@@ -105,12 +105,10 @@ auto check_and_get_shape(pyarray_c &arr) {
 template <class Solver>
 auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
     size_t N = myself.getNumberParticles();
-    if (forces.size() > 0 && forces.size() != 3 * N)
-    {
+    if (forces.size() > 0 && forces.size() != 3 * N) {
         throw std::runtime_error("The forces array must have size 3*N.");
     }
-    if (torques.size() > 0 && torques.size() != 3 * N)
-    {
+    if (torques.size() > 0 && torques.size() != 3 * N) {
         throw std::runtime_error("The torques array must have size 3*N.");
     }
 
@@ -126,24 +124,20 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
     auto mf = nb::ndarray<real, nb::c_contig>();
     auto mt = nb::ndarray<real, nb::c_contig>();
 
-    if (!f.empty())
-    {
-      auto f_shape = check_and_get_shape(forces);
-      mf = lp::create_with_framework<real>(f_shape, device, framework);
+    auto f_shape = f.empty() ? check_and_get_shape(torques) : check_and_get_shape(forces);
+    mf = lp::create_with_framework<real>(f_shape, device, framework);
+
+    if (!myself.getIncludeAngular()) {
+      if(!t.empty()){
+        throw std::runtime_error("The solver was configured without including angular velocities. "
+          "Set includeAngular to true when initializing if you want to use torques");
+      }
+    } else{
+      // only set mt if includeAngular is true
+      auto t_shape = t.empty() ? f_shape : check_and_get_shape(torques);
+      mt = lp::create_with_framework<real>(t_shape, device, framework);
     }
 
-    if (!t.empty())
-    {
-        if (!myself.getIncludeAngular())
-        {
-          throw std::runtime_error(
-              "The solver was configured without including angular velocities. "
-              "Set includeAngular to true when initializing if you want to use "
-              "torques");
-        }
-        auto t_shape = check_and_get_shape(torques);
-        mt = lp::create_with_framework<real>(t_shape, device, framework);
-    }
   return std::make_tuple(f, t, mf, mt);
 }
 
