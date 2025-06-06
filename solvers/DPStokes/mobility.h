@@ -143,7 +143,7 @@ public:
     device_adapter<real> angular(iangular, device::cuda);
 
     dpstokes->Mdot(forces.data(), torques.data(), linear.data(), angular.data(),
-                   this->getNumberParticles());
+                   this->getNumberParticles(), this->getIncludeAngular());
   }
 
   void thermalDrift(device_span<real> ilinear, device_span<real> iangular,
