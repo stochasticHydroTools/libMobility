@@ -1,5 +1,5 @@
 import pytest
-from libMobility import *
+# from libMobility import *
 import numpy as np
 from utils import (
     get_sane_params,
@@ -58,7 +58,15 @@ def test_includeAngular_false_returns_linear(Solver, periodicity):
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
 def test_torques_returns_both(Solver, periodicity):
 
-    numberParticles = 1
+    def check_results(mf, mt, ivec, Solver):
+        assert mt.shape == ivec.shape
+        assert mf.shape == ivec.shape
+        assert np.linalg.norm(mt) > 0
+        # selfmobility has no hydrodynamic interactions so a torque won't create a linear velocity
+        if Solver.__name__ != "SelfMobility":
+            assert np.linalg.norm(mf) > 0
+
+    numberParticles = 5
     solver = initialize_solver(Solver, periodicity, includeAngular=True)
 
     # Set precision to be the same as compiled precision
@@ -68,26 +76,30 @@ def test_torques_returns_both(Solver, periodicity):
 
     solver.setPositions(positions)
     mf, mt = solver.Mdot(torques=torques)
-    assert mt.shape == torques.shape
-    assert mf.shape == torques.shape
+    check_results(mf, mt, torques, Solver)
 
     torques = torques.reshape(numberParticles * 3)
     mf, mt = solver.Mdot(torques=torques)
-    assert mt.shape == torques.shape
-    assert mf.shape == torques.shape
+    check_results(mf, mt, torques, Solver)
 
     position = positions.reshape(numberParticles * 3)
     solver.setPositions(position)
     mf, mt = solver.Mdot(torques=torques)
-    assert mt.shape == torques.shape
-    assert mf.shape == torques.shape
-
+    check_results(mf, mt, torques, Solver)
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
 def test_forces_with_includeAngular_returns_both(Solver, periodicity):
 
-    numberParticles = 1
+    numberParticles = 5
     solver = initialize_solver(Solver, periodicity, includeAngular=True)
+
+    def check_results(mf, mt, ivec, Solver):
+        assert mt.shape == ivec.shape
+        assert mf.shape == ivec.shape
+        assert np.linalg.norm(mf) > 0
+        # selfmobility has no hydrodynamic interactions so a force won't create an angular velocity
+        if Solver.__name__ != "SelfMobility":
+            assert np.linalg.norm(mt) > 0
 
     # Set precision to be the same as compiled precision
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -96,19 +108,16 @@ def test_forces_with_includeAngular_returns_both(Solver, periodicity):
 
     solver.setPositions(positions)
     mf, mt = solver.Mdot(forces=forces)
-    assert mt.shape == forces.shape
-    assert mf.shape == forces.shape
+    check_results(mf, mt, forces, Solver)
 
     forces = forces.reshape(numberParticles * 3)
     mf, mt = solver.Mdot(forces=forces)
-    assert mt.shape == forces.shape
-    assert mf.shape == forces.shape
+    check_results(mf, mt, forces, Solver)
 
     position = positions.reshape(numberParticles * 3)
     solver.setPositions(position)
     mf, mt = solver.Mdot(forces=forces)
-    assert mt.shape == forces.shape
-    assert mf.shape == forces.shape
+    check_results(mf, mt, forces, Solver)
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
@@ -118,6 +127,12 @@ def test_returns_mf_mt(Solver, periodicity):
     solver = initialize_solver(
         Solver, periodicity, includeAngular=True, parameters=parameters
     )
+
+    def check_results(mf, mt, fvec, tvec):
+        assert mt.shape == fvec.shape
+        assert mf.shape == tvec.shape
+        assert np.linalg.norm(mf) > 0
+        assert np.linalg.norm(mt) > 0
 
     shapes = [[(3,), (1, 3)], [(1, 3), (3,)], [(1, 3), (1, 3)], [(3,), (3,)]]
 
@@ -130,15 +145,12 @@ def test_returns_mf_mt(Solver, periodicity):
 
         solver.setPositions(positions)
         u, w = solver.Mdot(forces, torques)
-        assert u.shape == forces.shape
-        assert w.shape == torques.shape
+        check_results(u, w, forces, torques)
 
         positions = positions.reshape(numberParticles * 3)
         solver.setPositions(positions)
         u, w = solver.Mdot(forces, torques)
-        assert u.shape == forces.shape
-        assert w.shape == torques.shape
-
+        check_results(u, w, forces, torques)
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_sqrtM(Solver, periodicity):
@@ -158,6 +170,7 @@ def test_returns_sqrtM(Solver, periodicity):
     sqrtmw, _ = solver.sqrtMdotW()
     assert sqrtmw.shape == positions.shape
 
+
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_thermal_drift(Solver, periodicity):
     numberParticles = 1
@@ -176,12 +189,17 @@ def test_returns_thermal_drift(Solver, periodicity):
     sqrtmw, _ = solver.thermalDrift()
     assert sqrtmw.shape == positions.shape
 
+
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_hydrodisp(Solver, periodicity):
     numberParticles = 1
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver = initialize_solver(
-        Solver, periodicity, parameters=parameters, temperature=1.0, includeAngular=False
+        Solver,
+        periodicity,
+        parameters=parameters,
+        temperature=1.0,
+        includeAngular=False,
     )
 
     shapes = [(3,), (1, 3), (1, 3), (3,)]
