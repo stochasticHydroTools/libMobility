@@ -1,7 +1,6 @@
 """
-Raul P. Pelaez 2021. libMobility python interface usage example.
+Raul P. Pelaez 2021-2025. libMobility python interface usage example.
 One of the available solvers is chosen and then, using the same interface the solver is initialized and the mobility is applied.
-
 """
 
 import numpy as np
@@ -25,34 +24,39 @@ precision = np.float32 if libMobility.SelfMobility.precision == "float" else np.
 pos = np.random.rand(3 * numberParticles).astype(precision)
 force = np.ones(3 * numberParticles).astype(precision)
 
-# Any solver can be used interchangeably, some of them need additional initialization via a "setParameters" function
-
-nb = libMobility.SelfMobility(
+# All solvers present a common interface, but some of them
+# need additional initialization via a "setParameters" function
+solver = libMobility.SelfMobility(
     periodicityX="open", periodicityY="open", periodicityZ="open"
 )
-# to call with the alternate import, use the below
-# nb = SelfMobility(periodicityX='open',periodicityY='open',periodicityZ='open')
 
-# For NBody periodicityZ can also be single_wall
-# nb = libMobility.NBody(periodicityX='open',periodicityY='open',periodicityZ='open')
-# nb.setParameters(algorithm="advise", Nbatch=1, NperBatch=numberParticles)
+# For the NBody solver, periodicityZ can also be single_wall, e.g.
+# solver = libMobility.NBody(periodicityX='open',periodicityY='open',periodicityZ='open')
+# solver.setParameters(algorithm="advise")
 
-# nb = libMobility.PSE(periodicityX='periodic',periodicityY='periodic',periodicityZ='periodic')
-# nb.setParameters(psi=1,   Lx=128, Ly=128, Lz=128,shearStrain=1)
+# solver = libMobility.PSE(periodicityX='periodic',periodicityY='periodic',periodicityZ='periodic')
+# solver.setParameters(psi=1, Lx=128, Ly=128, Lz=128,shearStrain=1)
 
-nb.initialize(
+solver.initialize(
     temperature=1.0,
-    viscosity=1 / (6 * np.pi),
+    viscosity=1.0,
     hydrodynamicRadius=1.0,
     includeAngular=False,
 )
-nb.setPositions(pos)
+solver.setPositions(pos)
 
-result, _ = nb.Mdot(forces=force)
+# Some solvers can include angular velocities by changing includeAngular=True in initialize().
+# The return is always a tuple of (linear_velocities, angular_velocities).
+linear_velocities, _ = solver.Mdot(forces=force)
 print(f"{numberParticles} particles located at ( X Y Z ): {pos}")
 print("Forces:", force)
-print("M*F:", result)
-# result = prefactor*sqrt(2*temperature*M)*dW
-result = nb.sqrtMdotW(prefactor=1.0)
-print("sqrt(2*T*M)*N(0,1):", result)
-nb.clean()
+print("M*F:", linear_velocities)
+
+linear_fluctuations, _ = solver.sqrtMdotW()
+print("M^{1/2} * dW:", linear_fluctuations)
+
+# Some solvers (e.g. SelfMobility) have no thermal drift and return all zeros.
+# In general, the thermal drift is non-zero and other solvers (e.g. DPStokes) return a non-zero value.
+linear_drift, _ = solver.thermalDrift()
+print("Thermal drift:", linear_drift)
+solver.clean()

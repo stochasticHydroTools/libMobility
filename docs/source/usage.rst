@@ -35,26 +35,5 @@ A libMobility solver is initialized in three steps:
 2. Setting the parameters proper to the solver.
 3. Initialization of the solver with global the parameters.
 
-.. code:: python
-
-
-		import numpy as np
-		from libMobility import SelfMobility
-		numberParticles = 100;
-		precision = np.float32 if SelfMobility.precision == "float" else np.float64
-		solver = SelfMobility("open", "open", "open")
-		solver.setParameters(parameter=5) # SelfMobility only exposes an example parameter
-		solver.initialize(
-		  temperature=0.0,
-		  viscosity=1.0,
-		  hydrodynamicRadius=1.0,
-		  needsTorque=True,
-		)
-		positions = np.random.rand(numberParticles, 3).astype(precision)
-		forces = np.random.rand(numberParticles, 3).astype(precision)
-		torques = np.random.rand(numberParticles, 3).astype(precision)
-		solver.setPositions(positions)
-		linear, angular = solver.Mdot(forces, torques)
-		noise_linear, noise_angular = solver.sqrtMdotW(prefactor=1)
-		thermal_drift = solver.thermalDrift(prefactor=1)
-		
+.. literalinclude:: ../../examples/python/example.py
+  :language: python
