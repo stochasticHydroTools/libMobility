@@ -13,7 +13,7 @@ void callBatchedNBody(device_span<const real> pos,
                       device_span<const real> torques, device_span<real> MF,
                       device_span<real> MT, int Nbatches, int NperBatch,
                       real transMobility, real rotMobility,
-                      real transRotMobility, real hydrodynamicRadius,
+                      real transRotMobility, real hydrodynamicRadius, bool needsTorque,
                       algorithm alg, kernel_type kernel);
 
 } // namespace nbody_rpy

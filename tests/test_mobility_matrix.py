@@ -1,7 +1,7 @@
 from utils import sane_parameters, compute_M, generate_positions_in_box
 import pytest
 import numpy as np
-from libMobility import SelfMobility, PSE, NBody, DPStokes
+from libMobility import SelfMobility, PSE, NBody
 from utils import compute_M, solver_configs_all, solver_configs_torques, get_sane_params
 
 
@@ -11,7 +11,7 @@ from utils import compute_M, solver_configs_all, solver_configs_torques, get_san
 def test_mobility_matrix_linear(
     Solver, periodicity, hydrodynamicRadius, numberParticles
 ):
-    needsTorque = False
+    includeAngular = False
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
     parameters = get_sane_params(Solver.__name__, periodicity[2])
@@ -20,11 +20,11 @@ def test_mobility_matrix_linear(
         temperature=0.0,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
-        needsTorque=needsTorque,
+        includeAngular=includeAngular,
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
     solver.setPositions(positions)
-    M = compute_M(solver, numberParticles, needsTorque)
+    M = compute_M(solver, numberParticles, includeAngular)
     assert M.shape == (3 * numberParticles, 3 * numberParticles)
     assert M.dtype == precision
     sym = M - M.T
@@ -41,7 +41,7 @@ def test_mobility_matrix_linear(
 def test_mobility_matrix_angular(
     Solver, periodicity, hydrodynamicRadius, numberParticles
 ):
-    needsTorque = True
+    includeAngular = True
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
     parameters = get_sane_params(Solver.__name__, periodicity[2])
@@ -50,11 +50,11 @@ def test_mobility_matrix_angular(
         temperature=0.0,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
-        needsTorque=needsTorque,
+        includeAngular=includeAngular,
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
     solver.setPositions(positions)
-    M = compute_M(solver, numberParticles, needsTorque)
+    M = compute_M(solver, numberParticles, includeAngular)
     size = 6 * numberParticles
     assert M.shape == (size, size)
     assert M.dtype == precision
@@ -66,8 +66,8 @@ def test_mobility_matrix_angular(
     ), f"Mobility matrix is not symmetric within {atol}, max diff: {np.max(np.abs(sym))}"
 
 
-@pytest.mark.parametrize("needsTorque", [True, False])
-def test_self_mobility_selfmobility(needsTorque):
+@pytest.mark.parametrize("includeAngular", [True, False])
+def test_self_mobility_selfmobility(includeAngular):
     # linear mobility should be just 1/(6\pi\eta R) for a single particle.
     # angular mobility should be just 1/(8\pi\eta R^3) for a single particle.
     precision = np.float32 if SelfMobility.precision == "float" else np.float64
@@ -80,14 +80,14 @@ def test_self_mobility_selfmobility(needsTorque):
         temperature=0.0,
         viscosity=viscosity,
         hydrodynamicRadius=hydrodynamicRadius,
-        needsTorque=needsTorque,
+        includeAngular=includeAngular,
     )
     positions = np.zeros((1, 3), dtype=precision)
     solver.setPositions(positions)
     forces = np.ones(3, dtype=precision)
     m0 = 1.0 / (6 * np.pi * viscosity * hydrodynamicRadius)
 
-    if needsTorque:
+    if includeAngular:
         torques = np.ones(3, dtype=precision)
         linear, angular = solver.Mdot(forces, torques)
         t0 = 1.0 / (8 * np.pi * viscosity * hydrodynamicRadius**3)
@@ -134,7 +134,7 @@ def test_self_mobility_angular_nbody(algorithm):
         temperature=0.0,
         viscosity=viscosity,
         hydrodynamicRadius=hydrodynamicRadius,
-        needsTorque=True,
+        includeAngular=True,
     )
     positions = np.zeros((1, 3), dtype=precision)
     solver.setPositions(positions)
@@ -212,7 +212,7 @@ def test_pair_mobility_angular_nbody(algorithm):
             temperature=0.0,
             viscosity=viscosity,
             hydrodynamicRadius=hydrodynamicRadius,
-            needsTorque=True,
+            includeAngular=True,
         )
         positions = r_vecs[i]
         solver.setPositions(positions)

@@ -16,7 +16,7 @@ from utils import (
 )
 
 
-def fluctuation_dissipation_KS(M, fluctuation_method, needsTorques):
+def fluctuation_dissipation_KS(M, fluctuation_method):
     R"""
     Test the fluctuation-dissipation theorem using the Kolmogorov-Smirnov test.
 
@@ -65,7 +65,7 @@ def fluctuation_dissipation_KS(M, fluctuation_method, needsTorques):
 def test_fluctuation_dissipation_linear_displacements(
     Solver, periodicity, hydrodynamicRadius, numberParticles
 ):
-    needsTorques = False
+    includeAngular = False
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
     parameters = get_sane_params(Solver.__name__, periodicity[2])
@@ -75,16 +75,16 @@ def test_fluctuation_dissipation_linear_displacements(
         temperature=0.5,  # needs to be 1/2 to cancel out the sqrt(2*T) when computing Mdot
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
-        needsTorque=needsTorques,
+        includeAngular=includeAngular,
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
     solver.setPositions(positions)
-    M = compute_M(solver, numberParticles, needsTorque=needsTorques)
+    M = compute_M(solver, numberParticles, includeAngular=includeAngular)
 
     def fluctuation_method():
         return solver.sqrtMdotW(prefactor=1.0)[0].flatten()
 
-    fluctuation_dissipation_KS(M, fluctuation_method, needsTorques)
+    fluctuation_dissipation_KS(M, fluctuation_method)
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
@@ -93,7 +93,7 @@ def test_fluctuation_dissipation_linear_displacements(
 def test_fluctuation_dissipation_angular_displacements(
     Solver, periodicity, hydrodynamicRadius, numberParticles
 ):
-    needsTorques = True
+    includeAngular = True
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
     parameters = get_sane_params(Solver.__name__, periodicity[2])
@@ -103,24 +103,24 @@ def test_fluctuation_dissipation_angular_displacements(
         temperature=0.5,  # needs to be 1/2 to cancel out the sqrt(2*T) when computing Mdot
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
-        needsTorque=needsTorques,
+        includeAngular=includeAngular,
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
     solver.setPositions(positions)
-    M = compute_M(solver, numberParticles, needsTorque=needsTorques)
+    M = compute_M(solver, numberParticles, includeAngular=includeAngular)
 
     def fluctuation_method():
         u, omega = solver.sqrtMdotW(prefactor=1.0)
         return np.concatenate((u.flatten(), omega.flatten()))
 
-    fluctuation_dissipation_KS(M, fluctuation_method, needsTorques)
+    fluctuation_dissipation_KS(M, fluctuation_method)
 
 
-@pytest.mark.parametrize("needsTorques", [True, False])
+@pytest.mark.parametrize("includeAngular", [True, False])
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
-def test_matrix_pos_def(Solver, periodicity, needsTorques):
+def test_matrix_pos_def(Solver, periodicity, includeAngular):
 
-    if needsTorques and Solver == PSE:
+    if includeAngular and Solver == PSE:
         pytest.skip("PSE does not support torques")
 
     numberParticles = 10
@@ -128,7 +128,7 @@ def test_matrix_pos_def(Solver, periodicity, needsTorques):
     solver = initialize_solver(
         Solver,
         periodicity,
-        needsTorque=needsTorques,
+        includeAngular=includeAngular,
         parameters=parameters,
     )
 
@@ -136,7 +136,7 @@ def test_matrix_pos_def(Solver, periodicity, needsTorques):
     for _ in range(n_iter):
         positions = generate_positions_in_box(parameters, numberParticles)
         solver.setPositions(positions)
-        M = compute_M(solver, numberParticles, needsTorque=needsTorques)
+        M = compute_M(solver, numberParticles, includeAngular=includeAngular)
         assert np.all(
             np.linalg.eigvals(M) > 0
         ), "Mobility matrix is not positive definite."

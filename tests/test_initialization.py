@@ -23,7 +23,7 @@ def test_pse_torques_unsupported():
             temperature=1.0,
             viscosity=1.0,
             hydrodynamicRadius=hydrodynamicRadius,
-            needsTorque=True,
+            includeAngular=True,
         )
 
 
