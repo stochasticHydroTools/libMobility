@@ -70,9 +70,7 @@ def test_fluctuation_dissipation_linear_displacements(
     solver = Solver(*periodicity)
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver.setParameters(**parameters)
-    numberParticles = 10
     solver.initialize(
-        temperature=0.5,  # needs to be 1/2 to cancel out the sqrt(2*T) when computing Mdot
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
         includeAngular=includeAngular,
@@ -98,9 +96,7 @@ def test_fluctuation_dissipation_angular_displacements(
     solver = Solver(*periodicity)
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver.setParameters(**parameters)
-    numberParticles = 10
     solver.initialize(
-        temperature=0.5,  # needs to be 1/2 to cancel out the sqrt(2*T) when computing Mdot
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
         includeAngular=includeAngular,

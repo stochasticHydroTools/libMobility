@@ -24,7 +24,6 @@ class SelfMobility : public libmobility::Mobility {
   // std::vector<real> positions;
   real linearMobility;
   real angularMobility;
-  real temperature;
   int numberParticles = 0;
   std::mt19937 rng;
 
@@ -41,7 +40,6 @@ public:
     if (not seed)
       seed = std::random_device()();
     this->rng = std::mt19937{seed};
-    this->temperature = ipar.temperature;
     real hydrodynamicRadius = ipar.hydrodynamicRadius[0];
     this->linearMobility =
         1.0 / (6 * M_PI * ipar.viscosity * hydrodynamicRadius);
@@ -97,7 +95,7 @@ public:
       int numberParticles = getNumberParticles();
       for (int i = 0; i < 3 * numberParticles; i++) {
         real dW = d(rng);
-        linear[i] += prefactor * sqrt(2 * temperature * linearMobility) * dW;
+        linear[i] += prefactor * sqrt(linearMobility) * dW;
       }
     }
     if (!iangular.empty()) {
@@ -106,7 +104,7 @@ public:
           libmobility::device_adapter(iangular, libmobility::device::cpu);
       for (int i = 0; i < 3 * numberParticles; i++) {
         real dW = d(rng);
-        angular[i] += prefactor * sqrt(2 * temperature * angularMobility) * dW;
+        angular[i] += prefactor * sqrt(angularMobility) * dW;
       }
     }
   }

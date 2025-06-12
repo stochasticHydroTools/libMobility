@@ -50,7 +50,6 @@ def test_thermal_drift_does_not_change_positions(Solver, periodicity):
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver.setParameters(**parameters)
     solver.initialize(
-        temperature=1.0,
         viscosity=1.0,
         hydrodynamicRadius=1.0,
         includeAngular=includeAngular,
@@ -89,7 +88,6 @@ def test_thermal_drift_is_zero(
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver.setParameters(**parameters)
     solver.initialize(
-        temperature=1.0,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
         includeAngular=includeAngular,
@@ -112,7 +110,6 @@ def test_thermal_drift_is_zero(
         ), f"Dipolar RFD drift is not zero: {np.max(np.abs(thermal_drift_d))}"
 
 
-
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
@@ -123,13 +120,11 @@ def test_thermal_drift_returns_different_numbers(
     if(Solver.__name__ == "PSE" and includeAngular):
         pytest.skip("PSE does not support torques")
 
-    temperature = 1.2
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver.setParameters(**parameters)
     solver.initialize(
-        temperature=temperature,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
         includeAngular=includeAngular,
@@ -156,13 +151,11 @@ def test_thermal_drift_matches_rfd(
 ):
     if(Solver.__name__ == "PSE" and includeAngular):
         pytest.skip("PSE does not support torques")
-    temperature = 1.2
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver.setParameters(**parameters)
     solver.initialize(
-        temperature=temperature,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
         includeAngular=includeAngular,
@@ -172,9 +165,6 @@ def test_thermal_drift_matches_rfd(
     )
     solver.setPositions(positions)
     reference_m, reference_d = thermal_drift_rfd(solver, positions)
-    reference_m = reference_m * temperature
-    if reference_d is not None:
-        reference_d = reference_d * temperature
 
     solver.setPositions(positions)
     rfd_m, rfd_d = average(lambda: average(solver.thermalDrift, 400), 100)
