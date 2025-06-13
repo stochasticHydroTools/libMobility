@@ -15,7 +15,6 @@ def test_precision(Solver, periodicity):
     solver.setParameters(**get_sane_params(Solver.__name__, periodicity[2]))
     numberParticles = 1
     solver.initialize(
-        temperature=1.0,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
     )
@@ -46,7 +45,6 @@ def test_incorrect_precision(Solver, periodicity):
     solver.setParameters(**get_sane_params(Solver.__name__, periodicity[2]))
     numberParticles = 1
     solver.initialize(
-        temperature=1.0,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
     )

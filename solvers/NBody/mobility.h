@@ -33,7 +33,6 @@ class NBody : public libmobility::Mobility {
   int Nbatch;
   int NperBatch;
 
-  real temperature;
   std::mt19937 rng;
 
 public:
@@ -105,7 +104,6 @@ public:
                                     hydrodynamicRadius * hydrodynamicRadius);
     this->rotMobility = 1.0 / (8 * M_PI * ipar.viscosity * hydrodynamicRadius *
                                hydrodynamicRadius * hydrodynamicRadius);
-    this->temperature = ipar.temperature;
     if (ipar.seed == 0) {
       ipar.seed = std::random_device()();
     }
@@ -161,7 +159,7 @@ public:
 
   void thermalDrift(device_span<real> ilinear, device_span<real> iangular,
                     real prefactor = 1) override {
-    if (temperature == 0 || prefactor == 0) {
+    if (prefactor == 0) {
       return;
     }
     if (this->kernel == nbody_rpy::kernel_type::open_rpy)
@@ -198,8 +196,7 @@ public:
     device_vector thermal_drift_d(iangular.size(), 0);
 
     libmobility::random_finite_differences(mdot, original_pos, thermal_drift_m,
-                                           thermal_drift_d, seed,
-                                           prefactor * temperature);
+                                           thermal_drift_d, seed, prefactor);
     device_adapter<real> linear(ilinear, device::cuda);
     this->setPositions(original_pos);
     thrust::transform(thrust::cuda::par, thermal_drift_m.begin(),

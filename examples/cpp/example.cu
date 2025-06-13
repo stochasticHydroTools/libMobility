@@ -71,7 +71,6 @@ int main(){
   par.hydrodynamicRadius = {1};
   par.viscosity = 1;
   par.tolerance = 1e-4;
-  par.temperature = 1.0;
   par.includeAngular = false;
 
   //Create two different solvers

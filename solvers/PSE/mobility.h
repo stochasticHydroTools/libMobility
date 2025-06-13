@@ -24,7 +24,6 @@ class PSE : public libmobility::Mobility {
   std::shared_ptr<uammd_pse::UAMMD_PSE_Glue> pse;
   uammd_pse::PyParameters psepar, currentpsepar;
   uint currentNumberParticles = 0;
-  real temperature;
 
 public:
   PSE(Configuration conf) {
@@ -40,7 +39,6 @@ public:
     if (pse and onlyShearStrainChanged(ipar)) {
       pse->setShearStrain(psepar.shearStrain);
     } else {
-      this->temperature = ipar.temperature;
       psepar.viscosity = ipar.viscosity;
       psepar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
       psepar.tolerance = ipar.tolerance;
@@ -113,14 +111,19 @@ public:
     if (!pse)
       throw std::runtime_error("[libMobility] PSE is not initialized. Did you "
                                "forget to call initialize?");
-    pse->computeHydrodynamicDisplacements(
-        positions.data().get(), nullptr, linear.data(), temperature, prefactor);
+
+    // need to pass in 0.5 for temperature to cancel out the T sqrt(2*T).
+    // all methods in libMobility should return with no prefactors not specified
+    // by the user.
+    pse->computeHydrodynamicDisplacements(positions.data().get(), nullptr,
+                                          linear.data(), 0.5, prefactor);
   }
 
   virtual void hydrodynamicVelocities(device_span<const real> forces,
                                       device_span<const real> torques,
                                       device_span<real> linear,
                                       device_span<real> angular,
+                                      real temperature = 0,
                                       real prefactor = 1) override {
     if (this->getNumberParticles() <= 0)
       throw std::runtime_error(
@@ -138,8 +141,7 @@ private:
     if (currentpsepar.psi != psepar.psi or currentpsepar.Lx != psepar.Lx or
         currentpsepar.Ly != psepar.Ly or currentpsepar.Lz != psepar.Lz)
       return false;
-    if (this->temperature != i_par.temperature or
-        psepar.viscosity != i_par.viscosity or
+    if (psepar.viscosity != i_par.viscosity or
         psepar.hydrodynamicRadius != i_par.hydrodynamicRadius[0] or
         psepar.tolerance != i_par.tolerance)
       return false;

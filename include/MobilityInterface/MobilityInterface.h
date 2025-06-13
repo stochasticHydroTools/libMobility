@@ -25,7 +25,6 @@ enum class periodicity_mode {
 struct Parameters {
   std::vector<real> hydrodynamicRadius;
   real viscosity = 1;
-  real temperature = 0;
   real tolerance = 1e-4; // Tolerance for Lanczos fluctuations
   std::uint64_t seed = 0;
   bool includeAngular = false;
@@ -49,7 +48,6 @@ private:
   real lanczosTolerance;
   std::shared_ptr<LanczosStochasticVelocities> lanczos;
   std::vector<real> lanczosOutput;
-  real temperature;
   bool includeAngular = false;
   std::mt19937 rng;
 
@@ -98,7 +96,6 @@ public:
     this->initialized = true;
     this->lanczosSeed = this->rng();
     this->lanczosTolerance = par.tolerance;
-    this->temperature = par.temperature;
     this->includeAngular = par.includeAngular;
   }
 
@@ -120,8 +117,6 @@ public:
   // will be used automatically
   virtual void sqrtMdotW(device_span<real> ilinear, device_span<real> iangular,
                          real prefactor = 1) {
-    if (this->temperature == 0)
-      return;
     if (prefactor == 0)
       return;
     if (not this->initialized)
@@ -143,9 +138,6 @@ public:
           "[libMobility] The number of linear velocities does not match the "
           "number of particles");
     }
-    // if (this->needsTorque && linear.size() != angular.size())
-      // throw std::runtime_error("[libMobility] This solver requires angular "
-                              //  "velocities when configured with torques");
     const auto numberElements =
         numberParticles + (this->includeAngular ? numberParticles : 0);
     if (not lanczos) {
@@ -184,12 +176,18 @@ public:
                                       device_span<const real> torques,
                                       device_span<real> linear,
                                       device_span<real> angular,
+                                      real temperature = 0,
                                       real prefactor = 1) {
     if (!forces.empty() or !torques.empty()) {
       Mdot(forces, torques, linear, angular);
     }
-    sqrtMdotW(linear, angular, prefactor);
-    thermalDrift(linear, angular, prefactor);
+
+    if (temperature != 0 && prefactor != 0) {
+      real sqrtM_factor = sqrt(2 * temperature);
+      real drift_factor = temperature;
+      sqrtMdotW(linear, angular, sqrtM_factor * prefactor);
+      thermalDrift(linear, angular, drift_factor * prefactor);
+    }
   }
 
   // Compute the thermal drift,

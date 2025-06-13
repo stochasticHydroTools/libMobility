@@ -28,7 +28,6 @@ class DPStokes : public libmobility::Mobility {
   Parameters par;
   std::shared_ptr<DPStokesUAMMD> dpstokes;
   DPStokesParameters dppar;
-  real temperature;
   real lanczosTolerance;
   std::string wallmode;
   std::mt19937 rng;
@@ -60,7 +59,6 @@ public:
 
   void initialize(Parameters ipar) override {
     this->dppar.viscosity = ipar.viscosity;
-    this->temperature = ipar.temperature;
     this->lanczosTolerance = ipar.tolerance;
     this->dppar.mode = this->wallmode;
     this->dppar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
@@ -148,7 +146,7 @@ public:
 
   void thermalDrift(device_span<real> ilinear, device_span<real> iangular,
                     real prefactor = 1) override {
-    if (temperature == 0 || prefactor == 0) {
+    if (prefactor == 0) {
       return;
     }
     if (ilinear.size() != 3 * this->numberParticles) {
@@ -182,8 +180,7 @@ public:
     device_vector thermal_drift_m(ilinear.size(), 0);
     device_vector thermal_drift_d(iangular.size(), 0);
     libmobility::random_finite_differences(mdot, original_pos, thermal_drift_m,
-                                           thermal_drift_d, seed,
-                                           prefactor * temperature);
+                                           thermal_drift_d, seed, prefactor);
     this->setPositions(original_pos);
     thrust::transform(thrust::cuda::par, thermal_drift_m.begin(),
                       thermal_drift_m.end(), linear.begin(), linear.begin(),

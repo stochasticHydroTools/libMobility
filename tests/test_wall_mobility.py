@@ -57,7 +57,6 @@ def test_self_mobility_linear(Solver, periodicity, tol, ref_file, wallHeight):
     solver.setParameters(**params)
     numberParticles = 1
     solver.initialize(
-        temperature=0,
         viscosity=eta,
         hydrodynamicRadius=hydrodynamicRadius,
     )
@@ -143,7 +142,6 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol, wallHeight):
     solver.setParameters(**params)
     numberParticles = 2
     solver.initialize(
-        temperature=0,
         viscosity=eta,
         hydrodynamicRadius=radH,
     )
@@ -213,7 +211,6 @@ def test_self_mobility_angular(Solver, periodicity, ref_file, wallHeight):
     solver.setParameters(**params)
     numberParticles = 1
     solver.initialize(
-        temperature=0,
         viscosity=eta,
         hydrodynamicRadius=hydrodynamicRadius,
         includeAngular=includeAngular,
@@ -279,7 +276,6 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file, offset, wallHeight
     solver = Solver(*periodicity)
     solver.setParameters(**params)
     solver.initialize(
-        temperature=0,
         viscosity=eta,
         hydrodynamicRadius=hydrodynamicRadius,
         includeAngular=includeAngular,

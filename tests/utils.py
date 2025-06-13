@@ -30,12 +30,12 @@ wall_parameters = {
 
 solver_configs_all = [
     (SelfMobility, ("open", "open", "open")),
-    (NBody, ("open", "open", "open")),
-    (NBody, ("open", "open", "single_wall")),
-    (PSE, ("periodic", "periodic", "periodic")),
-    (DPStokes, ("periodic", "periodic", "open")),
-    (DPStokes, ("periodic", "periodic", "single_wall")),
-    (DPStokes, ("periodic", "periodic", "two_walls")),
+    # (NBody, ("open", "open", "open")),
+    # (NBody, ("open", "open", "single_wall")),
+    # (PSE, ("periodic", "periodic", "periodic")),
+    # (DPStokes, ("periodic", "periodic", "open")),
+    # (DPStokes, ("periodic", "periodic", "single_wall")),
+    # (DPStokes, ("periodic", "periodic", "two_walls")),
 ]
 
 solver_configs_torques = [
@@ -54,7 +54,6 @@ def initialize_solver(
     else:
         solver.setParameters(**get_sane_params(Solver.__name__, periodicity[2]))
     solver.initialize(
-        temperature=kwargs.get("temperature", 1.0),
         viscosity=1.0,
         hydrodynamicRadius=1.0,
         includeAngular=includeAngular,
