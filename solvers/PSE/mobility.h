@@ -98,6 +98,8 @@ public:
 
   void sqrtMdotW(device_span<real> linear, device_span<real> angular,
                  real prefactor = 1) override {
+    if (prefactor == 0)
+      return;
     if (this->getNumberParticles() <= 0)
       throw std::runtime_error(
           "[PSE] The number of particles is not set. Did you "
@@ -112,28 +114,34 @@ public:
       throw std::runtime_error("[libMobility] PSE is not initialized. Did you "
                                "forget to call initialize?");
 
-    // need to pass in 0.5 for temperature to cancel out the T sqrt(2*T).
-    // all methods in libMobility should return with no prefactors not specified
-    // by the user.
+    // need to pass in 0.5 for temperature to cancel out the sqrt(2*T) that is
+    // built in to PSE. All methods in libMobility should return with no
+    // prefactors unless specified.
     pse->computeHydrodynamicDisplacements(positions.data().get(), nullptr,
                                           linear.data(), 0.5, prefactor);
   }
 
-  virtual void hydrodynamicVelocities(device_span<const real> forces,
-                                      device_span<const real> torques,
-                                      device_span<real> linear,
-                                      device_span<real> angular,
-                                      real temperature = 0,
-                                      real prefactor = 1) override {
+  virtual void LangevinVelocities(device_span<const real> forces,
+                                  device_span<const real> torques,
+                                  device_span<real> linear,
+                                  device_span<real> angular, real dt,
+                                  real kbt) override {
     if (this->getNumberParticles() <= 0)
       throw std::runtime_error(
           "[PSE] The number of particles is not set. Did you "
           "forget to call setPositions?");
     if (angular.size())
       throw std::runtime_error("[PSE] Torque is not implemented");
+    const real sqrtM_prefactor = std::sqrt(2 * kbt / dt);
+    // see note in sqrtMdotW for needing to pass in 0.5 as temperature.
+    // it's somewhat more transparent to include the factor 2 in the prefactor
+    // explicitly.
+    real temperature = 0.5;
+    if (sqrtM_prefactor == 0){
+      temperature = 0; // this will prevent the noise computation inside PSE if kbt is 0
+    }
     pse->computeHydrodynamicDisplacements(positions.data().get(), forces.data(),
-                                          linear.data(), temperature,
-                                          prefactor);
+                                          linear.data(), temperature, sqrtM_prefactor);
   }
 
 private:

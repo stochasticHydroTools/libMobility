@@ -170,31 +170,30 @@ public:
                      thrust::plus<real>());
   }
 
-  // Equivalent to calling Mdot, then stochasticDisplacements, and then thermal
-  // drift. Can be faster in some solvers
-  virtual void hydrodynamicVelocities(device_span<const real> forces,
+
+  // computes velocities according to the Langevin equation.
+  virtual void LangevinVelocities(device_span<const real> forces,
                                       device_span<const real> torques,
                                       device_span<real> linear,
                                       device_span<real> angular,
-                                      real temperature = 0,
-                                      real prefactor = 1) {
+                                      real dt, real kbt){
     if (!forces.empty() or !torques.empty()) {
       Mdot(forces, torques, linear, angular);
     }
 
-    if (temperature != 0 && prefactor != 0) {
-      real sqrtM_factor = sqrt(2 * temperature);
-      real drift_factor = temperature;
-      sqrtMdotW(linear, angular, sqrtM_factor * prefactor);
-      thermalDrift(linear, angular, drift_factor * prefactor);
+    // prefactors (last argument) are chosen for dimensional consistency
+    if (kbt != 0){
+      const real sqrt_prefactor = std::sqrt(2 * kbt / dt);
+      sqrtMdotW(linear, angular, sqrt_prefactor);
+      divM(linear, angular, kbt);
     }
   }
 
-  // Compute the thermal drift,
-  // :math:`k_BT\boldsymbol{\partial}_\boldsymbol{x}\cdot
+  // Compute the divergence of the mobility matrix,
+  // :math:`\boldsymbol{\partial}_\boldsymbol{x}\cdot
   // \boldsymbol{\mathcal{M}}`.
-  virtual void thermalDrift(device_span<real> ilinear,
-                            device_span<real> angular, real prefactor = 1) {
+  virtual void divM(device_span<real> ilinear, device_span<real> angular,
+                    real prefactor = 1) {
     // For open and periodic solvers the thermal drift is zero, so this function
     // does nothing by default.
   }

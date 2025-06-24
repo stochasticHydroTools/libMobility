@@ -157,7 +157,7 @@ public:
                                 this->getIncludeAngular(), algorithm, kernel);
   }
 
-  void thermalDrift(device_span<real> ilinear, device_span<real> iangular,
+  void divM(device_span<real> ilinear, device_span<real> iangular,
                     real prefactor = 1) override {
     if (prefactor == 0) {
       return;

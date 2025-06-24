@@ -172,7 +172,7 @@ def test_returns_sqrtM(Solver, periodicity):
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
-def test_returns_thermal_drift(Solver, periodicity):
+def test_returns_divM(Solver, periodicity):
     numberParticles = 1
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver = initialize_solver(
@@ -181,12 +181,12 @@ def test_returns_thermal_drift(Solver, periodicity):
 
     positions = generate_positions_in_box(parameters, numberParticles)
     solver.setPositions(positions)
-    sqrtmw, _ = solver.thermalDrift()
+    sqrtmw, _ = solver.divM()
     assert sqrtmw.shape == positions.shape
 
     positions = positions.reshape(numberParticles * 3)
     solver.setPositions(positions)
-    sqrtmw, _ = solver.thermalDrift()
+    sqrtmw, _ = solver.divM()
     assert sqrtmw.shape == positions.shape
 
 
@@ -210,16 +210,16 @@ def test_returns_hydrodisp(Solver, periodicity):
         positions = generate_positions_in_box(parameters, numberParticles)
         forces = np.random.rand(*f_shapes).astype(precision)
         solver.setPositions(positions)
-        v, _ = solver.hydrodynamicVelocities()
+        v, _ = solver.LangevinVelocities(dt=1.0, kbt=1.0)
         assert v.shape == positions.shape
-        v, _ = solver.hydrodynamicVelocities(forces)
+        v, _ = solver.LangevinVelocities(forces, dt=1.0, kbt=1.0)
         assert v.shape == forces.shape
 
         positions = positions.reshape(numberParticles * 3)
         solver.setPositions(positions)
-        v, _ = solver.hydrodynamicVelocities()
+        v, _ = solver.LangevinVelocities(dt=1.0, kbt=1.0)
         assert v.shape == positions.shape
-        v, _ = solver.hydrodynamicVelocities(forces)
+        v, _ = solver.LangevinVelocities(forces, dt=1.0, kbt=1.0)
         assert v.shape == forces.shape
 
 
@@ -240,17 +240,17 @@ def test_returns_hydrodisp_torques(Solver, periodicity):
         forces = np.random.rand(*f_shapes).astype(precision)
         torques = np.random.rand(*t_shapes).astype(precision)
         solver.setPositions(positions)
-        v, _ = solver.hydrodynamicVelocities()
+        v, _ = solver.LangevinVelocities(dt=1.0, kbt=1.0)
         assert v.shape == positions.shape
-        v, w = solver.hydrodynamicVelocities(forces, torques)
+        v, w = solver.LangevinVelocities(forces, torques, 1.0, 1.0)
         assert v.shape == forces.shape
         assert w.shape == torques.shape
 
         positions = positions.reshape(numberParticles * 3)
         solver.setPositions(positions)
-        v, _ = solver.hydrodynamicVelocities()
+        v, _ = solver.LangevinVelocities(dt=1.0, kbt=1.0)
         assert v.shape == positions.shape
-        v, w = solver.hydrodynamicVelocities(forces, torques)
+        v, w = solver.LangevinVelocities(forces, torques, dt=1.0, kbt=1.0)
         assert v.shape == forces.shape
         assert w.shape == torques.shape
 
@@ -294,7 +294,7 @@ def test_no_positions_error(Solver, periodicity):
         sqrtmw, _ = solver.sqrtMdotW()
 
     with pytest.raises(RuntimeError):
-        u, _ = solver.hydrodynamicVelocities()
+        u, _ = solver.LangevinVelocities(dt=1.0, kbt=1.0)
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
@@ -339,7 +339,7 @@ def test_bad_torque_shape(Solver, periodicity):
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("includeAngular", [True, False])
 def test_hydrodisp_equivalent(Solver, periodicity, includeAngular):
-    #  Check that calling Mdot is equivalent to calling hydrodynamicVelocities with temperature = 0
+    #  Check that calling Mdot is equivalent to calling LangevinVelocities with temperature set to 0
     if includeAngular and Solver.__name__ == "PSE":
         pytest.skip("PSE does not support torques")
 
@@ -348,7 +348,6 @@ def test_hydrodisp_equivalent(Solver, periodicity, includeAngular):
         Solver,
         periodicity,
         includeAngular=includeAngular,
-        temperature=0.0,
     )
 
     # Set precision to be the same as compiled precision
@@ -357,9 +356,9 @@ def test_hydrodisp_equivalent(Solver, periodicity, includeAngular):
     forces = np.random.rand(numberParticles, 3).astype(precision)
     torques = np.random.rand(numberParticles, 3).astype(precision)
     solver.setPositions(positions)
-    args = (forces, torques) if includeAngular else (forces,)
-    mf, mt = solver.Mdot(*args)
-    bothmf, bothmt = solver.hydrodynamicVelocities(*args)
+    temp_args = (forces, torques) if includeAngular else (forces,)
+    mf, mt = solver.Mdot(*temp_args)
+    bothmf, bothmt = solver.LangevinVelocities(*temp_args, dt=1.0, kbt=0.0)
     assert np.allclose(mf, bothmf, atol=1e-6)
     if includeAngular:
         assert np.allclose(mt, bothmt, atol=1e-6)
@@ -388,7 +387,7 @@ def test_changing_number_particles(Solver, periodicity, includeAngular):
         assert mf.shape == (numberParticles, 3)
         dwf, dmt = solver.sqrtMdotW()
         assert dwf.shape == (numberParticles, 3)
-        bothmf, bothmt = solver.hydrodynamicVelocities(*args)
+        bothmf, bothmt = solver.LangevinVelocities(*args, dt=1.0, kbt=1.0)
         assert bothmf.shape == (numberParticles, 3)
         if includeAngular:
             assert bothmt.shape == (numberParticles, 3)

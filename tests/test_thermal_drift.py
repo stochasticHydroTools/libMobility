@@ -21,11 +21,11 @@ def average(function, num_averages):
     return result_m / num_averages, result_d
 
 
-def thermal_drift_rfd(solver, positions):
-    # RFD works by approximating kT\partial_q \dot M = 1/\delta \langle M(q+\delta/2 W)W - M(q-\delta/2 W)W \rangle
+def divM_rfd(solver, positions):
+    # RFD works by approximating \partial_q \dot M = 1/\delta \langle M(q+\delta/2 W)W - M(q-\delta/2 W)W \rangle
     delta = 1e-3
 
-    def thermal_drift_func():
+    def rfd_func():
         W = np.random.normal(size=positions.shape).astype(positions.dtype)
         solver.setPositions(positions + delta / 2 * W)
         _tdriftp_m, _tdriftp_d = solver.Mdot(W)
@@ -36,13 +36,13 @@ def thermal_drift_rfd(solver, positions):
         return _tdrift_m, _tdrift_d
 
     solver.setPositions(positions)
-    tdrift_m, tdrift_d = average(lambda: average(thermal_drift_func, 400), 100)
+    tdrift_m, tdrift_d = average(lambda: average(rfd_func, 400), 100)
     return tdrift_m, tdrift_d
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
-def test_thermal_drift_does_not_change_positions(Solver, periodicity):
-    # Compute the Mdot with some random forces, then compute the thermal drift, then compute Mdot again
+def test_divM_does_not_change_positions(Solver, periodicity):
+    # Compute the Mdot with some random forces, then compute divM, then compute Mdot again
     # Check that Mdot has not changed
     includeAngular = False
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -58,7 +58,7 @@ def test_thermal_drift_does_not_change_positions(Solver, periodicity):
     solver.setPositions(positions)
     forces = np.random.normal(size=positions.shape).astype(precision)
     mf, _ = solver.Mdot(forces)
-    solver.thermalDrift()
+    solver.divM()
     mf2, _ = solver.Mdot(forces)
     assert np.allclose(
         mf,
@@ -72,14 +72,14 @@ def test_thermal_drift_does_not_change_positions(Solver, periodicity):
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
 @pytest.mark.parametrize("includeAngular", [False, True])
-def test_thermal_drift_is_zero(
+def test_divM_is_zero(
         Solver, periodicity, hydrodynamicRadius, numberParticles, includeAngular
 ):
     if not np.all(np.array(periodicity) == "open") and not np.all(
         np.array(periodicity) == "periodic"
     ):
         pytest.skip(
-            "Only periodic and open boundary conditions have zero thermal drift"
+            "Only periodic and open boundary conditions have zero divergence"
         )
     if(Solver.__name__ == "PSE" and includeAngular):
         pytest.skip("PSE does not support torques")
@@ -94,7 +94,7 @@ def test_thermal_drift_is_zero(
     )
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
     solver.setPositions(positions)
-    thermal_drift_m, thermal_drift_d = average(solver.thermalDrift, 3000)
+    thermal_drift_m, thermal_drift_d = average(solver.divM, 3000)
     assert np.allclose(
         np.abs(thermal_drift_m),
         0.0,
@@ -114,7 +114,7 @@ def test_thermal_drift_is_zero(
 @pytest.mark.parametrize("hydrodynamicRadius", [1.0, 0.95, 1.12])
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
 @pytest.mark.parametrize("includeAngular", [False, True])
-def test_thermal_drift_returns_different_numbers(
+def test_divM_returns_different_numbers(
         Solver, periodicity, hydrodynamicRadius, numberParticles, includeAngular
 ):
     if(Solver.__name__ == "PSE" and includeAngular):
@@ -133,10 +133,10 @@ def test_thermal_drift_returns_different_numbers(
         generate_positions_in_box(parameters, numberParticles).astype(precision) * 0.8
     )
     solver.setPositions(positions)
-    rfd1,_ = solver.thermalDrift()
+    rfd1,_ = solver.divM()
     if np.all(rfd1 == 0):
         pytest.skip("RFD is zero, skipping test")
-    rfd2,_ = solver.thermalDrift()
+    rfd2,_ = solver.divM()
     assert np.any(
         np.abs(rfd1 - rfd2) > 1e-5
     ), f"RFD is not different: {np.max(np.abs(rfd1 - rfd2))}"
@@ -146,7 +146,7 @@ def test_thermal_drift_returns_different_numbers(
 @pytest.mark.parametrize("hydrodynamicRadius", [0.95])
 @pytest.mark.parametrize("numberParticles", [1, 10])
 @pytest.mark.parametrize("includeAngular", [False, True])
-def test_thermal_drift_matches_rfd(
+def test_divM_matches_rfd(
         Solver, periodicity, hydrodynamicRadius, numberParticles, includeAngular
 ):
     if(Solver.__name__ == "PSE" and includeAngular):
@@ -164,10 +164,10 @@ def test_thermal_drift_matches_rfd(
         generate_positions_in_box(parameters, numberParticles).astype(precision)
     )
     solver.setPositions(positions)
-    reference_m, reference_d = thermal_drift_rfd(solver, positions)
+    reference_m, reference_d = divM_rfd(solver, positions)
 
     solver.setPositions(positions)
-    rfd_m, rfd_d = average(lambda: average(solver.thermalDrift, 400), 100)
+    rfd_m, rfd_d = average(lambda: average(solver.divM, 400), 100)
     assert np.allclose(
         reference_m,
         rfd_m,

@@ -30,12 +30,12 @@ wall_parameters = {
 
 solver_configs_all = [
     (SelfMobility, ("open", "open", "open")),
-    # (NBody, ("open", "open", "open")),
-    # (NBody, ("open", "open", "single_wall")),
-    # (PSE, ("periodic", "periodic", "periodic")),
-    # (DPStokes, ("periodic", "periodic", "open")),
-    # (DPStokes, ("periodic", "periodic", "single_wall")),
-    # (DPStokes, ("periodic", "periodic", "two_walls")),
+    (NBody, ("open", "open", "open")),
+    (NBody, ("open", "open", "single_wall")),
+    (PSE, ("periodic", "periodic", "periodic")),
+    (DPStokes, ("periodic", "periodic", "open")),
+    (DPStokes, ("periodic", "periodic", "single_wall")),
+    (DPStokes, ("periodic", "periodic", "two_walls")),
 ]
 
 solver_configs_torques = [
