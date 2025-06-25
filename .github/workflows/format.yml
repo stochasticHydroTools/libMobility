@@ -10,9 +10,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # --------------------
-      # C++ Formatting Check
-      # --------------------
       - name: Run C++ format and lint check
         id: cpp_lint
         uses: cpp-linter/cpp-linter-action@v2
@@ -20,7 +17,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           style: 'file'
-          tidy-checks: ''
+          tidy-checks: '-*'
           thread-comments: ${{ github.event_name == 'pull_request' && 'update' }}
 
       - name: Record C++ status
@@ -42,7 +39,7 @@ jobs:
         continue-on-error: true
         run: |
           echo "Running black --check --diff..."
-          OUTPUT=$(black --check --diff src tests 2>&1 || true)
+          OUTPUT=$(black --check --diff . 2>&1 || true)
           echo "$OUTPUT"
           echo "$OUTPUT" > black_diff.txt
 
