@@ -1,11 +1,7 @@
 name: cpp-linter
 on:
   pull_request:
-    branches: [main, master, develop]
-    paths: ['**.c', '**.cu', '**.cuh', '**.cpp', '**.h', '**.hpp', '**.cxx', '**.hxx', '**.cc', '**.hh', '**CMakeLists.txt', 'meson.build', '**.cmake']
-  push:
-    branches: [main, master, develop]
-    paths: ['**.c', '**.cu', '**.cuh', '**.cpp', '**.h', '**.hpp', '**.cxx', '**.hxx', '**.cc', '**.hh', '**CMakeLists.txt', 'meson.build', '**.cmake']
+    branches: [ main ]
 
 jobs:
   cpp-linter:
