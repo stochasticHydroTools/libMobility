@@ -19,7 +19,7 @@ jobs:
         id: format_check
         run: |
           FILE_LIST="unformatted_files.txt"
-          find src ! -path 'src/third_party/*' \
+          find solvers include ! -path 'src/third_party/*' \
             -regex '.*\.\(cpp\|hpp\|h\|c\|cc\|cu\|cuh\)' \
             -exec bash -c 'clang-format-19 -style=file -output-replacements-xml "$0" | grep -q "<replacement " && echo "$0"' {} \; > "$FILE_LIST"
           cat "$FILE_LIST"
