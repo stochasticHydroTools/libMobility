@@ -172,11 +172,11 @@ public:
 
 
   // computes velocities according to the Langevin equation.
-  virtual void LangevinVelocities(device_span<const real> forces,
-                                      device_span<const real> torques,
-                                      device_span<real> linear,
-                                      device_span<real> angular,
-                                      real dt, real kbt){
+  virtual void LangevinVelocities(real dt, real kbt, 
+                                  device_span<const real> forces,
+                                  device_span<const real> torques,
+                                  device_span<real> linear,
+                                  device_span<real> angular){
     if (!forces.empty() or !torques.empty()) {
       Mdot(forces, torques, linear, angular);
     }

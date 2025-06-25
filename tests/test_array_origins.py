@@ -83,7 +83,7 @@ def test_framework(Solver, periodicity, framework, use_torques, method):
     elif method == "sqrtMdotW":
         mf, mt = solver.sqrtMdotW()
     elif method == "LangevinVelocities":
-        mf, mt = solver.LangevinVelocities(forces, torques, 1.0, 1.0)
+        mf, mt = solver.LangevinVelocities(1.0, 1.0, forces, torques)
     else:
         raise ValueError(f"Unknown method: {method}")
     assert type(mf) == type(positions)

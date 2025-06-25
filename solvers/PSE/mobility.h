@@ -121,11 +121,11 @@ public:
                                           linear.data(), 0.5, prefactor);
   }
 
-  virtual void LangevinVelocities(device_span<const real> forces,
+  virtual void LangevinVelocities(real dt, real kbt, 
+                                  device_span<const real> forces,
                                   device_span<const real> torques,
                                   device_span<real> linear,
-                                  device_span<real> angular, real dt,
-                                  real kbt) override {
+                                  device_span<real> angular) override {
     if (this->getNumberParticles() <= 0)
       throw std::runtime_error(
           "[PSE] The number of particles is not set. Did you "

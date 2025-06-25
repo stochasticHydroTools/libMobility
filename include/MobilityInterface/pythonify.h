@@ -273,8 +273,8 @@ template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
 }
 
 template <class Solver>
-auto call_LangevinVelocities(Solver &myself, pyarray_c &forces,
-                             pyarray_c &torques, real dt, real kbt) {
+auto call_LangevinVelocities(Solver &myself, real dt, real kbt,
+                             pyarray_c &forces, pyarray_c &torques) {
   auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
 
   if (forces.size() == 0) // must check because this can be called without
@@ -290,7 +290,7 @@ auto call_LangevinVelocities(Solver &myself, pyarray_c &forces,
 
   auto mf_ptr = cast_to_real(mf);
   auto mt_ptr = cast_to_real(mt);
-  myself.LangevinVelocities(f, t, mf_ptr, mt_ptr, dt, kbt);
+  myself.LangevinVelocities(dt, kbt, f, t, mf_ptr, mt_ptr);
   int N = myself.getNumberParticles();
   return std::make_pair(mf, mt);
 }
@@ -306,14 +306,14 @@ Calling this function is equivalent to calling :py:mod:`Mdot`, :py:mod:`sqrtMdot
 
 Parameters
 ----------
-forces : array_like, optional
-		Forces acting on the particles.
-torques : array_like, optional
-		Torques acting on the particles. The solver must have been initialized with includeAngular=True.
 dt : float
 		Time step :math:`\Delta t` for the Langevin equation.
 kbt : float
 		Boltzmann constant times temperature, :math:`k_B T`, in units of energy.
+forces : array_like, optional
+		Forces acting on the particles.
+torques : array_like, optional
+		Torques acting on the particles. The solver must have been initialized with includeAngular=True.
 Returns
 -------
 array_like
@@ -382,8 +382,8 @@ auto define_module_content(
       .def("sqrtMdotW", call_sqrtMdotW<MODULENAME>, sqrtMdotW_docstring,
            "prefactor"_a = 1.0)
       .def("LangevinVelocities", call_LangevinVelocities<MODULENAME>,
-           langevinvelocities_docstring, "forces"_a = pyarray_c(),
-           "torques"_a = pyarray_c(), "dt"_a, "kbt"_a)
+           langevinvelocities_docstring, "dt"_a, "kbt"_a,
+           "forces"_a = pyarray_c(), "torques"_a = pyarray_c())
       .def("divM", call_divM<MODULENAME>, divM_docstring, "prefactor"_a = 1)
       .def("clean", &MODULENAME::clean,
            "Frees any memory allocated by the module.")

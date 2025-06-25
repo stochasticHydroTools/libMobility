@@ -210,16 +210,16 @@ def test_returns_hydrodisp(Solver, periodicity):
         positions = generate_positions_in_box(parameters, numberParticles)
         forces = np.random.rand(*f_shapes).astype(precision)
         solver.setPositions(positions)
-        v, _ = solver.LangevinVelocities(dt=1.0, kbt=1.0)
+        v, _ = solver.LangevinVelocities(1.0, 1.0)
         assert v.shape == positions.shape
-        v, _ = solver.LangevinVelocities(forces, dt=1.0, kbt=1.0)
+        v, _ = solver.LangevinVelocities(1.0, 1.0, forces)
         assert v.shape == forces.shape
 
         positions = positions.reshape(numberParticles * 3)
         solver.setPositions(positions)
-        v, _ = solver.LangevinVelocities(dt=1.0, kbt=1.0)
+        v, _ = solver.LangevinVelocities(1.0, 1.0)
         assert v.shape == positions.shape
-        v, _ = solver.LangevinVelocities(forces, dt=1.0, kbt=1.0)
+        v, _ = solver.LangevinVelocities(1.0, 1.0, forces)
         assert v.shape == forces.shape
 
 
@@ -242,7 +242,7 @@ def test_returns_hydrodisp_torques(Solver, periodicity):
         solver.setPositions(positions)
         v, _ = solver.LangevinVelocities(dt=1.0, kbt=1.0)
         assert v.shape == positions.shape
-        v, w = solver.LangevinVelocities(forces, torques, 1.0, 1.0)
+        v, w = solver.LangevinVelocities(1.0, 1.0, forces, torques)
         assert v.shape == forces.shape
         assert w.shape == torques.shape
 
@@ -250,7 +250,7 @@ def test_returns_hydrodisp_torques(Solver, periodicity):
         solver.setPositions(positions)
         v, _ = solver.LangevinVelocities(dt=1.0, kbt=1.0)
         assert v.shape == positions.shape
-        v, w = solver.LangevinVelocities(forces, torques, dt=1.0, kbt=1.0)
+        v, w = solver.LangevinVelocities(1.0, 1.0, forces, torques)
         assert v.shape == forces.shape
         assert w.shape == torques.shape
 
@@ -358,7 +358,7 @@ def test_hydrodisp_equivalent(Solver, periodicity, includeAngular):
     solver.setPositions(positions)
     temp_args = (forces, torques) if includeAngular else (forces,)
     mf, mt = solver.Mdot(*temp_args)
-    bothmf, bothmt = solver.LangevinVelocities(*temp_args, dt=1.0, kbt=0.0)
+    bothmf, bothmt = solver.LangevinVelocities(1.0, 0.0, *temp_args)
     assert np.allclose(mf, bothmf, atol=1e-6)
     if includeAngular:
         assert np.allclose(mt, bothmt, atol=1e-6)
@@ -387,7 +387,7 @@ def test_changing_number_particles(Solver, periodicity, includeAngular):
         assert mf.shape == (numberParticles, 3)
         dwf, dmt = solver.sqrtMdotW()
         assert dwf.shape == (numberParticles, 3)
-        bothmf, bothmt = solver.LangevinVelocities(*args, dt=1.0, kbt=1.0)
+        bothmf, bothmt = solver.LangevinVelocities(1.0, 1.0, *args)
         assert bothmf.shape == (numberParticles, 3)
         if includeAngular:
             assert bothmt.shape == (numberParticles, 3)
