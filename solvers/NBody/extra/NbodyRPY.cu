@@ -23,12 +23,11 @@ namespace nbody_rpy {
 // computation. Threads will tipically read one value from global memory but
 // blockDim.x from shared memory.
 template <class HydrodynamicKernel, class vecType>
-__global__ void computeRPYBatchedFastGPU(const vecType *pos,
-                                         const vecType *forces,
-                                         const vecType *torques, real3 *Mv,
-                                         real3 *Mw, Constants constants,
-                                         blocksToCompute blocks,
-                                         int Nbatches, int NperBatch) {
+__global__ void
+computeRPYBatchedFastGPU(const vecType *pos, const vecType *forces,
+                         const vecType *torques, real3 *Mv, real3 *Mw,
+                         Constants constants, blocksToCompute blocks,
+                         int Nbatches, int NperBatch) {
   const int tid = blockIdx.x * blockDim.x + threadIdx.x;
   const int N = Nbatches * NperBatch;
   const bool active = tid < N;
@@ -79,7 +78,8 @@ __global__ void computeRPYBatchedFastGPU(const vecType *pos,
           const real3 pj = shPos[counter];
           const real3 fj = forces ? shForce[counter] : real3();
           const real3 tj = torques ? shTorque[counter] : real3();
-          const mdot_result dot = HydrodynamicKernel::dotProduct(pi, pj, fj, tj, constants, blocks);
+          const mdot_result dot =
+              HydrodynamicKernel::dotProduct(pi, pj, fj, tj, constants, blocks);
           MF += dot.MF;
           MT += dot.MT;
         }
@@ -88,7 +88,7 @@ __global__ void computeRPYBatchedFastGPU(const vecType *pos,
     __syncthreads();
   }
   if (active) {
-    if(Mv)
+    if (Mv)
       Mv[id] = MF;
     if (Mw)
       Mw[id] = MT;
@@ -98,14 +98,14 @@ __global__ void computeRPYBatchedFastGPU(const vecType *pos,
 template <class HydrodynamicKernel, class vecType>
 void computeRPYBatchedFast(const vecType *pos, const vecType *force,
                            const vecType *torque, real3 *Mv, real3 *Mw,
-                           int Nbatches, int NperBatch,
-                           Constants &constants, blocksToCompute &blocks) {
+                           int Nbatches, int NperBatch, Constants &constants,
+                           blocksToCompute &blocks) {
   int N = Nbatches * NperBatch;
   int nearestWarpMultiple = ((NperBatch + 16) / 32) * 32;
   int minBlockSize = std::max(nearestWarpMultiple, 32);
   int Nthreads = std::min(std::min(minBlockSize, N), 256);
   int Nblocks = (N + Nthreads - 1) / Nthreads;
-  int sharedMemoryFactor = 1;  // always allocate shared memory for positions
+  int sharedMemoryFactor = 1; // always allocate shared memory for positions
   // allocate shared memory for forces & torques separately if provided
   sharedMemoryFactor += force != nullptr;
   sharedMemoryFactor += torque != nullptr;
@@ -116,12 +116,11 @@ void computeRPYBatchedFast(const vecType *pos, const vecType *force,
 
 template <class HydrodynamicKernel, class vecType>
 // Naive N^2 algorithm (looks like x20 times slower than the fast kernel
-__global__ void computeRPYBatchedNaiveGPU(const vecType *pos,
-                                          const vecType *forces,
-                                          const vecType *torques, real3 *Mv,
-                                          real3 *Mw, Constants constants,
-                                          blocksToCompute blocks,
-                                          int Nbatches, int NperBatch) {
+__global__ void
+computeRPYBatchedNaiveGPU(const vecType *pos, const vecType *forces,
+                          const vecType *torques, real3 *Mv, real3 *Mw,
+                          Constants constants, blocksToCompute blocks,
+                          int Nbatches, int NperBatch) {
   const int tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid >= Nbatches * NperBatch)
     return;
@@ -140,8 +139,10 @@ __global__ void computeRPYBatchedNaiveGPU(const vecType *pos,
     MF += dot.MF;
     MT += dot.MT;
   }
-  if (Mv) Mv[tid] = MF;
-  if (Mw) Mw[tid] = MT;
+  if (Mv)
+    Mv[tid] = MF;
+  if (Mw)
+    Mw[tid] = MT;
 }
 
 template <class HydrodynamicKernel, class vecType>
@@ -159,10 +160,11 @@ void computeRPYBatchedNaive(const vecType *pos, const vecType *force,
 
 template <class HydrodynamicKernel, class vecType>
 // NaiveBlock N^2 algorithm (looks like x20 times slower than the fast kernel
-__global__ void computeRPYBatchedNaiveBlockGPU(
-    const vecType *pos, const vecType *forces, const vecType *torque, real3 *Mv,
-    real3 *Mw, Constants constants, blocksToCompute blocks, int Nbatches,
-    int NperBatch) {
+__global__ void
+computeRPYBatchedNaiveBlockGPU(const vecType *pos, const vecType *forces,
+                               const vecType *torque, real3 *Mv, real3 *Mw,
+                               Constants constants, blocksToCompute blocks,
+                               int Nbatches, int NperBatch) {
   const int tid = blockIdx.x;
   if (tid >= Nbatches * NperBatch)
     return;
@@ -178,22 +180,29 @@ __global__ void computeRPYBatchedNaiveBlockGPU(
     // real3 fj = make_real3(forces[i]);
     const real3 fj = forces ? make_real3(forces[i]) : real3();
     const real3 tj = torque ? make_real3(torque[i]) : real3();
-    mdot_result dot = HydrodynamicKernel::dotProduct(pi, pj, fj, tj, constants, blocks);
+    mdot_result dot =
+        HydrodynamicKernel::dotProduct(pi, pj, fj, tj, constants, blocks);
     MF += dot.MF;
     MT += dot.MT;
   }
-  if (Mv) sharedMemory[threadIdx.x] = MF;
-  if (Mw) sharedMemory[threadIdx.x + blockDim.x] = MT;
+  if (Mv)
+    sharedMemory[threadIdx.x] = MF;
+  if (Mw)
+    sharedMemory[threadIdx.x + blockDim.x] = MT;
   __syncthreads();
   if (threadIdx.x == 0) {
     auto MFTot = real3();
     auto MTTot = real3();
     for (int i = 0; i < blockDim.x; i++) {
-      if (Mv) MFTot += sharedMemory[i];
-      if (Mw) MTTot += sharedMemory[i + blockDim.x];
+      if (Mv)
+        MFTot += sharedMemory[i];
+      if (Mw)
+        MTTot += sharedMemory[i + blockDim.x];
     }
-    if (Mv) Mv[tid] = MFTot;
-    if (Mw) Mw[tid] = MTTot;
+    if (Mv)
+      Mv[tid] = MFTot;
+    if (Mw)
+      Mw[tid] = MTTot;
   }
 }
 
@@ -219,7 +228,8 @@ template <class HydrodynamicKernel>
 void batchedNBody(device_span<const real> ipos, device_span<const real> iforces,
                   device_span<const real> itorques, device_span<real> iMF,
                   device_span<real> iMT, int Nbatches, int NperBatch,
-                  Constants& constants, blocksToCompute& blocks, algorithm alg) {
+                  Constants &constants, blocksToCompute &blocks,
+                  algorithm alg) {
   if (ipos.size() < Nbatches * NperBatch * 3)
     throw std::runtime_error("Not enough space in pos");
   device_adapter<const real> pos(ipos, device::cuda);
@@ -264,12 +274,12 @@ void callBatchedNBody(device_span<const real> pos,
   }
 
   if (kernel == kernel_type::bottom_wall) {
-    batchedNBody<BottomWall>(
-        pos, forces, torques, MF, MT, Nbatches, NperBatch, constants, blocks, alg);
+    batchedNBody<BottomWall>(pos, forces, torques, MF, MT, Nbatches, NperBatch,
+                             constants, blocks, alg);
 
   } else if (kernel == kernel_type::open_rpy) {
-    batchedNBody<OpenBoundary>(
-      pos, forces, torques, MF, MT, Nbatches, NperBatch, constants, blocks, alg);
+    batchedNBody<OpenBoundary>(pos, forces, torques, MF, MT, Nbatches,
+                               NperBatch, constants, blocks, alg);
   } else {
     throw std::runtime_error("Unknown kernel type");
   }

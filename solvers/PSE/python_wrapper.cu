@@ -28,8 +28,6 @@ MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(
         [](PSE &self, real psi, real Lx, real Ly, real Lz, real shearStrain) {
           self.setParametersPSE({psi, Lx, Ly, Lz, shearStrain});
         },
-        docstringSetParameters,
-	"psi"_a, "Lx"_a,
-        "Ly"_a, "Lz"_a,
+        docstringSetParameters, "psi"_a, "Lx"_a, "Ly"_a, "Lz"_a,
         "shearStrain"_a);
     , docstring);
