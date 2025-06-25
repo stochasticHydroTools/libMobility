@@ -1,0 +1,66 @@
+name: Python Formatting Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  python-black-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Black
+        run: pip install black
+
+      - name: Run Black and capture output
+        id: black_check
+        continue-on-error: true
+        run: |
+          set +e
+          OUTPUT=$(black --check --diff . 2>&1)
+          EXIT_CODE=$?
+
+          echo "$OUTPUT"
+          echo "$OUTPUT" > black_output.txt
+          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+
+          if [[ "$EXIT_CODE" -ne 0 ]]; then
+            echo "py_failed=true" >> $GITHUB_ENV
+          else
+            echo "py_failed=false" >> $GITHUB_ENV
+          fi
+
+      - name: Comment on PR if Black failed
+        if: env.py_failed == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ⚠️ **Black formatting check failed**
+
+            The following Python files are not correctly formatted:
+
+            ```
+            ${{ steps.black_check.outputs.black_output }}
+            ```
+
+            Please run:
+            ```bash
+            black .
+            ```
+            And commit the changes before merging.
+
+      - name: Fail if Black failed
+        if: env.py_failed == 'true'
+        run: |
+          echo "❌ Python formatting issues found."
+          exit 1
