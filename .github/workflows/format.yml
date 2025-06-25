@@ -26,8 +26,7 @@ jobs:
         id: clang_check
         run: |
           FILE_LIST="unformatted_cpp.txt"
-          find src ! -path 'src/third_party/*' \
-            -regex '.*\.\(cpp\|hpp\|h\|c\|cc\|cu\|cuh\)' \
+          find include solvers  -regex '.*\.\(cpp\|hpp\|h\|c\|cc\|cu\|cuh\)' \
             -exec bash -c 'clang-format-19 -style=file -output-replacements-xml "$0" | grep -q "<replacement " && echo "$0"' {} \; > "$FILE_LIST"
           cat "$FILE_LIST"
           if [ -s "$FILE_LIST" ]; then
@@ -43,7 +42,7 @@ jobs:
       - name: Check Python formatting with Black
         id: black_check
         run: |
-          OUTPUT=$(black --check --diff python || true)
+          OUTPUT=$(black --check --diff . || true)
           echo "$OUTPUT"
           if echo "$OUTPUT" | grep -q "would reformat"; then
             {
