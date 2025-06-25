@@ -1,70 +1,30 @@
-name: Code Formatting Check
-
-on: [push, pull_request]
+name: cpp-linter
+on:
+  pull_request:
+    branches: [main, master, develop]
+    paths: ['**.c', '**.cu', '**.cuh', '**.cpp', '**.h', '**.hpp', '**.cxx', '**.hxx', '**.cc', '**.hh', '**CMakeLists.txt', 'meson.build', '**.cmake']
+  push:
+    branches: [main, master, develop]
+    paths: ['**.c', '**.cu', '**.cuh', '**.cpp', '**.h', '**.hpp', '**.cxx', '**.hxx', '**.cc', '**.hh', '**CMakeLists.txt', 'meson.build', '**.cmake']
 
 jobs:
-  lint-format:
+  cpp-linter:
     runs-on: ubuntu-latest
-
+    permissions:
+      pull-requests: write
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run C++ format and lint check
-        id: cpp_lint
-        uses: cpp-linter/cpp-linter-action@v2
+      - uses: actions/checkout@v4
+      - uses: cpp-linter/cpp-linter-action@v2
+        id: linter
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          style: 'file'
-          tidy-checks: '-*'
+          style: 'file'  # Use .clang-format config file. 
+          tidy-checks: '-*' # disable clang-tidy checks. 
+          # only 'update' a single comment in a pull request's thread. 
           thread-comments: ${{ github.event_name == 'pull_request' && 'update' }}
-
-      - name: Record C++ status
-        run: echo "cpp_failed=${{ steps.cpp_lint.outputs.checks-failed }}" >> $GITHUB_ENV
-
-      # ----------------------
-      # Python Formatting Check
-      # ----------------------
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Black
-        run: pip install black
-
-      - name: Run Black and capture output
-        id: py_black
-        continue-on-error: true
-        run: |
-          echo "Running black --check --diff..."
-          OUTPUT=$(black --check --diff . 2>&1 || true)
-          echo "$OUTPUT"
-          echo "$OUTPUT" > black_diff.txt
-
-          if echo "$OUTPUT" | grep -q "would reformat"; then
-            echo "py_failed=true" >> $GITHUB_ENV
-          else
-            echo "py_failed=false" >> $GITHUB_ENV
-          fi
-
-      - name: Print unformatted Python files
-        if: env.py_failed == 'true'
-        run: |
-          echo "❌ Python formatting issues detected:"
-          grep '^would reformat' black_diff.txt | cut -d' ' -f3 | sort -u
-
-      # ----------------------
-      # Final Step: Global Fail
-      # ----------------------
-      - name: Fail if either check failed
-        run: |
-          echo "C++ checks failed: $cpp_failed"
-          echo "Python checks failed: $py_failed"
-          if [[ "$cpp_failed" != "0" || "$py_failed" == "true" ]]; then
-            echo "❌ One or more format checks failed."
-            exit 1
-          else
-            echo "✅ All format checks passed."
-          fi
+          
+      - name: Fail fast?!
+        if: steps.linter.outputs.clang-format-checks-failed > 0
+        run: exit 1
