@@ -7,6 +7,31 @@ import sys
 import os
 
 
+def setup(app):
+    import inspect
+    from sphinx.util import inspect as sphinx_inspect
+
+    # xref: https://github.com/wjakob/nanobind/discussions/707
+    # Sphinx inspects all objects in the module and tries to resolve their type
+    # (attribute, function, class, module, etc.) by using its own functions in
+    # `sphinx.util.inspect`. These functions misidentify certain nanobind
+    # objects. We monkey patch those functions here.
+    def mpatch_ismethod(object):
+        if hasattr(object, "__name__") and type(object).__name__ == "nb_method":
+            return True
+        return inspect.ismethod(object)
+
+    sphinx_inspect_isclassmethod = sphinx_inspect.isclassmethod
+
+    def mpatch_isclassmethod(object, cls=None, name=None):
+        if hasattr(object, "__name__") and type(object).__name__ == "nb_method":
+            return False
+        return sphinx_inspect_isclassmethod(object, cls, name)
+
+    sphinx_inspect.ismethod = mpatch_ismethod
+    sphinx_inspect.isclassmethod = mpatch_isclassmethod
+
+
 def get_latest_git_tag(repo_path="."):
     repo = git.Repo(repo_path)
     tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)
@@ -50,9 +75,6 @@ autosummary_ignore_module_all = False
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
-    "torch": ("https://pytorch.org/docs/stable/", None),
-    "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
-    "pybind11": ("https://pybind11.readthedocs.io/en/stable/", None),
 }
 intersphinx_disabled_domains = ["std"]
 
@@ -68,18 +90,14 @@ epub_show_urls = "footnote"
 autoclass_content = "both"
 autodoc_typehints = "none"
 autodoc_inherit_docstrings = False
-sphinx_autodoc_typehints = True
 html_show_sourcelink = True
 autodoc_default_options = {
     "members": True,
     "member-order": "bysource",
-    "exclude-members": "__weakref__",
+    "exclude-members": "__weakref__,precision",
     "undoc-members": False,
     "show-inheritance": True,
     "inherited-members": False,
 }
-# Exclude all torchmdnet.datasets.*.rst files in source/generated/
+
 html_static_path = ["../_static"]
-html_css_files = [
-    "style.css",
-]
