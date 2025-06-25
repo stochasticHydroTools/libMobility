@@ -1,77 +1,73 @@
-name: Clang and Black Format Lint Check
+name: Code Formatting Check
 
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+on: [push, pull_request]
 
 jobs:
-  format-check:
+  lint-format:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # --------------------
+      # C++ Formatting Check
+      # --------------------
+      - name: Run C++ format and lint check
+        id: cpp_lint
+        uses: cpp-linter/cpp-linter-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          style: 'file'
+          tidy-checks: ''
+          thread-comments: ${{ github.event_name == 'pull_request' && 'update' }}
+
+      - name: Record C++ status
+        run: echo "cpp_failed=${{ steps.cpp_lint.outputs.checks-failed }}" >> $GITHUB_ENV
+
+      # ----------------------
+      # Python Formatting Check
+      # ----------------------
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update && sudo apt-get install -y clang-format-19
-          pip install black
+      - name: Install Black
+        run: pip install black
 
-      - name: Check C++ formatting with clang-format
-        id: clang_check
+      - name: Run Black and capture output
+        id: py_black
+        continue-on-error: true
         run: |
-          FILE_LIST="unformatted_cpp.txt"
-          find include solvers  -regex '.*\.\(cpp\|hpp\|h\|c\|cc\|cu\|cuh\)' \
-            -exec bash -c 'clang-format-19 -style=file -output-replacements-xml "$0" | grep -q "<replacement " && echo "$0"' {} \; > "$FILE_LIST"
-          cat "$FILE_LIST"
-          if [ -s "$FILE_LIST" ]; then
-            {
-              echo 'cpp_files<<EOF'
-              cat "$FILE_LIST"
-              echo 'EOF'
-            } >> "$GITHUB_OUTPUT"
-          else
-            echo 'cpp_files=' >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Check Python formatting with Black
-        id: black_check
-        run: |
-          OUTPUT=$(black --check --diff . || true)
+          echo "Running black --check --diff..."
+          OUTPUT=$(black --check --diff src tests 2>&1 || true)
           echo "$OUTPUT"
+          echo "$OUTPUT" > black_diff.txt
+
           if echo "$OUTPUT" | grep -q "would reformat"; then
-            {
-              echo 'py_output<<EOF'
-              echo "$OUTPUT"
-              echo 'EOF'
-            } >> "$GITHUB_OUTPUT"
+            echo "py_failed=true" >> $GITHUB_ENV
           else
-            echo 'py_output=' >> "$GITHUB_OUTPUT"
+            echo "py_failed=false" >> $GITHUB_ENV
           fi
 
-      - name: Comment on PR if any formatting issues found
-        if: steps.clang_check.outputs.cpp_files != '' || steps.black_check.outputs.py_output != ''
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ⚠️ **Formatting check failed**
-
-            ${{ steps.clang_check.outputs.cpp_files != '' && format('### C++ files not properly formatted:\n```\n{0}\n```', steps.clang_check.outputs.cpp_files) || '' }}
-
-            ${{ steps.black_check.outputs.py_output != '' && format('### Python files not properly formatted:\n```\n{0}\n```', steps.black_check.outputs.py_output) || '' }}
-
-            Please format these files using:
-            - `clang-format -i` for C++ files
-            - `black python/` for Python files
-
-      - name: Fail job if any formatting issues found
-        if: steps.clang_check.outputs.cpp_files != '' || steps.black_check.outputs.py_output != ''
+      - name: Print unformatted Python files
+        if: env.py_failed == 'true'
         run: |
-          echo "Formatting issues detected. Failing the job."
-          exit 1
+          echo "❌ Python formatting issues detected:"
+          grep '^would reformat' black_diff.txt | cut -d' ' -f3 | sort -u
+
+      # ----------------------
+      # Final Step: Global Fail
+      # ----------------------
+      - name: Fail if either check failed
+        run: |
+          echo "C++ checks failed: $cpp_failed"
+          echo "Python checks failed: $py_failed"
+          if [[ "$cpp_failed" != "0" || "$py_failed" == "true" ]]; then
+            echo "❌ One or more format checks failed."
+            exit 1
+          else
+            echo "✅ All format checks passed."
+          fi
