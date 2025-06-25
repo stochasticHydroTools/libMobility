@@ -1,0 +1,78 @@
+name: Clang and Black Format Lint Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  format-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y clang-format-19
+          pip install black
+
+      - name: Check C++ formatting with clang-format
+        id: clang_check
+        run: |
+          FILE_LIST="unformatted_cpp.txt"
+          find src ! -path 'src/third_party/*' \
+            -regex '.*\.\(cpp\|hpp\|h\|c\|cc\|cu\|cuh\)' \
+            -exec bash -c 'clang-format-19 -style=file -output-replacements-xml "$0" | grep -q "<replacement " && echo "$0"' {} \; > "$FILE_LIST"
+          cat "$FILE_LIST"
+          if [ -s "$FILE_LIST" ]; then
+            {
+              echo 'cpp_files<<EOF'
+              cat "$FILE_LIST"
+              echo 'EOF'
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo 'cpp_files=' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check Python formatting with Black
+        id: black_check
+        run: |
+          OUTPUT=$(black --check --diff python || true)
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -q "would reformat"; then
+            {
+              echo 'py_output<<EOF'
+              echo "$OUTPUT"
+              echo 'EOF'
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo 'py_output=' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Comment on PR if any formatting issues found
+        if: steps.clang_check.outputs.cpp_files != '' || steps.black_check.outputs.py_output != ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ⚠️ **Formatting check failed**
+
+            ${{ steps.clang_check.outputs.cpp_files != '' && format('### C++ files not properly formatted:\n```\n{0}\n```', steps.clang_check.outputs.cpp_files) || '' }}
+
+            ${{ steps.black_check.outputs.py_output != '' && format('### Python files not properly formatted:\n```\n{0}\n```', steps.black_check.outputs.py_output) || '' }}
+
+            Please format these files using:
+            - `clang-format -i` for C++ files
+            - `black python/` for Python files
+
+      - name: Fail job if any formatting issues found
+        if: steps.clang_check.outputs.cpp_files != '' || steps.black_check.outputs.py_output != ''
+        run: |
+          echo "Formatting issues detected. Failing the job."
+          exit 1
