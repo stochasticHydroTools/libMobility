@@ -121,7 +121,7 @@ public:
                                           linear.data(), 0.5, prefactor);
   }
 
-  virtual void LangevinVelocities(real dt, real kbt, 
+  virtual void LangevinVelocities(real dt, real kbt,
                                   device_span<const real> forces,
                                   device_span<const real> torques,
                                   device_span<real> linear,
@@ -137,11 +137,13 @@ public:
     // it's somewhat more transparent to include the factor 2 in the prefactor
     // explicitly.
     real temperature = 0.5;
-    if (sqrtM_prefactor == 0){
-      temperature = 0; // this will prevent the noise computation inside PSE if kbt is 0
+    if (sqrtM_prefactor == 0) {
+      temperature =
+          0; // this will prevent the noise computation inside PSE if kbt is 0
     }
     pse->computeHydrodynamicDisplacements(positions.data().get(), forces.data(),
-                                          linear.data(), temperature, sqrtM_prefactor);
+                                          linear.data(), temperature,
+                                          sqrtM_prefactor);
   }
 
 private:

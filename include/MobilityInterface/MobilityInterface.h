@@ -170,19 +170,18 @@ public:
                      thrust::plus<real>());
   }
 
-
   // computes velocities according to the Langevin equation.
   virtual void LangevinVelocities(real dt, real kbt,
                                   device_span<const real> forces,
                                   device_span<const real> torques,
                                   device_span<real> linear,
-                                  device_span<real> angular){
+                                  device_span<real> angular) {
     if (!forces.empty() or !torques.empty()) {
       Mdot(forces, torques, linear, angular);
     }
 
     // prefactors (last argument) are chosen for dimensional consistency
-    if (kbt != 0){
+    if (kbt != 0) {
       const real sqrt_prefactor = std::sqrt(2 * kbt / dt);
       sqrtMdotW(linear, angular, sqrt_prefactor);
       divM(linear, angular, kbt);
