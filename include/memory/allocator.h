@@ -11,7 +11,8 @@
 
    using namespace libmobility::allocator;
    using float_vector = std::vector<float, host_cached_allocator<float>>;
-   using float_device_vector = thrust::device_vector<float, thrust_cached_allocator<float>>;
+   using float_device_vector = thrust::device_vector<float,
+   thrust_cached_allocator<float>>;
 
    float_vector v(1000); // Allocates 1000 floats in host memory
    float_device_vector dv(1000); // Allocates 1000 floats in device memory

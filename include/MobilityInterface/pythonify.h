@@ -104,39 +104,42 @@ auto check_and_get_shape(pyarray_c &arr) {
 
 template <class Solver>
 auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
-    size_t N = myself.getNumberParticles();
-    if (forces.size() > 0 && forces.size() != 3 * N) {
-        throw std::runtime_error("The forces array must have size 3*N.");
+  size_t N = myself.getNumberParticles();
+  if (forces.size() > 0 && forces.size() != 3 * N) {
+    throw std::runtime_error("The forces array must have size 3*N.");
+  }
+  if (torques.size() > 0 && torques.size() != 3 * N) {
+    throw std::runtime_error("The torques array must have size 3*N.");
+  }
+
+  auto f = cast_to_const_real(forces);
+  auto t = cast_to_const_real(torques);
+  auto framework = lp::get_framework(forces);
+  last_framework = framework;
+  int device = f.empty() ? torques.device_type() : forces.device_type();
+  if (device == nb::device::none::value)
+    device = nb::device::cpu::value;
+  last_device = device;
+
+  auto mf = nb::ndarray<real, nb::c_contig>();
+  auto mt = nb::ndarray<real, nb::c_contig>();
+
+  auto f_shape =
+      f.empty() ? check_and_get_shape(torques) : check_and_get_shape(forces);
+  mf = lp::create_with_framework<real>(f_shape, device, framework);
+
+  if (!myself.getIncludeAngular()) {
+    if (!t.empty()) {
+      throw std::runtime_error(
+          "The solver was configured without including angular velocities. "
+          "Set includeAngular to true when initializing if you want to use "
+          "torques");
     }
-    if (torques.size() > 0 && torques.size() != 3 * N) {
-        throw std::runtime_error("The torques array must have size 3*N.");
-    }
-
-    auto f = cast_to_const_real(forces);
-    auto t = cast_to_const_real(torques);
-    auto framework = lp::get_framework(forces);
-    last_framework = framework;
-    int device = f.empty() ? torques.device_type() : forces.device_type();
-    if (device == nb::device::none::value)
-        device = nb::device::cpu::value;
-    last_device = device;
-
-    auto mf = nb::ndarray<real, nb::c_contig>();
-    auto mt = nb::ndarray<real, nb::c_contig>();
-
-    auto f_shape = f.empty() ? check_and_get_shape(torques) : check_and_get_shape(forces);
-    mf = lp::create_with_framework<real>(f_shape, device, framework);
-
-    if (!myself.getIncludeAngular()) {
-      if(!t.empty()){
-        throw std::runtime_error("The solver was configured without including angular velocities. "
-          "Set includeAngular to true when initializing if you want to use torques");
-      }
-    } else{
-      // only set mt if includeAngular is true
-      auto t_shape = t.empty() ? f_shape : check_and_get_shape(torques);
-      mt = lp::create_with_framework<real>(t_shape, device, framework);
-    }
+  } else {
+    // only set mt if includeAngular is true
+    auto t_shape = t.empty() ? f_shape : check_and_get_shape(torques);
+    mt = lp::create_with_framework<real>(t_shape, device, framework);
+  }
 
   return std::make_tuple(f, t, mf, mt);
 }
@@ -218,12 +221,12 @@ array_like
 
 template <class Solver>
 auto call_mdot(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
-    auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
-    int N = myself.getNumberParticles();
-    auto mf_ptr = cast_to_real(mf);
-    auto mt_ptr = cast_to_real(mt);
-    myself.Mdot(f, t, mf_ptr, mt_ptr);
-    return std::make_pair(mf, mt);
+  auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
+  int N = myself.getNumberParticles();
+  auto mf_ptr = cast_to_real(mf);
+  auto mt_ptr = cast_to_real(mt);
+  myself.Mdot(f, t, mf_ptr, mt_ptr);
+  return std::make_pair(mf, mt);
 }
 
 const char *mdot_docstring = R"pbdoc(
@@ -250,8 +253,8 @@ array_like
 )pbdoc";
 
 template <class Solver>
-void call_initialize(Solver &myself, real T, real eta, real a, bool includeAngular,
-                     real tol) {
+void call_initialize(Solver &myself, real T, real eta, real a,
+                     bool includeAngular, real tol) {
   libmobility::Parameters par;
   par.temperature = T;
   par.viscosity = eta;
@@ -267,9 +270,8 @@ template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
   last_device = pos.device_type();
   myself.setPositions(cast_to_const_real(pos));
   last_shape.resize(pos.ndim());
-  for (size_t i = 0; i < pos.ndim(); ++i)
-  {
-      last_shape[i] = pos.shape(i);
+  for (size_t i = 0; i < pos.ndim(); ++i) {
+    last_shape[i] = pos.shape(i);
   }
 }
 

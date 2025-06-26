@@ -40,9 +40,13 @@ class CMakeBuild(build_ext):
             sys.prefix
         )  # Use sys.prefix to install in the environment's prefix
 
-        double_precision = os.environ.get("DOUBLEPRECISION", "0")  # Default to "0" if not set
+        double_precision = os.environ.get(
+            "DOUBLEPRECISION", "0"
+        )  # Default to "0" if not set
         if double_precision not in {"0", "1"}:
-            raise ValueError("Environment variable DOUBLEPRECISION must be '0' or '1'. It is 0 by default- set to 1 to compile in double precision.")
+            raise ValueError(
+                "Environment variable DOUBLEPRECISION must be '0' or '1'. It is 0 by default- set to 1 to compile in double precision."
+            )
 
         cmake_args = [
             "-DCMAKE_INSTALL_PREFIX=" + install_dir,  # Point to the install directory
