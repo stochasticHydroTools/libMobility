@@ -16,27 +16,25 @@ and angular forces (torques). For example, dotProduct_UF computes U = MF.
 
 namespace nbody_rpy {
 
-    // constants for each block of the mobility tensor and the hydrodynamic radius
-    struct Constants
-    {
-        const real t0; // trans-trans
-        const real r0; // rot-rot
-        const real rt0; //rot-trans and trans-rot
-        const real rh; // hydro radius
-    };
+// constants for each block of the mobility tensor and the hydrodynamic radius
+struct Constants {
+  const real t0;  // trans-trans
+  const real r0;  // rot-rot
+  const real rt0; // rot-trans and trans-rot
+  const real rh;  // hydro radius
+};
 
-    struct blocksToCompute{
-      bool useUF = false;
-      bool useWT = false;
-      bool useUT = false;
-      bool useWF = false;
-    };
+struct blocksToCompute {
+  bool useUF = false;
+  bool useWT = false;
+  bool useUT = false;
+  bool useWF = false;
+};
 
-    struct mdot_result
-    {
-        real3 MF = real3(0, 0, 0);
-        real3 MT = real3(0, 0, 0);
-    };
+struct mdot_result {
+  real3 MF = real3(0, 0, 0);
+  real3 MT = real3(0, 0, 0);
+};
 
 // RPY = (1/(6*pi*viscosity*rh))*(f*I + g* r\diadic r/r^2). rh is hydrodynamic
 // radius. This function returns {f, g/r^2}
@@ -123,58 +121,55 @@ __device__ real3 RPY_WF(real3 rij, real r, real rh) {
 class OpenBoundary {
 
 public:
-    static __device__ mdot_result dotProduct(real3 pi, real3 pj, real3 fj, real3 tj, Constants &c, blocksToCompute &blocks)
-    {
-        mdot_result result;
-        real3 rij = make_real3(pi) - make_real3(pj);
-        const real r = sqrt(dot(rij, rij));
+  static __device__ mdot_result dotProduct(real3 pi, real3 pj, real3 fj,
+                                           real3 tj, Constants &c,
+                                           blocksToCompute &blocks) {
+    mdot_result result;
+    real3 rij = make_real3(pi) - make_real3(pj);
+    const real r = sqrt(dot(rij, rij));
 
-        if  (blocks.useUF)
-            result.MF += c.t0 * dotProduct_UF(rij, r, fj, c.rh);
-        if  (blocks.useUT)
-            result.MF += c.rt0 * dotProduct_UT(rij, r, tj, c.rh);
-        if  (blocks.useWT)
-            result.MT += c.r0 * dotProduct_WT(rij, r, tj, c.rh);
-        if  (blocks.useWF)
-            result.MT += c.rt0 * dotProduct_WF(rij, r, fj, c.rh);
-        return result;
-    }
+    if (blocks.useUF)
+      result.MF += c.t0 * dotProduct_UF(rij, r, fj, c.rh);
+    if (blocks.useUT)
+      result.MF += c.rt0 * dotProduct_UT(rij, r, tj, c.rh);
+    if (blocks.useWT)
+      result.MT += c.r0 * dotProduct_WT(rij, r, tj, c.rh);
+    if (blocks.useWF)
+      result.MT += c.rt0 * dotProduct_WF(rij, r, fj, c.rh);
+    return result;
+  }
 
   // Computes M(ri, rj)*vj
-  static __device__ real3 dotProduct_UF(real3 rij, real r, real3 fj, real rh)
-  {
-      const real2 c12 = RPY_UF(r, rh);
-      const real f = c12.x;
-      const real gdivr2 = c12.y;
-      const real gv = gdivr2 * dot(rij, fj);
-      const real3 Mv_t = f * fj + (r > real(0) ? gv * rij : real3());
-      return Mv_t;
+  static __device__ real3 dotProduct_UF(real3 rij, real r, real3 fj, real rh) {
+    const real2 c12 = RPY_UF(r, rh);
+    const real f = c12.x;
+    const real gdivr2 = c12.y;
+    const real gv = gdivr2 * dot(rij, fj);
+    const real3 Mv_t = f * fj + (r > real(0) ? gv * rij : real3());
+    return Mv_t;
   }
 
-  static __device__ real3 dotProduct_WT(real3 rij, real r, real3 tj, real rh)
-  {
-      const real2 c12 = RPY_WT(r, rh);
-      const real f = c12.x;
-      const real gdivr2 = c12.y;
-      const real gv = gdivr2 * dot(rij, tj);
-      const real3 Mv_t = f * tj + (r > real(0) ? gv * rij : real3());
-      return Mv_t;
+  static __device__ real3 dotProduct_WT(real3 rij, real r, real3 tj, real rh) {
+    const real2 c12 = RPY_WT(r, rh);
+    const real f = c12.x;
+    const real gdivr2 = c12.y;
+    const real gv = gdivr2 * dot(rij, tj);
+    const real3 Mv_t = f * tj + (r > real(0) ? gv * rij : real3());
+    return Mv_t;
   }
 
-  static __device__ real3 dotProduct_UT(real3 rij, real r, real3 tj, real rh)
-  {
-      const real3 m = RPY_UT(rij, r, rh); // (M_xy, M_xz, M_yz)
-      const real3 Mv_t = {m.x * tj.y + m.y * tj.z, -m.x * tj.x + m.z * tj.z,
-                          -m.y * tj.x - m.z * tj.y};
-      return Mv_t;
+  static __device__ real3 dotProduct_UT(real3 rij, real r, real3 tj, real rh) {
+    const real3 m = RPY_UT(rij, r, rh); // (M_xy, M_xz, M_yz)
+    const real3 Mv_t = {m.x * tj.y + m.y * tj.z, -m.x * tj.x + m.z * tj.z,
+                        -m.y * tj.x - m.z * tj.y};
+    return Mv_t;
   }
 
-  static __device__ real3 dotProduct_WF(real3 rij, real r, real3 fj, real rh)
-  {
-      const real3 m = RPY_WF(rij, r, rh); // (M_xy, M_xz, M_yz)
-      const real3 Mv_t = {m.x * fj.y + m.y * fj.z, -m.x * fj.x + m.z * fj.z,
-                          -m.y * fj.x - m.z * fj.y};
-      return Mv_t;
+  static __device__ real3 dotProduct_WF(real3 rij, real r, real3 fj, real rh) {
+    const real3 m = RPY_WF(rij, r, rh); // (M_xy, M_xz, M_yz)
+    const real3 Mv_t = {m.x * fj.y + m.y * fj.z, -m.x * fj.x + m.z * fj.z,
+                        -m.y * fj.x - m.z * fj.y};
+    return Mv_t;
   }
 };
 
@@ -189,7 +184,8 @@ class BottomWall {
   // located at z=0 rij: distance between particles rij.z: This component
   // contains ((pi.z-pj.z) + 2*pj.z)/rh self: self interaction hj: height of the
   // particle j vj: quantity (i.e force) of particle j
-  static __device__ real3 wallCorrection_UF(real3 rij, bool self, real hj, real3 vj) {
+  static __device__ real3 wallCorrection_UF(real3 rij, bool self, real hj,
+                                            real3 vj) {
     real3 correction = real3(0, 0, 0);
     if (self) { // B1*vj in [1]
       real invZi = real(1.0) / hj;
@@ -254,7 +250,8 @@ class BottomWall {
 
   // NOTE: normalized by 8 pi eta a**3. [1] normalizes by 6 pi et a**3
   // so, all coeffs are multiplied by 4/3 if compared to [1]
-  static __device__ real3 wallCorrection_WT(real3 rij, bool self, real hj, real3 vj) {
+  static __device__ real3 wallCorrection_WT(real3 rij, bool self, real hj,
+                                            real3 vj) {
     real3 correction = real3(0, 0, 0);
     if (self) { // B3*vj in [1]
       real invZi = real(1.0) / hj;
@@ -287,7 +284,8 @@ class BottomWall {
   // note: [1] seemingly uses the left-hand rule for the cross product, so the
   // signs are flipped on expressions in that paper that use the Levi-Civita
   // symbol
-  static __device__ real3 wallCorrection_UT(real3 rij, bool self, real h, real3 vj) {
+  static __device__ real3 wallCorrection_UT(real3 rij, bool self, real h,
+                                            real3 vj) {
     real3 correction = real3(0, 0, 0);
     if (self) { // B2^T*vj in [1]. ^T denotes transpose.
       real invZi = real(1.0) / h;
@@ -323,7 +321,8 @@ class BottomWall {
   // note: [1] seemingly uses the left-hand rule for the cross product, so the
   // signs are flipped on expressions in that paper that use the Levi-Civita
   // symbol
-  static __device__ real3 wallCorrection_WF(real3 rij, bool self, real h, real3 vj) {
+  static __device__ real3 wallCorrection_WF(real3 rij, bool self, real h,
+                                            real3 vj) {
     real3 correction = real3(0, 0, 0);
     if (self) { // B2*fj in [1].
       real invZi = real(1.0) / h;
@@ -360,37 +359,38 @@ class BottomWall {
   }
 
 public:
+  static __device__ mdot_result dotProduct(real3 pi, real3 pj, real3 fj,
+                                           real3 tj, Constants &c,
+                                           blocksToCompute &blocks) {
+    // implements damping from Appendix 1 in [2] so the matrix is positive
+    // definite when a particle overlaps the wall
+    mdot_result result;
+    real bi = min(pi.z / c.rh, real(1.0));
+    bi = max(bi, real(0.0));
+    real bj = min(pj.z / c.rh, real(1.0));
+    bj = max(bj, real(0.0));
+    real bij = bi * bj;
 
-  static __device__ mdot_result dotProduct(real3 pi, real3 pj, real3 fj, real3 tj, Constants &c, blocksToCompute &blocks)
-  {
-      // implements damping from Appendix 1 in [2] so the matrix is positive
-      // definite when a particle overlaps the wall
-      mdot_result result;
-      real bi = min(pi.z / c.rh, real(1.0));
-      bi = max(bi, real(0.0));
-      real bj = min(pj.z / c.rh, real(1.0));
-      bj = max(bj, real(0.0));
-      real bij = bi * bj;
+    pi.z = max(pi.z, c.rh);
+    pj.z = max(pj.z, c.rh);
 
-      pi.z = max(pi.z, c.rh);
-      pj.z = max(pj.z, c.rh);
+    real3 rij = make_real3(pi) - make_real3(pj);
+    const real r = sqrt(dot(rij, rij));
 
-      real3 rij = make_real3(pi) - make_real3(pj);
-      const real r = sqrt(dot(rij, rij));
-
-      if  (blocks.useUF)
-          result.MF += bij * c.t0 * dotProduct_UF(rij, r, fj, pj.z, c.rh);
-      if  (blocks.useUT)
-          result.MF += bij * c.rt0 * dotProduct_UT(rij, r, tj, pi.z, c.rh);
-      if  (blocks.useWT)
-          result.MT += bij * c.r0 * dotProduct_WT(rij, r, tj, pj.z, c.rh);
-      if  (blocks.useWF)
-          result.MT += bij * c.rt0 * dotProduct_WF(rij, r, fj, pj.z, c.rh);
+    if (blocks.useUF)
+      result.MF += bij * c.t0 * dotProduct_UF(rij, r, fj, pj.z, c.rh);
+    if (blocks.useUT)
+      result.MF += bij * c.rt0 * dotProduct_UT(rij, r, tj, pi.z, c.rh);
+    if (blocks.useWT)
+      result.MT += bij * c.r0 * dotProduct_WT(rij, r, tj, pj.z, c.rh);
+    if (blocks.useWF)
+      result.MT += bij * c.rt0 * dotProduct_WF(rij, r, fj, pj.z, c.rh);
 
     return result;
   }
 
-  static __device__ real3 dotProduct_UF(real3 rij, real r, real3 fj, real hj, real rh) {
+  static __device__ real3 dotProduct_UF(real3 rij, real r, real3 fj, real hj,
+                                        real rh) {
     const real2 c12 = RPY_UF(r, rh);
     const real f = c12.x;
     const real gdivr2 = c12.y;
@@ -401,7 +401,8 @@ public:
     return Mv_t;
   }
 
-  static __device__ real3 dotProduct_WT(real3 rij, real r, real3 tj, real hj, real rh) {
+  static __device__ real3 dotProduct_WT(real3 rij, real r, real3 tj, real hj,
+                                        real rh) {
     const real2 c12 = RPY_WT(r, rh);
     const real f = c12.x;
     const real gdivr2 = c12.y;
@@ -418,7 +419,8 @@ public:
   // calling loop. so, we call wallCorrection_UT with R = -rij = pj - pi and h =
   // pi.z, i.e. we flip the order of the (ij) arguments so that we get M_{UT,
   // ij}
- static  __device__ real3 dotProduct_UT(real3 rij, real r, real3 tj, real hi, real rh) {
+  static __device__ real3 dotProduct_UT(real3 rij, real r, real3 tj, real hi,
+                                        real rh) {
     const real3 m = RPY_UT(rij, r, rh); // (M_xy, M_xz, M_yz)
     real3 Mv_t = {m.x * tj.y + m.y * tj.z, -m.x * tj.x + m.z * tj.z,
                   -m.y * tj.x - m.z * tj.y};
@@ -428,7 +430,8 @@ public:
     return Mv_t;
   }
 
-  static __device__ real3 dotProduct_WF(real3 rij, real r, real3 fj, real hj, real rh) {
+  static __device__ real3 dotProduct_WF(real3 rij, real r, real3 fj, real hj,
+                                        real rh) {
     const real3 m = RPY_WF(rij, r, rh); // (M_xy, M_xz, M_yz)
     real3 Mv_t = {m.x * fj.y + m.y * fj.z, -m.x * fj.x + m.z * fj.z,
                   -m.y * fj.x - m.z * fj.y};

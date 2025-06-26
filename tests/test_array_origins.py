@@ -64,7 +64,9 @@ def setup_inputs(framework, use_torques, numberParticles, precision):
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 @pytest.mark.parametrize("framework", ["numpy", "torch", "cupy", "jax", "tensorflow"])
 @pytest.mark.parametrize("use_torques", [False, True])
-@pytest.mark.parametrize("method", ["Mdot", "thermalDrift", "sqrtMdotW", "hydrodynamicVelocities"])
+@pytest.mark.parametrize(
+    "method", ["Mdot", "thermalDrift", "sqrtMdotW", "hydrodynamicVelocities"]
+)
 def test_framework(Solver, periodicity, framework, use_torques, method):
     if use_torques and Solver.__name__ in "PSE":
         pytest.skip("PSE does not support torques")

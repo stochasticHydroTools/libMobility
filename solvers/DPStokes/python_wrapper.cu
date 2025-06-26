@@ -34,20 +34,19 @@ The periodicity must be set to `periodic` in the X and Y directions. The Z perio
 [1] Aref Hashemi, Raúl P. Peláez, Sachin Natesh, Brennan Sprinkle, Ondrej Maxian, Zecheng Gan, Aleksandar Donev; Computing hydrodynamic interactions in confined doubly periodic geometries in linear time. J. Chem. Phys. 21 April 2023; 158 (15): 154101. https://doi.org/10.1063/5.0141371
 )pbdoc";
 
-MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(DPStokes,
-                                   solver.def(
-                                       "setParameters",
-                                       [](DPStokes &self, real Lx,
-                                          real Ly, real zmin, real zmax, bool allowChangingBoxSize)
-                                       {
-                                           DPStokesParameters params;
-                                           params.Lx = Lx;
-                                           params.Ly = Ly;
-                                           params.zmin = zmin;
-                                           params.zmax = zmax;
-                                           params.allowChangingBoxSize = allowChangingBoxSize;
-                                           self.setParametersDPStokes(params);
-                                       },
-                                       "Lx"_a, "Ly"_a, "zmin"_a,
-					      "zmax"_a, "allowChangingBoxSize"_a = false, setparameters_docstring);
-                                   , docstring);
+MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(
+    DPStokes, solver.def(
+                  "setParameters",
+                  [](DPStokes &self, real Lx, real Ly, real zmin, real zmax,
+                     bool allowChangingBoxSize) {
+                    DPStokesParameters params;
+                    params.Lx = Lx;
+                    params.Ly = Ly;
+                    params.zmin = zmin;
+                    params.zmax = zmax;
+                    params.allowChangingBoxSize = allowChangingBoxSize;
+                    self.setParametersDPStokes(params);
+                  },
+                  "Lx"_a, "Ly"_a, "zmin"_a, "zmax"_a,
+                  "allowChangingBoxSize"_a = false, setparameters_docstring);
+    , docstring);

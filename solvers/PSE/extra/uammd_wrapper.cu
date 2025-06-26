@@ -9,7 +9,7 @@
 #include <uammd.cuh>
 
 namespace uammd_pse {
- using namespace uammd;
+using namespace uammd;
 
 class Gaussian {
   IBM_kernels::Gaussian kern;

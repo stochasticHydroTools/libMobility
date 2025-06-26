@@ -144,8 +144,8 @@ public:
           "number of particles");
     }
     // if (this->needsTorque && linear.size() != angular.size())
-      // throw std::runtime_error("[libMobility] This solver requires angular "
-                              //  "velocities when configured with torques");
+    // throw std::runtime_error("[libMobility] This solver requires angular "
+    //  "velocities when configured with torques");
     const auto numberElements =
         numberParticles + (this->includeAngular ? numberParticles : 0);
     if (not lanczos) {
