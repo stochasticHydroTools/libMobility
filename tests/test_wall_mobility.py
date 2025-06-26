@@ -4,11 +4,14 @@ import numpy as np
 from libMobility import DPStokes, NBody
 import libMobility
 from utils import compute_M, get_wall_params
+import os
 
 # NOTE: Some of the following tests will only pass if compiled with double precision.
 # This is because the reference data was generated in double precision.
 
 precision = np.float32 if NBody.precision == "float" else np.float64
+
+ref_dir = os.path.dirname(os.path.abspath(__file__)) + "/ref/"
 
 
 @pytest.mark.parametrize(
@@ -44,8 +47,6 @@ def test_self_mobility_linear(Solver, periodicity, tol, ref_file, wallHeight):
     xymax = 76.8
     params = get_wall_params(Solver.__name__, wallHeight)
     includeAngular = False
-
-    ref_dir = "./ref/"
     ref = np.load(ref_dir + ref_file)
     refM = ref["M"]
     refHeights = ref["heights"].flatten()
@@ -126,8 +127,6 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, tol, wallHeight):
     xymax = 76.8
     params = get_wall_params(Solver.__name__, wallHeight)
     includeAngular = False
-
-    ref_dir = "./ref/"
     ref = np.load(ref_dir + ref_file)
     refM = ref["M"]
     refHeights = ref["heights"]
@@ -202,7 +201,6 @@ def test_self_mobility_angular(Solver, periodicity, ref_file, wallHeight):
     includeAngular = True
     tol = 1e-6
 
-    ref_dir = "./ref/"
     ref = np.load(ref_dir + ref_file)
     refM = ref["M"]
     refHeights = ref["heights"].flatten()
@@ -266,7 +264,6 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file, offset, wallHeight
 
     tol = 1e-6
 
-    ref_dir = "./ref/"
     ref_file += "_offset_" + offset + ".npz"
     ref = np.load(ref_dir + ref_file)
     refM = ref["M"]
