@@ -29,8 +29,7 @@ jobs:
           EXIT_CODE=$?
 
           echo "$OUTPUT" > black_output.txt
-
-          grep '^would reformat' black_output.txt | awk '{print $3}' | sort -u > black_files.txt
+          grep '^would reformat' black_output.txt | awk '{print $3}' | sed "s|$(pwd)/||" | sort -u > black_files.txt          
 
           if [[ -s black_files.txt ]]; then
             echo "py_failed=true" >> $GITHUB_ENV
