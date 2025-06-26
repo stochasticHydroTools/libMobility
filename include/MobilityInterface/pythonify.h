@@ -167,6 +167,8 @@ periodicityZ : str
 const char *initialize_docstring = R"pbdoc(
 Initialize the module with a given set of parameters.
 
+.. warning:: :py:mod:`setParameters` must be called before this function.
+
 Parameters
 ----------
 viscosity : float
@@ -349,10 +351,12 @@ template <class Solver> auto call_divM(Solver &solver, real prefactor) {
 const char *divM_docstring = R"pbdoc(
 Computes the divergence term, :math:`\boldsymbol{\partial}_\boldsymbol{x}\cdot \boldsymbol{\mathcal{M}}`.
 It is required that :py:mod:`setPositions` has been called before calling this function.
+
 Parameters
 ----------
 prefactor : float, optional
 		Prefactor to multiply the result by. Default is 1.0.
+
 Returns
 -------
 array_like

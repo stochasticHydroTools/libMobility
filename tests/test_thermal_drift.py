@@ -31,8 +31,10 @@ def divM_rfd(solver, positions):
         _tdriftp_m, _tdriftp_d = solver.Mdot(W)
         solver.setPositions(positions - delta / 2 * W)
         _tdriftm_m, _tdriftm_d = solver.Mdot(W)
-        _tdrift_m = (_tdriftp_m - _tdriftm_m)/delta
-        _tdrift_d = (_tdriftp_d - _tdriftm_d)/delta if _tdriftm_d is not None else None
+        _tdrift_m = (_tdriftp_m - _tdriftm_m) / delta
+        _tdrift_d = (
+            (_tdriftp_d - _tdriftm_d) / delta if _tdriftm_d is not None else None
+        )
         return _tdrift_m, _tdrift_d
 
     solver.setPositions(positions)
@@ -73,15 +75,13 @@ def test_divM_does_not_change_positions(Solver, periodicity):
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
 @pytest.mark.parametrize("includeAngular", [False, True])
 def test_divM_is_zero(
-        Solver, periodicity, hydrodynamicRadius, numberParticles, includeAngular
+    Solver, periodicity, hydrodynamicRadius, numberParticles, includeAngular
 ):
     if not np.all(np.array(periodicity) == "open") and not np.all(
         np.array(periodicity) == "periodic"
     ):
-        pytest.skip(
-            "Only periodic and open boundary conditions have zero divergence"
-        )
-    if(Solver.__name__ == "PSE" and includeAngular):
+        pytest.skip("Only periodic and open boundary conditions have zero divergence")
+    if Solver.__name__ == "PSE" and includeAngular:
         pytest.skip("PSE does not support torques")
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)
@@ -115,9 +115,9 @@ def test_divM_is_zero(
 @pytest.mark.parametrize("numberParticles", [1, 2, 3, 10])
 @pytest.mark.parametrize("includeAngular", [False, True])
 def test_divM_returns_different_numbers(
-        Solver, periodicity, hydrodynamicRadius, numberParticles, includeAngular
+    Solver, periodicity, hydrodynamicRadius, numberParticles, includeAngular
 ):
-    if(Solver.__name__ == "PSE" and includeAngular):
+    if Solver.__name__ == "PSE" and includeAngular:
         pytest.skip("PSE does not support torques")
 
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -133,10 +133,10 @@ def test_divM_returns_different_numbers(
         generate_positions_in_box(parameters, numberParticles).astype(precision) * 0.8
     )
     solver.setPositions(positions)
-    rfd1,_ = solver.divM()
+    rfd1, _ = solver.divM()
     if np.all(rfd1 == 0):
         pytest.skip("RFD is zero, skipping test")
-    rfd2,_ = solver.divM()
+    rfd2, _ = solver.divM()
     assert np.any(
         np.abs(rfd1 - rfd2) > 1e-5
     ), f"RFD is not different: {np.max(np.abs(rfd1 - rfd2))}"
@@ -147,9 +147,9 @@ def test_divM_returns_different_numbers(
 @pytest.mark.parametrize("numberParticles", [1, 10])
 @pytest.mark.parametrize("includeAngular", [False, True])
 def test_divM_matches_rfd(
-        Solver, periodicity, hydrodynamicRadius, numberParticles, includeAngular
+    Solver, periodicity, hydrodynamicRadius, numberParticles, includeAngular
 ):
-    if(Solver.__name__ == "PSE" and includeAngular):
+    if Solver.__name__ == "PSE" and includeAngular:
         pytest.skip("PSE does not support torques")
     precision = np.float32 if Solver.precision == "float" else np.float64
     solver = Solver(*periodicity)

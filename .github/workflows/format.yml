@@ -1,0 +1,90 @@
+name: Clang-Format Lint Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  clang-format-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format-19
+
+      - name: Find unformatted files
+        id: format_check
+        run: |
+          FILE_LIST="unformatted_files.txt"
+          find solvers include ! -path 'src/third_party/*' \
+            -regex '.*\.\(cpp\|hpp\|h\|c\|cc\|cu\|cuh\)' \
+            -exec bash -c 'clang-format-19 -style=file -output-replacements-xml "$0" | grep -q "<replacement " && echo "$0"' {} \; > "$FILE_LIST"
+
+          cat "$FILE_LIST"
+
+          if [ -s "$FILE_LIST" ]; then
+            echo "failed=true" >> $GITHUB_ENV
+            {
+              echo 'files<<EOF'
+              cat "$FILE_LIST"
+              echo 'EOF'
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "failed=false" >> $GITHUB_ENV
+            echo 'files=' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Find existing clang-format comment
+        id: find_comment
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- clang-format-check -->'
+
+      - name: Create or update PR comment - failed
+        if: env.failed == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find_comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            <!-- clang-format-check -->
+            ⚠️ **Clang-format check failed**
+
+            The following files are not correctly formatted:
+
+            ```
+            ${{ steps.format_check.outputs.files }}
+            ```
+
+            Please run:
+            ```bash
+            clang-format -i <file(s)>
+            ```
+            And commit the changes before merging.
+
+      - name: Create or update PR comment - success
+        if: env.failed == 'false'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find_comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            <!-- clang-format-check -->
+            ✅ **Linter reported no issues**
+
+            All C/C++ files are correctly formatted with **clang-format**.
+
+      - name: Fail job if formatting issues found
+        if: env.failed == 'true'
+        run: |
+          echo "❌ Formatting issues detected. Failing the job."
+          exit 1

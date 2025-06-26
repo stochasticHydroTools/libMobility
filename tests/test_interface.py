@@ -1,4 +1,5 @@
 import pytest
+
 # from libMobility import *
 import numpy as np
 from utils import (
@@ -87,6 +88,7 @@ def test_torques_returns_both(Solver, periodicity):
     mf, mt = solver.Mdot(torques=torques)
     check_results(mf, mt, torques, Solver)
 
+
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_torques)
 def test_forces_with_includeAngular_returns_both(Solver, periodicity):
 
@@ -151,6 +153,7 @@ def test_returns_mf_mt(Solver, periodicity):
         solver.setPositions(positions)
         u, w = solver.Mdot(forces, torques)
         check_results(u, w, forces, torques)
+
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
 def test_returns_sqrtM(Solver, periodicity):

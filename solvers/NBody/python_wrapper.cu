@@ -19,6 +19,16 @@ static const char *docstringSetParameters = R"pbdoc(
                 The height of the wall. Only valid if periodicityZ is single_wall.
         )pbdoc";
 
+static const char *docstring = R"pbdoc(
+This module computes hydrodynamic interactions using an :math:`O(N^2)` algorithm.
+Different hydrodynamic kernels can be chosen depending on the periodicity.
+
+This module only accepts open boundaries in the X and Y directions. The Z direction can be one of:
+
+- `open`: The Rotne-Prager-Yamakawa mobility is used.
+- `single_wall`: The Rotne-Prager-Blake mobility is used, with a single wall at the bottom of the simulation box (see setParameters).
+
+)pbdoc";
 namespace nbody_rpy {
 auto string2NBodyAlgorithm(std::string algo) {
   if (algo == "naive")
@@ -39,12 +49,11 @@ MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(
     NBody,
     solver.def(
         "setParameters",
-        [](NBody &myself, std::string algo, int NBatch, int NperBatch, std::optional<real> wallHeight)
-        {
-            myself.setParametersNBody(
-                {nbody_rpy::string2NBodyAlgorithm(algo), NBatch, NperBatch, wallHeight});
+        [](NBody &myself, std::string algo, int NBatch, int NperBatch,
+           std::optional<real> wallHeight) {
+          myself.setParametersNBody({nbody_rpy::string2NBodyAlgorithm(algo),
+                                     NBatch, NperBatch, wallHeight});
         },
-        docstringSetParameters,
-        "algorithm"_a = "advise", "Nbatch"_a = -1, "NperBatch"_a = -1, "wallHeight"_a = std::nullopt);
-    , "This module computes the RPY mobility using an N^2 algorithm in the "
-      "GPU. Different hydrodynamic kernels can be chosen.");
+        docstringSetParameters, "algorithm"_a = "advise", "Nbatch"_a = -1,
+        "NperBatch"_a = -1, "wallHeight"_a = std::nullopt);
+    , docstring);

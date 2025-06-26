@@ -1,0 +1,94 @@
+name: Python Formatting Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  python-black-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Black
+        run: pip install black
+
+      - name: Run Black and extract offending files
+        id: black_check
+        continue-on-error: true
+        run: |
+          set +e
+          OUTPUT=$(black --check . 2>&1)
+          EXIT_CODE=$?
+
+          echo "$OUTPUT" > black_output.txt
+          grep '^would reformat' black_output.txt | awk '{print $3}' | sed "s|$(pwd)/||" | sort -u > black_files.txt          
+
+          if [[ -s black_files.txt ]]; then
+            echo "py_failed=true" >> $GITHUB_ENV
+            echo "black_files<<EOF" >> $GITHUB_OUTPUT
+            cat black_files.txt >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "py_failed=false" >> $GITHUB_ENV
+            echo "black_files=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Find existing Black formatting comment
+        id: find_comment
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- black-formatting-check -->'
+
+      - name: Create or update PR comment - failed
+        if: env.py_failed == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find_comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            <!-- black-formatting-check -->
+            ⚠️ **Black formatting check failed**
+
+            The following Python files need formatting:
+
+            ```
+            ${{ steps.black_check.outputs.black_files }}
+            ```
+
+            Please run:
+            ```bash
+            black .
+            ```
+            And commit the changes before merging.
+
+      - name: Create or update PR comment - success
+        if: env.py_failed == 'false'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find_comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            <!-- black-formatting-check -->
+            ✅ **Linter reported no issues**
+
+            All Python files are correctly formatted with **Black**.
+
+      - name: Fail if Black failed
+        if: env.py_failed == 'true'
+        run: |
+          echo "❌ Python formatting issues found."
+          exit 1

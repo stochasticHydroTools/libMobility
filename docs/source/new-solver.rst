@@ -42,15 +42,11 @@ A new solver must add a directory under the "solvers" folder, which must be the 
    
    This must contain rules to create the shared library for the particular solver and its Python wrapper. The solver library should be called "lib[Solver].so", while the Python library should be called "[Solver].[Python_SOABI].so" with the correct extension suffix.
 
-4. **example.py**
+4. **README.md**
    
-   An example script using the Python bindings of the module.
+   The documentation for the specific module (anything relevant about the particular solver that does not fit the class docstring).
 
-5. **README.md**
-   
-   The documentation for the specific module (stating the geometry, required arguments, etc.).
-
-6. **tests**
+5. **tests**
 
    Add any relevant tests to the test folder using pytest.
 
