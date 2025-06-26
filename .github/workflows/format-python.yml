@@ -42,13 +42,24 @@ jobs:
             echo "black_files=" >> $GITHUB_OUTPUT
           fi
 
-      - name: Comment on PR if Black failed
+      - name: Find existing Black formatting comment
+        id: find_comment
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- black-formatting-check -->'
+
+      - name: Create or update PR comment - failed
         if: env.py_failed == 'true'
         uses: peter-evans/create-or-update-comment@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find_comment.outputs.comment-id }}
+          edit-mode: replace
           body: |
+            <!-- black-formatting-check -->
             ⚠️ **Black formatting check failed**
 
             The following Python files need formatting:
@@ -62,6 +73,20 @@ jobs:
             black .
             ```
             And commit the changes before merging.
+
+      - name: Create or update PR comment - success
+        if: env.py_failed == 'false'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find_comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            <!-- black-formatting-check -->
+            ✅ **Linter reported no issues**
+
+            All Python files are correctly formatted with **Black**.
 
       - name: Fail if Black failed
         if: env.py_failed == 'true'
