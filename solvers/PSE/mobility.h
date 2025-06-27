@@ -24,7 +24,6 @@ class PSE : public libmobility::Mobility {
   std::shared_ptr<uammd_pse::UAMMD_PSE_Glue> pse;
   uammd_pse::PyParameters psepar, currentpsepar;
   uint currentNumberParticles = 0;
-  real temperature;
 
 public:
   PSE(Configuration conf) {
@@ -40,7 +39,6 @@ public:
     if (pse and onlyShearStrainChanged(ipar)) {
       pse->setShearStrain(psepar.shearStrain);
     } else {
-      this->temperature = ipar.temperature;
       psepar.viscosity = ipar.viscosity;
       psepar.hydrodynamicRadius = ipar.hydrodynamicRadius[0];
       psepar.tolerance = ipar.tolerance;
@@ -100,6 +98,8 @@ public:
 
   void sqrtMdotW(device_span<real> linear, device_span<real> angular,
                  real prefactor = 1) override {
+    if (prefactor == 0)
+      return;
     if (this->getNumberParticles() <= 0)
       throw std::runtime_error(
           "[PSE] The number of particles is not set. Did you "
@@ -113,24 +113,37 @@ public:
     if (!pse)
       throw std::runtime_error("[libMobility] PSE is not initialized. Did you "
                                "forget to call initialize?");
-    pse->computeHydrodynamicDisplacements(
-        positions.data().get(), nullptr, linear.data(), temperature, prefactor);
+
+    // need to pass in 0.5 for temperature to cancel out the sqrt(2*T) that is
+    // built in to PSE. All methods in libMobility should return with no
+    // prefactors unless specified.
+    pse->computeHydrodynamicDisplacements(positions.data().get(), nullptr,
+                                          linear.data(), 0.5, prefactor);
   }
 
-  virtual void hydrodynamicVelocities(device_span<const real> forces,
-                                      device_span<const real> torques,
-                                      device_span<real> linear,
-                                      device_span<real> angular,
-                                      real prefactor = 1) override {
+  virtual void LangevinVelocities(real dt, real kbt,
+                                  device_span<const real> forces,
+                                  device_span<const real> torques,
+                                  device_span<real> linear,
+                                  device_span<real> angular) override {
     if (this->getNumberParticles() <= 0)
       throw std::runtime_error(
           "[PSE] The number of particles is not set. Did you "
           "forget to call setPositions?");
     if (angular.size())
       throw std::runtime_error("[PSE] Torque is not implemented");
+    const real sqrtM_prefactor = std::sqrt(2 * kbt / dt);
+    // see note in sqrtMdotW for needing to pass in 0.5 as temperature.
+    // it's somewhat more transparent to include the factor 2 in the prefactor
+    // explicitly.
+    real temperature = 0.5;
+    if (sqrtM_prefactor == 0) {
+      temperature =
+          0; // this will prevent the noise computation inside PSE if kbt is 0
+    }
     pse->computeHydrodynamicDisplacements(positions.data().get(), forces.data(),
                                           linear.data(), temperature,
-                                          prefactor);
+                                          sqrtM_prefactor);
   }
 
 private:
@@ -138,8 +151,7 @@ private:
     if (currentpsepar.psi != psepar.psi or currentpsepar.Lx != psepar.Lx or
         currentpsepar.Ly != psepar.Ly or currentpsepar.Lz != psepar.Lz)
       return false;
-    if (this->temperature != i_par.temperature or
-        psepar.viscosity != i_par.viscosity or
+    if (psepar.viscosity != i_par.viscosity or
         psepar.hydrodynamicRadius != i_par.hydrodynamicRadius[0] or
         psepar.tolerance != i_par.tolerance)
       return false;

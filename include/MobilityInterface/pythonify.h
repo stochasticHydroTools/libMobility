@@ -171,8 +171,6 @@ Initialize the module with a given set of parameters.
 
 Parameters
 ----------
-temperature : float
-		Temperature of the system in energy units (i.e. kT).
 viscosity : float
 		Viscosity of the fluid.
 hydrodynamicRadius : float
@@ -201,7 +199,7 @@ template <class Solver> auto call_sqrtMdotW(Solver &myself, real prefactor) {
 }
 
 const char *sqrtMdotW_docstring = R"pbdoc(
-Computes the stochastic contribution, :math:`\text{prefactor}\sqrt{2T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}`, where :math:`\boldsymbol{\mathcal{M}}` is the grand mobility matrix and :math:`d\boldsymbol{W}` is a Wiener process.
+Computes the stochastic contribution, :math:`{\mathcal{M}}^{1/2} \boldsymbol{W}`, where :math:`\boldsymbol{\mathcal{M}}` is the grand mobility matrix and :math:`\boldsymbol{W}` is a standard normal Gaussian process.
 
 It is required that :py:mod:`setPositions` has been called before calling this function.
 
@@ -255,10 +253,9 @@ array_like
 )pbdoc";
 
 template <class Solver>
-void call_initialize(Solver &myself, real T, real eta, real a,
-                     bool includeAngular, real tol) {
+void call_initialize(Solver &myself, real eta, real a, bool includeAngular,
+                     real tol) {
   libmobility::Parameters par;
-  par.temperature = T;
   par.viscosity = eta;
   par.hydrodynamicRadius = {a};
   par.tolerance = tol;
@@ -278,8 +275,8 @@ template <class Solver> void call_setPositions(Solver &myself, pyarray_c &pos) {
 }
 
 template <class Solver>
-auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,
-                                 pyarray_c &torques, real prefactor) {
+auto call_LangevinVelocities(Solver &myself, real dt, real kbt,
+                             pyarray_c &forces, pyarray_c &torques) {
   auto [f, t, mf, mt] = setup_arrays(myself, forces, torques);
 
   if (forces.size() == 0) // must check because this can be called without
@@ -295,30 +292,30 @@ auto call_hydrodynamicVelocities(Solver &myself, pyarray_c &forces,
 
   auto mf_ptr = cast_to_real(mf);
   auto mt_ptr = cast_to_real(mt);
-  myself.hydrodynamicVelocities(f, t, mf_ptr, mt_ptr, prefactor);
+  myself.LangevinVelocities(dt, kbt, f, t, mf_ptr, mt_ptr);
   int N = myself.getNumberParticles();
   return std::make_pair(mf, mt);
 }
 
-const char *hydrodynamicvelocities_docstring = R"pbdoc(
-Computes the hydrodynamic (deterministic and stochastic) velocities.
+const char *langevinvelocities_docstring = R"pbdoc(
+Computes the hydrodynamic (deterministic and stochastic) velocities according to the Langevin equation,
 
 .. math::
-        \boldsymbol{\mathcal{M}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{T}\end{bmatrix} + \text{prefactor}\sqrt{2T\boldsymbol{\mathcal{M}}}d\boldsymbol{W}
+        \boldsymbol{\mathcal{M}}\begin{bmatrix}\boldsymbol{F}\\\boldsymbol{T}\end{bmatrix} + \sqrt{\frac{2k_BT}{\Delta t}}\boldsymbol{\mathcal{M}}^{1/2} \boldsymbol{W} + k_BT \partial_{\boldsymbol{q}}\cdot \boldsymbol{\mathcal{M}}.
 
-If the forces are omitted only the stochastic part is computed.
-If the temperature is zero the stochastic part is omitted.
-Calling this function is equivalent to calling :py:mod:`Mdot` and :py:mod:`sqrtMdotW` in sequence, but in some solvers this can be done more efficiently.
+If forces and torques are omitted then only the stochastic part is computed.
+Calling this function is equivalent to calling :py:mod:`Mdot`, :py:mod:`sqrtMdotW` and :py:mod:`divM` in sequence and applying their respective scalar coefficients, but this can be done more efficiently in a combined fashion in some solvers. By default, this is equvialent to an Euler-Maruyama scheme that uses a random finite difference to compute the divergence term, if necessary, which may not be accurate enough for some applications.
 
 Parameters
 ----------
+dt : float
+		Time step :math:`\Delta t` for the Langevin equation.
+kbt : float
+		Boltzmann constant times temperature, :math:`k_B T`, in units of energy.
 forces : array_like, optional
 		Forces acting on the particles.
 torques : array_like, optional
 		Torques acting on the particles. The solver must have been initialized with includeAngular=True.
-prefactor : float, optional
-		Prefactor to multiply the result by. Default is 1.0.
-
 Returns
 -------
 array_like
@@ -333,7 +330,7 @@ std::unique_ptr<Solver> call_construct(std::string perx, std::string pery,
   return std::make_unique<Solver>(createConfiguration(perx, pery, perz));
 }
 
-template <class Solver> auto call_thermalDrift(Solver &solver, real prefactor) {
+template <class Solver> auto call_divM(Solver &solver, real prefactor) {
   const size_t N = solver.getNumberParticles();
   if (N <= 0) {
     throw std::runtime_error(
@@ -347,12 +344,12 @@ template <class Solver> auto call_thermalDrift(Solver &solver, real prefactor) {
     angular = lp::create_with_framework<real>(last_shape, last_device,
                                               last_framework);
   }
-  solver.thermalDrift(cast_to_real(linear), cast_to_real(angular), prefactor);
+  solver.divM(cast_to_real(linear), cast_to_real(angular), prefactor);
   return std::make_pair(linear, angular);
 }
 
-const char *thermaldrift_docstring = R"pbdoc(
-Computes the thermal drift, :math:`k_BT\boldsymbol{\partial}_\boldsymbol{x}\cdot \boldsymbol{\mathcal{M}}`.
+const char *divM_docstring = R"pbdoc(
+Computes the divergence term, :math:`\boldsymbol{\partial}_\boldsymbol{x}\cdot \boldsymbol{\mathcal{M}}`.
 It is required that :py:mod:`setPositions` has been called before calling this function.
 
 Parameters
@@ -378,8 +375,8 @@ auto define_module_content(
       .def(nb::new_(&call_construct<MODULENAME>), constructor_docstring,
            "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)
       .def("initialize", call_initialize<MODULENAME>, initialize_docstring,
-           "temperature"_a, "viscosity"_a, "hydrodynamicRadius"_a,
-           "includeAngular"_a = false, "tolerance"_a = 1e-4)
+           "viscosity"_a, "hydrodynamicRadius"_a, "includeAngular"_a = false,
+           "tolerance"_a = 1e-4)
       .def("setPositions", call_setPositions<MODULENAME>,
            "The module will compute the mobility according to this set of "
            "positions.",
@@ -388,11 +385,10 @@ auto define_module_content(
            "forces"_a = pyarray(), "torques"_a = pyarray())
       .def("sqrtMdotW", call_sqrtMdotW<MODULENAME>, sqrtMdotW_docstring,
            "prefactor"_a = 1.0)
-      .def("hydrodynamicVelocities", call_hydrodynamicVelocities<MODULENAME>,
-           hydrodynamicvelocities_docstring, "forces"_a = pyarray_c(),
-           "torques"_a = pyarray_c(), "prefactor"_a = 1)
-      .def("thermalDrift", call_thermalDrift<MODULENAME>,
-           thermaldrift_docstring, "prefactor"_a = 1)
+      .def("LangevinVelocities", call_LangevinVelocities<MODULENAME>,
+           langevinvelocities_docstring, "dt"_a, "kbt"_a,
+           "forces"_a = pyarray_c(), "torques"_a = pyarray_c())
+      .def("divM", call_divM<MODULENAME>, divM_docstring, "prefactor"_a = 1)
       .def("clean", &MODULENAME::clean,
            "Frees any memory allocated by the module.")
       .def_prop_ro_static(

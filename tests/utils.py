@@ -54,7 +54,6 @@ def initialize_solver(
     else:
         solver.setParameters(**get_sane_params(Solver.__name__, periodicity[2]))
     solver.initialize(
-        temperature=kwargs.get("temperature", 1.0),
         viscosity=1.0,
         hydrodynamicRadius=1.0,
         includeAngular=includeAngular,

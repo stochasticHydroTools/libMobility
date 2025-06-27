@@ -38,7 +38,6 @@ solver = libMobility.SelfMobility(
 # solver.setParameters(psi=1, Lx=128, Ly=128, Lz=128,shearStrain=1)
 
 solver.initialize(
-    temperature=1.0,
     viscosity=1.0,
     hydrodynamicRadius=1.0,
     includeAngular=False,

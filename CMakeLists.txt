@@ -39,14 +39,14 @@ if (NOT nanobind_FOUND)
   FetchContent_Declare(
     nanobind
     GIT_REPOSITORY https://github.com/wjakob/nanobind/
-    GIT_TAG        v2.6.0
+    GIT_TAG        v2.7.0
   )
   FetchContent_MakeAvailable(nanobind)
 endif()
 FetchContent_Declare(
   uammd
   GIT_REPOSITORY https://github.com/RaulPPelaez/uammd/
-  GIT_TAG        v2.8.0
+  GIT_TAG        v2.8.5
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(uammd)
@@ -61,7 +61,6 @@ include_directories(${lanczos_SOURCE_DIR}/include)
 
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
-
 include_directories(${CMAKE_SOURCE_DIR}/include)
 if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr -extended-lambda")

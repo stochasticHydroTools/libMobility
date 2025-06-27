@@ -20,7 +20,6 @@ def test_pse_torques_unsupported():
     solver.setParameters(**parameters)
     with pytest.raises(RuntimeError):
         solver.initialize(
-            temperature=1.0,
             viscosity=1.0,
             hydrodynamicRadius=hydrodynamicRadius,
             includeAngular=True,
@@ -53,7 +52,6 @@ def test_nbody_good_batch_parameters(NBatch, NperBatch):
     solver.setParameters("advise", NBatch, NperBatch)
     numberParticles = NBatch * NperBatch
     solver.initialize(
-        temperature=1.0,
         viscosity=1.0,
         hydrodynamicRadius=1.5,
     )
@@ -65,7 +63,6 @@ def test_nbody_default_parameters():
     solver = NBody("open", "open", "open")
     solver.setParameters("advise")
     solver.initialize(
-        temperature=1.0,
         viscosity=1.0,
         hydrodynamicRadius=1.5,
     )
@@ -85,7 +82,6 @@ def test_nbody_bad_parameters(NBatch, NperBatch, numberParticles):
     solver.setParameters("advise", NBatch, NperBatch)
     with pytest.raises(RuntimeError):
         solver.initialize(
-            temperature=1.0,
             viscosity=1.0,
             hydrodynamicRadius=1.5,
         )

@@ -25,7 +25,6 @@ enum class periodicity_mode {
 struct Parameters {
   std::vector<real> hydrodynamicRadius;
   real viscosity = 1;
-  real temperature = 0;
   real tolerance = 1e-4; // Tolerance for Lanczos fluctuations
   std::uint64_t seed = 0;
   bool includeAngular = false;
@@ -49,7 +48,6 @@ private:
   real lanczosTolerance;
   std::shared_ptr<LanczosStochasticVelocities> lanczos;
   std::vector<real> lanczosOutput;
-  real temperature;
   bool includeAngular = false;
   std::mt19937 rng;
 
@@ -98,7 +96,6 @@ public:
     this->initialized = true;
     this->lanczosSeed = this->rng();
     this->lanczosTolerance = par.tolerance;
-    this->temperature = par.temperature;
     this->includeAngular = par.includeAngular;
   }
 
@@ -120,8 +117,6 @@ public:
   // will be used automatically
   virtual void sqrtMdotW(device_span<real> ilinear, device_span<real> iangular,
                          real prefactor = 1) {
-    if (this->temperature == 0)
-      return;
     if (prefactor == 0)
       return;
     if (not this->initialized)
@@ -143,9 +138,6 @@ public:
           "[libMobility] The number of linear velocities does not match the "
           "number of particles");
     }
-    // if (this->needsTorque && linear.size() != angular.size())
-    // throw std::runtime_error("[libMobility] This solver requires angular "
-    //  "velocities when configured with torques");
     const auto numberElements =
         numberParticles + (this->includeAngular ? numberParticles : 0);
     if (not lanczos) {
@@ -178,25 +170,29 @@ public:
                      thrust::plus<real>());
   }
 
-  // Equivalent to calling Mdot, then stochasticDisplacements, and then thermal
-  // drift. Can be faster in some solvers
-  virtual void hydrodynamicVelocities(device_span<const real> forces,
-                                      device_span<const real> torques,
-                                      device_span<real> linear,
-                                      device_span<real> angular,
-                                      real prefactor = 1) {
+  // computes velocities according to the Langevin equation.
+  virtual void LangevinVelocities(real dt, real kbt,
+                                  device_span<const real> forces,
+                                  device_span<const real> torques,
+                                  device_span<real> linear,
+                                  device_span<real> angular) {
     if (!forces.empty() or !torques.empty()) {
       Mdot(forces, torques, linear, angular);
     }
-    sqrtMdotW(linear, angular, prefactor);
-    thermalDrift(linear, angular, prefactor);
+
+    // prefactors (last argument) are chosen for dimensional consistency
+    if (kbt != 0) {
+      const real sqrt_prefactor = std::sqrt(2 * kbt / dt);
+      sqrtMdotW(linear, angular, sqrt_prefactor);
+      divM(linear, angular, kbt);
+    }
   }
 
-  // Compute the thermal drift,
-  // :math:`k_BT\boldsymbol{\partial}_\boldsymbol{x}\cdot
+  // Compute the divergence of the mobility matrix,
+  // :math:`\boldsymbol{\partial}_\boldsymbol{x}\cdot
   // \boldsymbol{\mathcal{M}}`.
-  virtual void thermalDrift(device_span<real> ilinear,
-                            device_span<real> angular, real prefactor = 1) {
+  virtual void divM(device_span<real> ilinear, device_span<real> angular,
+                    real prefactor = 1) {
     // For open and periodic solvers the thermal drift is zero, so this function
     // does nothing by default.
   }

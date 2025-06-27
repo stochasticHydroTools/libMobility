@@ -17,7 +17,6 @@ def test_mobility_matrix_linear(
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver.setParameters(**parameters)
     solver.initialize(
-        temperature=0.0,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
         includeAngular=includeAngular,
@@ -47,7 +46,6 @@ def test_mobility_matrix_angular(
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver.setParameters(**parameters)
     solver.initialize(
-        temperature=0.0,
         viscosity=1.0,
         hydrodynamicRadius=hydrodynamicRadius,
         includeAngular=includeAngular,
@@ -77,7 +75,6 @@ def test_self_mobility_selfmobility(includeAngular):
     hydrodynamicRadius = 0.9123
     viscosity = 1.123
     solver.initialize(
-        temperature=0.0,
         viscosity=viscosity,
         hydrodynamicRadius=hydrodynamicRadius,
         includeAngular=includeAngular,
@@ -108,7 +105,6 @@ def test_self_mobility_linear_nbody(algorithm):
     hydrodynamicRadius = 0.9123
     viscosity = 1.123
     solver.initialize(
-        temperature=0.0,
         viscosity=viscosity,
         hydrodynamicRadius=hydrodynamicRadius,
     )
@@ -131,7 +127,6 @@ def test_self_mobility_angular_nbody(algorithm):
     hydrodynamicRadius = 0.9123
     viscosity = 1.123
     solver.initialize(
-        temperature=0.0,
         viscosity=viscosity,
         hydrodynamicRadius=hydrodynamicRadius,
         includeAngular=True,
@@ -171,7 +166,6 @@ def test_self_mobility_linear_pse_cubic_box(psi):
     hydrodynamicRadius = 2
     viscosity = 1.123
     solver.initialize(
-        temperature=0.0,
         viscosity=viscosity,
         hydrodynamicRadius=hydrodynamicRadius,
         tolerance=1e-6,
@@ -209,7 +203,6 @@ def test_pair_mobility_angular_nbody(algorithm):
         hydrodynamicRadius = a[i]
         viscosity = eta[i]
         solver.initialize(
-            temperature=0.0,
             viscosity=viscosity,
             hydrodynamicRadius=hydrodynamicRadius,
             includeAngular=True,
