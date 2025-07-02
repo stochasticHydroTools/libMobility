@@ -12,6 +12,7 @@ build:
 requirements:
 
   build:
+    - python ={{ PYTHON_VERSION }}
     - cmake >=3.22
     - cuda-version {{ CUDA_VERSION }}
     - {{ compiler('c') }}
@@ -20,11 +21,12 @@ requirements:
     - cuda-nvcc 
     - make
     - nanobind
+  host:
+    - python ={{ PYTHON_VERSION }}
     - blas-devel
     - libblas
     - liblapacke
     - nomkl
-    - python ={{ PYTHON_VERSION }}
   run:
     - python ={{ PYTHON_VERSION }}
     - cuda-version >={{ CUDA_VERSION }}
