@@ -36,6 +36,8 @@ test:
   requires:
     - pytest
     - scipy
+    # Prove that netlib-linked BLAS works with MKL
+    - libblas * *mkl  # [x86 or x86_64]
   imports:
     - libMobility
   source_files:
