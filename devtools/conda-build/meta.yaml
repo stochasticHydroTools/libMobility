@@ -19,6 +19,7 @@ requirements:
     - cuda-libraries-dev
     - cuda-nvcc 
     - make
+    - nanobind
     - blas-devel
     - libblas
     - liblapacke
