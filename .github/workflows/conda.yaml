@@ -15,8 +15,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
-        cuda-version: ["12.1", "12.3", "12.6", "12.8"]
-        mkl-version: ["2024"]
+        cuda-version: ["12.1", "12.3", "12.6", "12.8", "12.9"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,7 +48,6 @@ jobs:
         env:
           CUDA_VERSION: ${{ matrix.cuda-version }}
           PYTHON_VERSION: ${{ matrix.python-version }}
-          MKL_VERSION: ${{ matrix.mkl-version }}
         with:
           meta_yaml_dir: devtools/conda-build
           python-version: ${{ matrix.python-version }} # Values previously defined in `matrix`

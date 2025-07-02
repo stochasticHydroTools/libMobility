@@ -59,6 +59,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(lanczos)
 include_directories(${lanczos_SOURCE_DIR}/include)
 
+set(BLA_VENDOR Generic)
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 include_directories(${CMAKE_SOURCE_DIR}/include)
