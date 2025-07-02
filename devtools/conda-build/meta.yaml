@@ -14,7 +14,8 @@ requirements:
   build:
     - cmake >=3.22
     - cuda-version {{ CUDA_VERSION }}
-    - gxx
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
     - cuda-libraries-dev
     - cuda-nvcc 
     - make
