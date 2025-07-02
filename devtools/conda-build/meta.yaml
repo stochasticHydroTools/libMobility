@@ -32,7 +32,6 @@ requirements:
     - cuda-version >={{ CUDA_VERSION }}
     - numpy
     - cuda-cudart
-    # - libblas
     - libcufft
     - libcublas
 
@@ -41,7 +40,7 @@ test:
     - pytest
     - scipy
     # Prove that netlib-linked BLAS works with MKL
-    # - libblas * *mkl  # [x86 or x86_64]
+    - libblas * *mkl  # [x86 or x86_64]
   imports:
     - libMobility
   source_files:
