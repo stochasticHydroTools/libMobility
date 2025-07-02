@@ -62,7 +62,7 @@ jobs:
     - name: Compile examples
       run: |
         mkdir examples/cpp/build && cd examples/cpp/build
-        cmake -DCMAKE_VERBOSE_MAKEFILE=yes -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -Dnanobind_DIR=$(python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')/nanobind/cmake ..
+        cmake -DCMAKE_VERBOSE_MAKEFILE=yes -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
         make -j3
       shell: micromamba-shell {0}
       
