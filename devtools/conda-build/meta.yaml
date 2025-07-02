@@ -32,6 +32,7 @@ requirements:
     - cuda-version >={{ CUDA_VERSION }}
     - numpy
     - cuda-cudart
+    # - libblas
     - libcufft
     - libcublas
 
