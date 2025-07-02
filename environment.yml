@@ -18,7 +18,6 @@ dependencies:
   - scipy
   - pip
   - nanobind
-  - nanobind-abi
   - pip:
     - sphinx==8.1.3
     - sphinx-rtd-theme==3.0.2
