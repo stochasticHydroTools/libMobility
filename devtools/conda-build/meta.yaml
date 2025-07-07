@@ -30,7 +30,7 @@ requirements:
     - liblapacke
     - libcufft
     - libcublas
-    - numpy
+    - numpy *
     - nanobind
   run:
     - python ={{ PYTHON_VERSION }}
