@@ -27,13 +27,13 @@ requirements:
     - libblas
     - liblapacke
     - nomkl
+    - libcufft
+    - libcublas
   run:
     - python ={{ PYTHON_VERSION }}
     - cuda-version >={{ CUDA_VERSION }}
     - numpy
     - cuda-cudart
-    - libcufft
-    - libcublas
 
 test:
   requires:
