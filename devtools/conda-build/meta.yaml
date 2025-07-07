@@ -23,10 +23,11 @@ requirements:
     - nanobind-abi
   host:
     - python ={{ PYTHON_VERSION }}
-    - blas-devel
+    - blas-devel  * *netlib
     - libblas
+    - libcblas
+    - liblapack
     - liblapacke
-    - nomkl
     - libcufft
     - libcublas
     - numpy
