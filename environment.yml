@@ -6,19 +6,18 @@ dependencies:
   - python <3.13
   - cmake >=3.24
   - cuda-version 12.*
-  - gxx
+  - gxx >9
   - cuda-libraries-dev
   - cuda-nvcc 
   - make
-  - mkl-devel
-  - mkl-include
-  - mkl
+  - blas-devel
+  - libblas
+  - liblapacke
   - numpy
   - pytest
   - scipy
   - pip
   - nanobind
-  - nanobind-abi
   - pip:
     - sphinx==8.1.3
     - sphinx-rtd-theme==3.0.2

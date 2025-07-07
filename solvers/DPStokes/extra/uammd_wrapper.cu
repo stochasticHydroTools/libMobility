@@ -109,6 +109,9 @@ private:
                             reinterpret_cast<const uammd::real4 *>(d_force),
                             reinterpret_cast<const uammd::real4 *>(d_torques),
                             numberParticles, st);
+    } else {
+      throw std::runtime_error("DPStokesUAMMD: No DPStokes or FCM module "
+                               "initialized. This should not had happened");
     }
   }
 
