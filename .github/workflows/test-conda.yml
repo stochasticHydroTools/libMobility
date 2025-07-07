@@ -42,6 +42,7 @@ jobs:
       run: |
         export CUDA_VERSION=12
         export PYTHON_VERSION=3
+        export CMAKE_ARGS="-DCMAKE_CUDA_ARCHITECTURES=OFF"
         conda build devtools/conda-build -c conda-forge
       shell: micromamba-shell {0}
       
