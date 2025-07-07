@@ -23,6 +23,7 @@ requirements:
     - nanobind-abi
   host:
     - python ={{ PYTHON_VERSION }}
+    - cuda-version {{ CUDA_VERSION }}
     - blas-devel  * *netlib
     - libblas
     - libcblas
