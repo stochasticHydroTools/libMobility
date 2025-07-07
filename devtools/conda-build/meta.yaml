@@ -20,7 +20,7 @@ requirements:
     - cuda-libraries-dev
     - cuda-nvcc 
     - make
-    - nanobind
+    - nanobind-abi
   host:
     - python ={{ PYTHON_VERSION }}
     - blas-devel
@@ -29,6 +29,7 @@ requirements:
     - nomkl
     - libcufft
     - libcublas
+    - nanobind
   run:
     - python ={{ PYTHON_VERSION }}
     - cuda-version >={{ CUDA_VERSION }}
