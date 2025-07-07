@@ -6,8 +6,8 @@ on:
   pull_request:
     branches: [ main ]
   schedule:
-    # Run every Sunday at midnight
-    - cron:  '0 0 * * 0'
+    # Run once every month
+    - cron:  '0 0 1 * *' # At 00:00 on day-of-month 1
 
 defaults:
   run:
@@ -15,14 +15,9 @@ defaults:
 
 jobs:
   build:
-    name: ${{ matrix.name }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          # Latest supported versions
-          - name: Linux (CUDA 12)
     steps:
     - name: Check out
       uses: actions/checkout@v4
@@ -37,7 +32,7 @@ jobs:
       uses: mamba-org/setup-micromamba@v2
       with:
         environment-file: environment.yml
-        cache-environment: false
+        cache-environment: true
         cache-downloads: true
         generate-run-shell: true
 
@@ -79,14 +74,6 @@ jobs:
         pytest -sv -k SelfMobility tests/test*py
       shell: micromamba-shell {0}
       
-    - name: Build conda package
-      run: |
-        micromamba install -c conda-forge conda-build
-        export CUDA_VERSION=12
-        export PYTHON_VERSION=3
-        conda build devtools/conda-build
-      shell: micromamba-shell {0}
-
     - name: Install via pip
       run: |
         pip install -vv .

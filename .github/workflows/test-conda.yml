@@ -1,0 +1,51 @@
+name: Conda build test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run once every month
+    - cron:  '0 0 1 * *' # At 00:00 on day-of-month 1
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+    steps:
+    - name: Check out
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: recursive
+        
+    - name: Show dependency file
+      run: cat environment.yml
+      
+    - name: Install Mamba
+      uses: mamba-org/setup-micromamba@v2
+      with:
+        environment-file: environment.yml
+        cache-environment: true
+        cache-downloads: true
+        generate-run-shell: true
+
+    - name: List environment
+      run: |
+        micromamba list
+      shell: micromamba-shell {0}
+            
+    - name: Build conda package
+      run: |
+        micromamba install -c conda-forge conda-build
+        export CUDA_VERSION=12
+        export PYTHON_VERSION=3
+        conda build devtools/conda-build
+      shell: micromamba-shell {0}
+      
