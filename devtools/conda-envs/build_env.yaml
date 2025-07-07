@@ -1,3 +1,4 @@
+name: build
 channels:    # write here the list of channels to look for your library dependencies
   - conda-forge
   - nodefaults
