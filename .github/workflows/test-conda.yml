@@ -25,9 +25,6 @@ jobs:
         fetch-depth: 0
         submodules: recursive
         
-    - name: Show dependency file
-      run: cat environment.yml
-      
     - name: Install Mamba
       uses: mamba-org/setup-micromamba@v2
       with:
