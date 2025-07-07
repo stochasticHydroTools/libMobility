@@ -15,9 +15,9 @@ defaults:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: true
     steps:
     - name: Check out
       uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
     - name: Install Mamba
       uses: mamba-org/setup-micromamba@v2
       with:
-        environment-file: devtools/conda-envs/build_env.yml
+        environment-file: devtools/conda-envs/build_env.yaml
         cache-environment: true
         cache-downloads: true
         generate-run-shell: true
