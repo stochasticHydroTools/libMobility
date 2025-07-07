@@ -28,16 +28,14 @@ requirements:
     - libcblas
     - liblapack
     - liblapacke
-    - libcufft
-    - libcublas
+    - libcufft-dev
+    - libcublas-dev
     - numpy *
     - nanobind
   run:
     - python ={{ PYTHON_VERSION }}
     - cuda-version >={{ CUDA_VERSION }}
     - cuda-cudart
-    - libcufft
-    - libcublas
 
 test:
   requires:
