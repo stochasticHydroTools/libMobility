@@ -144,26 +144,6 @@ auto setup_arrays(Solver &myself, pyarray_c &forces, pyarray_c &torques) {
   return std::make_tuple(f, t, mf, mt);
 }
 
-const char *constructor_docstring = R"pbdoc(
-Initialize the module with a given set of periodicity conditions.
-
-Each periodicity condition can be one of the following:
-	- open: No periodicity in the corresponding direction.
-	- unspecified: The periodicity is not specified.
-	- single_wall: The system is bounded by a single wall in the corresponding direction.
-	- two_walls: The system is bounded by two walls in the corresponding direction.
-	- periodic: The system is periodic in the corresponding direction.
-
-Parameters
-----------
-periodicityX : str
-		Periodicity condition in the x direction.
-periodicityY : str
-		Periodicity condition in the y direction.
-periodicityZ : str
-		Periodicity condition in the z direction.
-)pbdoc";
-
 const char *initialize_docstring = R"pbdoc(
 Initialize the module with a given set of parameters.
 
@@ -372,7 +352,7 @@ auto define_module_content(
   auto solver = py::class_<MODULENAME>(m, name, documentation);
 
   solver
-      .def(nb::new_(&call_construct<MODULENAME>), constructor_docstring,
+      .def(nb::new_(&call_construct<MODULENAME>),
            "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)
       .def("initialize", call_initialize<MODULENAME>, initialize_docstring,
            "viscosity"_a, "hydrodynamicRadius"_a, "includeAngular"_a = false,
