@@ -53,6 +53,7 @@ class CMakeBuild(build_ext):
             "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_BUILD_TYPE=" + ("Debug" if self.debug else "Release"),
             f"-DDOUBLEPRECISION={double_precision}",
+            f"-DCMAKE_CUDA_ARCHITECTURES={os.environ.get('CMAKE_CUDA_ARCHITECTURES', '')}",
         ]
 
         num_jobs = os.cpu_count()
