@@ -55,6 +55,10 @@ class CMakeBuild(build_ext):
             f"-DDOUBLEPRECISION={double_precision}",
         ]
 
+        cuda_arch = os.environ.get("CMAKE_CUDA_ARCHITECTURES", "")
+        if cuda_arch:
+            cmake_args.append(f"-DCMAKE_CUDA_ARCHITECTURES={cuda_arch}")
+
         num_jobs = os.cpu_count()
         build_args = ["--config", "Release", f"-j{num_jobs}"]
 
