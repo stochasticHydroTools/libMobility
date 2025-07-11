@@ -352,8 +352,8 @@ auto define_module_content(
   auto solver = py::class_<MODULENAME>(m, name, documentation);
 
   solver
-      .def(nb::new_(&call_construct<MODULENAME>),
-           "periodicityX"_a, "periodicityY"_a, "periodicityZ"_a)
+      .def(nb::new_(&call_construct<MODULENAME>), "periodicityX"_a,
+           "periodicityY"_a, "periodicityZ"_a)
       .def("initialize", call_initialize<MODULENAME>, initialize_docstring,
            "viscosity"_a, "hydrodynamicRadius"_a, "includeAngular"_a = false,
            "tolerance"_a = 1e-4)
