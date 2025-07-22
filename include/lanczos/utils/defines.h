@@ -1,14 +1,12 @@
-#ifndef LANCZOS_DEFINES_H
-#define LANCZOS_DEFINES_H
+#pragma once
 #ifndef DOUBLE_PRECISION
 #define SINGLE_PRECISION
 #endif
 
-namespace lanczos{
+namespace lanczos {
 #ifndef DOUBLE_PRECISION
-  using real = float;
+using real = float;
 #else
-  using real = double;
+using real = double;
 #endif
-}
-#endif
+} // namespace lanczos
