@@ -51,6 +51,7 @@ private:
   thrust::device_vector<real> lanczosOutput;
   bool includeAngular = false;
   std::mt19937 rng;
+  std::function<void(int, real)> lanczosCallback;
 
 protected:
   Mobility() {};
@@ -97,6 +98,7 @@ public:
     this->initialized = true;
     this->lanczosSeed = this->rng();
     this->lanczosTolerance = par.tolerance;
+    this->lanczosCallback = par.lanczosCallback;
     this->includeAngular = par.includeAngular;
   }
 
@@ -161,12 +163,13 @@ public:
           device_span<real> s_mv({mv, mv + 3 * N}, dev);
           Mdot(s_f, s_t, s_mv, s_mt);
         },
-        lanczosOutput.data().get(), numberElements, prefactor);
+        lanczosOutput.data().get(), numberElements, lanczosCallback, prefactor);
     thrust::transform(thrust::cuda::par, lanczosOutput.begin(),
                       lanczosOutput.begin() + 3 * numberParticles,
                       linear.begin(), linear.begin(), thrust::plus<real>());
     if (this->includeAngular)
-      thrust::transform(thrust::cuda::par, lanczosOutput.begin() + 3 * numberParticles,
+      thrust::transform(thrust::cuda::par,
+                        lanczosOutput.begin() + 3 * numberParticles,
                         lanczosOutput.end(), angular.begin(), angular.begin(),
                         thrust::plus<real>());
   }

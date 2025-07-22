@@ -47,19 +47,17 @@ class KrylovSubspace {
 
   void diagonalizeSubSpace() {
     int size = getSubSpaceSize();
-    /**************LAPACKE********************/
     /*The tridiagonal matrix is stored only with its diagonal and subdiagonal*/
     /*Store both in a temporal array*/
     for (int i = 0; i < size; i++) {
       htemp[i] = hdiag[i];
       htemp[i + size] = hsup[i];
     }
-    /*P = eigenvectors must be filled with zeros, I do not know why*/
-    real *h_P = P.data();
-    memset(h_P, 0, size * size * sizeof(real));
+    std::fill_n(P.begin(), size * size,
+                0); // P must be zero filled for steqr to work correctly
     /*Compute eigenvalues and eigenvectors of a triangular symmetric matrix*/
     auto info = LAPACKE_steqr(LAPACK_COL_MAJOR, 'I', size, &htemp[0],
-                              &htemp[0] + size, h_P, size);
+                              &htemp[0] + size, P.data(), size);
     if (info != 0) {
       throw std::runtime_error("[Lanczos] Could not diagonalize tridiagonal "
                                "krylov matrix, steqr failed with code " +
@@ -173,7 +171,7 @@ public:
 Solver::Solver() : check_convergence_steps(3) {}
 
 int Solver::run(lanczos::Dot &dot, real *Bz, const real *z, real tolerance,
-                int N) {
+                int N, lanczos::Callback callback) {
   oldBz.resize((N + 1), real());
   /*Lanczos iterations for Krylov decomposition*/
   detail::KrylovSubspace solver(N);
@@ -182,10 +180,13 @@ int Solver::run(lanczos::Dot &dot, real *Bz, const real *z, real tolerance,
       std::min(check_convergence_steps, iterationHardLimit - 2);
   for (int i = 0; i < iterationHardLimit; i++) {
     solver.nextIteration(dot);
-    if (i >= checkConvergenceSteps) {
+    if (i >= checkConvergenceSteps || bool(callback)) {
       solver.computeCurrentResultEstimation(Bz);
       if (i > 0) {
-        auto currentResidual = computeError(Bz, N);
+        const real currentResidual = computeError(Bz, N);
+        if (callback) {
+          callback(i, currentResidual);
+        }
         if (currentResidual <= tolerance) {
           registerRequiredStepsForConverge(i);
           return i;
