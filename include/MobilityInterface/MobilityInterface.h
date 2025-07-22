@@ -7,10 +7,10 @@
 #include "defines.h"
 #include "lanczos.h"
 #include "memory/container.h"
+#include <functional>
 #include <random>
 #include <stdexcept>
 #include <vector>
-
 namespace libmobility {
 
 enum class periodicity_mode {
@@ -28,6 +28,7 @@ struct Parameters {
   real tolerance = 1e-4; // Tolerance for Lanczos fluctuations
   std::uint64_t seed = 0;
   bool includeAngular = false;
+  std::function<void(int, float)> lanczosCallback;
 };
 
 // A list of parameters that cannot be changed by reinitializing a solver and/or
@@ -47,7 +48,7 @@ private:
   std::uint64_t lanczosSeed;
   real lanczosTolerance;
   std::shared_ptr<LanczosStochasticVelocities> lanczos;
-  std::vector<real> lanczosOutput;
+  thrust::device_vector<real> lanczosOutput;
   bool includeAngular = false;
   std::mt19937 rng;
 
@@ -128,8 +129,8 @@ public:
       throw std::runtime_error(
           "[libMobility] The number of particles is not set. Did you "
           "forget to call setPositions?");
-    device_adapter<real> linear(ilinear, device::cpu);
-    device_adapter<real> angular(iangular, device::cpu);
+    device_adapter<real> linear(ilinear, device::cuda);
+    device_adapter<real> angular(iangular, device::cuda);
     if (linear.empty())
       throw std::runtime_error(
           "[libMobility] This solver requires linear velocities");
@@ -145,8 +146,8 @@ public:
           this->lanczosTolerance, this->lanczosSeed);
     }
     lanczosOutput.resize(3 * numberElements);
-    std::fill(lanczosOutput.begin(), lanczosOutput.end(), 0);
-    auto dev = linear.dev;
+    thrust::fill(lanczosOutput.begin(), lanczosOutput.end(), 0);
+    auto dev = device::cuda;
     lanczos->sqrtMdotW(
         [this, dev, numberParticles](const real *f, real *mv) {
           // Torques are stored at the end of the force array
@@ -160,14 +161,14 @@ public:
           device_span<real> s_mv({mv, mv + 3 * N}, dev);
           Mdot(s_f, s_t, s_mv, s_mt);
         },
-        lanczosOutput.data(), numberElements, prefactor);
-    std::transform(lanczosOutput.begin(),
-                   lanczosOutput.begin() + 3 * numberParticles, linear.begin(),
-                   linear.begin(), thrust::plus<real>());
+        lanczosOutput.data().get(), numberElements, prefactor);
+    thrust::transform(thrust::cuda::par, lanczosOutput.begin(),
+                      lanczosOutput.begin() + 3 * numberParticles,
+                      linear.begin(), linear.begin(), thrust::plus<real>());
     if (this->includeAngular)
-      std::transform(lanczosOutput.begin() + 3 * numberParticles,
-                     lanczosOutput.end(), angular.begin(), angular.begin(),
-                     thrust::plus<real>());
+      thrust::transform(thrust::cuda::par, lanczosOutput.begin() + 3 * numberParticles,
+                        lanczosOutput.end(), angular.begin(), angular.begin(),
+                        thrust::plus<real>());
   }
 
   // computes velocities according to the Langevin equation.
