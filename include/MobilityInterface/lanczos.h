@@ -41,8 +41,8 @@ public:
   // dW). Where B is an operator that applies the square root of the provided
   // mobility.
   template <class MobilityDot>
-  void sqrtMdotW(MobilityDot idot, real *result, int numberParticles, std::function<void(int, float)> callback,
-                 real prefactor = 1) {
+  void sqrtMdotW(MobilityDot idot, real *result, int numberParticles,
+                 std::function<void(int, float)> callback, real prefactor = 1) {
     lanczosNoise.resize(3 * numberParticles);
     // std::generate(lanczosNoise.begin(), lanczosNoise.end(), gen);
     uint seed1 = std::uniform_int_distribution<uint>(0, UINT32_MAX)(engine);
