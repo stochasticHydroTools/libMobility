@@ -1,7 +1,8 @@
-/*Raul P. Pelaez 2016-2022. Precision agnostic cublas/cusolver function defines*/
+/*Raul P. Pelaez 2016-2022. Precision agnostic cublas/cusolver function
+ * defines*/
 #ifndef CUDA_LIB_DEFINES_H
 #define CUDA_LIB_DEFINES_H
-#include<cublas_v2.h>
+#include <cublas_v2.h>
 
 #if defined SINGLE_PRECISION
 #define cusolverDnpotrf cusolverDnSpotrf
@@ -35,6 +36,5 @@
 #define cusolverDngesvd cusolverDnDgesvd
 #define cublasgemm cublasDgemm
 #endif
-
 
 #endif

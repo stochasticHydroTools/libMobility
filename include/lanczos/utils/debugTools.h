@@ -11,36 +11,36 @@
 #define CudaSafeCall(err) __cudaSafeCall(err, __FILE__, __LINE__)
 #define CudaCheckError() __cudaCheckError(__FILE__, __LINE__)
 
-#include<string>
-#include<exception>
-#include<stdexcept>
+#include <exception>
+#include <stdexcept>
+#include <string>
 
-inline void __cudaSafeCall(cudaError err, const char *file, const int line){
-  #ifdef CUDA_ERROR_CHECK
-  if (cudaSuccess != err){
-    cudaGetLastError(); //Reset CUDA error status
-    throw std::runtime_error("CudaSafeCall() failed at "+
-			     std::string(file) + ":" + std::to_string(line)+
-			     " with error " + std::to_string(err));
+inline void __cudaSafeCall(cudaError err, const char *file, const int line) {
+#ifdef CUDA_ERROR_CHECK
+  if (cudaSuccess != err) {
+    cudaGetLastError(); // Reset CUDA error status
+    throw std::runtime_error("CudaSafeCall() failed at " + std::string(file) +
+                             ":" + std::to_string(line) + " with error " +
+                             std::to_string(err));
   }
-  #endif
+#endif
 }
 
-inline void __cudaCheckError(const char *file, const int line){
+inline void __cudaCheckError(const char *file, const int line) {
   cudaError err;
 #ifdef CUDA_ERROR_CHECK_SYNC
   err = cudaDeviceSynchronize();
-  if(cudaSuccess != err){
-    throw std::runtime_error("CudaCheckError() with sync failed at "+
-			     std::string(file) + ":" + std::to_string(line)+
-			     " with error " + std::to_string(err));
+  if (cudaSuccess != err) {
+    throw std::runtime_error("CudaCheckError() with sync failed at " +
+                             std::string(file) + ":" + std::to_string(line) +
+                             " with error " + std::to_string(err));
   }
 #endif
   err = cudaGetLastError();
-  if(cudaSuccess != err){
-    throw std::runtime_error("CudaSafeCall() failed at "+
-			     std::string(file) + ":" + std::to_string(line)+
-			     " with error " + std::to_string(err));
+  if (cudaSuccess != err) {
+    throw std::runtime_error("CudaSafeCall() failed at " + std::string(file) +
+                             ":" + std::to_string(line) + " with error " +
+                             std::to_string(err));
   }
 }
 
