@@ -145,6 +145,7 @@ public:
                                           linear.data(), temperature,
                                           sqrtM_prefactor);
   }
+  void clean() { pse->clean(); }
 
 private:
   bool onlyShearStrainChanged(Parameters i_par) {
