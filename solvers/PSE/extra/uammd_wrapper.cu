@@ -203,7 +203,8 @@ struct UAMMD_PSE {
     fcm.reset();
     pse.reset();
     pd.reset();
-    sys->finish();
+    if(sys)
+      sys->finish();
     sys.reset();
   }
 
