@@ -191,6 +191,7 @@ struct UAMMD_PSE {
   }
 
   ~UAMMD_PSE() {
+    this->clean();
     cudaDeviceSynchronize();
     cudaStreamDestroy(st);
   }
