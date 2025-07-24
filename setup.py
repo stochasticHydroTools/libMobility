@@ -60,8 +60,7 @@ class CMakeBuild(build_ext):
             cmake_args.append(f"-DCMAKE_CUDA_ARCHITECTURES={cuda_arch}")
 
         num_jobs = os.cpu_count()
-        build_args = ["--config", "Release", f"-j{num_jobs}"]
-
+        build_args = ["--config", "Release", "--parallel", str(num_jobs)]
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
 
