@@ -50,14 +50,6 @@ FetchContent_Declare(
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(uammd)
-FetchContent_Declare(
-  lanczos
-  GIT_REPOSITORY https://github.com/RaulPPelaez/LanczosAlgorithm
-  GIT_TAG        v1.0.1
-  EXCLUDE_FROM_ALL
-)
-FetchContent_MakeAvailable(lanczos)
-include_directories(${lanczos_SOURCE_DIR}/include)
 
 set(BLA_VENDOR Generic)
 find_package(BLAS REQUIRED)
