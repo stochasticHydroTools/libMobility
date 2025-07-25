@@ -50,12 +50,16 @@ A new solver must add a directory under the "solvers" folder, which must be the 
 
    Add any relevant tests to the test folder using pytest.
 
+6. **extra**
+
+   Any additional source files required for the compilation of the solver.
+   
 Additional Considerations
 -------------------------
 
 - A new line should be added to ``solvers/CMakeLists.txt`` to include the new module in the compilation process.
 - Some interface functions provide default behavior if not defined. For example, stochastic displacements will be computed using a Lanczos solver if the module does not override the corresponding function.
-- The ``hydrodynamicVelocities`` function defaults to calling ``Mdot`` followed by ``sqrtMdotW`` and finally ``thermalDrift``.
+- The ``LangevinVelocities`` function defaults to calling ``Mdot`` followed by ``sqrtMdotW`` and finally ``divM``.
 - The ``clean`` function defaults to doing nothing.
 - The ``initialize`` function of a new solver must call the ``libmobility::Mobility::initialize`` function at some point.
 
@@ -73,4 +77,15 @@ Examples
 --------
 
 - See ``solvers/SelfMobility`` for a basic example.
-- The NBody solver only provides an initialization, ``Mdot`` and ``thermalDrift`` functions, demonstrating the use of default implementations for other methods.
+- The NBody solver only provides an initialization, ``Mdot`` and ``divM`` functions, demonstrating the use of default implementations for other methods.
+
+
+Using the default fluctuation computation
+-----------------------------------------
+
+If the `sqrtMdotW` function is not implemented, libMobility will automatically provide the functionality using the Lanczos algorithm. No extra step is needed to adhere to it.
+
+Using Random Finite Diferences for thermal drift computation
+------------------------------------------------------------
+
+By default it is assumed that the divergence of the mobility is null. If the new solver has a non-zero divergence and offers no way to compute this term you can use the available functions for computing using only `Mdot` via RFD. See the NBody solver for an example

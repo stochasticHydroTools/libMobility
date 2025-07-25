@@ -191,6 +191,7 @@ struct UAMMD_PSE {
   }
 
   ~UAMMD_PSE() {
+    this->clean();
     cudaDeviceSynchronize();
     cudaStreamDestroy(st);
   }
@@ -202,7 +203,8 @@ struct UAMMD_PSE {
     fcm.reset();
     pse.reset();
     pd.reset();
-    sys->finish();
+    if (sys)
+      sys->finish();
     sys.reset();
   }
 
