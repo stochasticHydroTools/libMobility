@@ -50,10 +50,6 @@ public:
 
   void setParametersDPStokes(DPStokesParameters i_dppar) {
     this->dppar = i_dppar;
-    if (this->dppar.Lx != this->dppar.Ly)
-      throw std::runtime_error("[DPStokes] Only square periodic boxes (Lx = "
-                               "Ly) are currently supported.\n");
-
     dpstokes = std::make_shared<uammd_dpstokes::DPStokesGlue>();
   }
 
@@ -83,18 +79,20 @@ public:
     this->dppar.alpha = this->dppar.w * 0.5;
     this->dppar.tolerance = 1e-6;
 
-    int N = floor(this->dppar.Lx / h);
-    N += N % 2;
+    int Nx = floor(this->dppar.Lx / h);
+    Nx += Nx % 2;
+    int Ny = floor(this->dppar.Ly / h);
+    Ny += Ny % 2;
 
-    this->dppar.nx = N;
-    this->dppar.ny = N;
+    this->dppar.nx = Nx;
+    this->dppar.ny = Ny;
 
     // note: this part is only configured for square boxes
     if (this->dppar.allowChangingBoxSize) { // adjust box size to suit h
-      this->dppar.Lx = N * h;
-      this->dppar.Ly = N * h;
+      this->dppar.Lx = Nx * h;
+      this->dppar.Ly = Ny * h;
     } else { // adjust h so that L/h is an integer
-      h = this->dppar.Lx / N;
+      h = this->dppar.Lx / Nx;
       double arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h);
       this->dppar.beta =
           dpstokes_polys::polyEval(dpstokes_polys::cbetam_inv, arg);
