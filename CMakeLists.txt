@@ -46,7 +46,7 @@ endif()
 FetchContent_Declare(
   uammd
   GIT_REPOSITORY https://github.com/RaulPPelaez/uammd/
-  GIT_TAG        v2.9.0
+  GIT_TAG        v2.10.0
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(uammd)
