@@ -92,7 +92,7 @@ public:
       this->dppar.Lx = Nx * h;
       this->dppar.Ly = Ny * h;
     } else { // adjust h so that L/h is an integer
-      h = this->dppar.Lx / Nx;
+      h = std::min(this->dppar.Lx / Nx, this->dppar.Ly / Ny);
       double arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h);
       this->dppar.beta =
           dpstokes_polys::polyEval(dpstokes_polys::cbetam_inv, arg);
