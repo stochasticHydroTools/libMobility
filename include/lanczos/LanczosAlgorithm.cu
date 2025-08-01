@@ -79,8 +79,8 @@ class KrylovSubspace {
     real beta = 0.0;
     cblas_gemv(CblasColMajor, CblasNoTrans, size, size, alpha, h_P, size,
                &htemp[0], 1, beta, &htemp[0] + size, 1);
-    detail::device_copy(htemp.begin() + size, htemp.begin() + 2 * size,
-                        htempGPU.begin());
+    thrust::copy(htemp.begin() + size, htemp.begin() + 2 * size,
+                 htempGPU.begin());
     return detail::getRawPointer(htempGPU);
   }
 
