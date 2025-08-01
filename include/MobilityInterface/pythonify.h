@@ -7,13 +7,17 @@ python (accompanied by the default documentation of the mobility interface.
 #ifndef MOBILITY_PYTHONIFY_H
 #include "MobilityInterface/MobilityInterface.h"
 #include "memory/python_tensor.h"
+#include <functional>
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/unique_ptr.h>
 #include <nanobind/stl/vector.h>
+#include <optional>
 #include <stdexcept>
+
 namespace nb = nanobind;
 using namespace nb::literals;
 namespace py = nb;
@@ -159,6 +163,8 @@ includeAngular : bool, optional
 		Whether the solver will produce angular velocities. Needed if torques are given. Default is false.
 tolerance : float, optional
 		Tolerance, used for approximate methods and also for Lanczos (default fluctuation computation). Default is 1e-4.
+lanczos_callback : callable, optional
+		Callback function to be called during the Lanczos process. It should take two arguments: the current iteration (int) and the current error (float). Default is None, which means no callback will be used.
 )pbdoc";
 
 template <class Solver> auto call_sqrtMdotW(Solver &myself, real prefactor) {
@@ -234,12 +240,19 @@ array_like
 
 template <class Solver>
 void call_initialize(Solver &myself, real eta, real a, bool includeAngular,
-                     real tol) {
+                     real tol, std::optional<nb::callable> i_lanczosCallback) {
   libmobility::Parameters par;
   par.viscosity = eta;
   par.hydrodynamicRadius = {a};
   par.tolerance = tol;
   par.includeAngular = includeAngular;
+  std::function<void(int, real)> lanczosCallback;
+  if (i_lanczosCallback.has_value() && bool(i_lanczosCallback.value())) {
+    lanczosCallback = [i_lanczosCallback](int i, real err) {
+      i_lanczosCallback.value()(i, err);
+    };
+  }
+  par.lanczosCallback = lanczosCallback;
   myself.initialize(par);
 }
 
@@ -356,7 +369,7 @@ auto define_module_content(
            "periodicityY"_a, "periodicityZ"_a)
       .def("initialize", call_initialize<MODULENAME>, initialize_docstring,
            "viscosity"_a, "hydrodynamicRadius"_a, "includeAngular"_a = false,
-           "tolerance"_a = 1e-4)
+           "tolerance"_a = 1e-4, "lanczos_callback"_a = nb::none())
       .def("setPositions", call_setPositions<MODULENAME>,
            "The module will compute the mobility according to this set of "
            "positions.",
