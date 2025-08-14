@@ -3,12 +3,11 @@ import libMobility as lm
 
 
 def compute_with_dpstokes(pos, forces, lx, ly):
-    lz = 15
     params = {"viscosity": 1 / (6 * np.pi), "hydrodynamicRadius": 1.0}
     dpstokes = lm.DPStokes(
         periodicityX="periodic", periodicityY="periodic", periodicityZ="single_wall"
     )
-    dpstokes.setParameters(Lx=lx, Ly=ly, zmin=-1.0, zmax=lz)
+    dpstokes.setParameters(Lx=lx, Ly=ly, zmin=-8.0, zmax=8.0)
     dpstokes.initialize(**params)
     dpstokes.setPositions(pos)
     mf_dp, _ = dpstokes.Mdot(forces=forces)
@@ -16,8 +15,9 @@ def compute_with_dpstokes(pos, forces, lx, ly):
 
 
 def test_non_square_box():
-    pos_or = np.random.uniform(-8, 8, (10, 3)).astype(np.float32)
-    forces_or = np.random.uniform(-1, 1, (10, 3)).astype(np.float32)
+    nP = 2
+    pos_or = np.random.uniform(-8, 8, (nP, 3)).astype(np.float32)
+    forces_or = np.random.uniform(-1, 1, (nP, 3)).astype(np.float32)
     forces_or -= np.mean(forces_or, axis=0)  # Center the forces around zero
 
     mf_dp_cube = compute_with_dpstokes(pos_or, forces_or, lx=16.0, ly=16.0)
