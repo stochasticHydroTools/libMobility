@@ -32,7 +32,8 @@ struct PyParameters {
   real tolerance = 1e-5;
   real w, w_d;
   real hydrodynamicRadius = -1;
-  real beta = -1;
+  real beta_x = -1;
+  real beta_y = -1;
   real beta_d = -1;
   real alpha = -1;
   real alpha_d = -1;

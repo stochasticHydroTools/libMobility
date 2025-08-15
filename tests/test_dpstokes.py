@@ -56,3 +56,45 @@ def test_isotropy():
         assert np.allclose(mf_x[0], mf_y[1], rtol=1e-3, atol=1e-2)
         assert np.allclose(mf_x[1], mf_y[0], rtol=1e-3, atol=1e-2)
         assert np.allclose(mf_x[2], mf_y[2], rtol=1e-3, atol=1e-2)
+
+
+def test_hydro_radius():
+    eta = 2.5
+    a = 1.2
+    L0 = 50.0
+    L_fact = 1.0
+    L = [L0 * L_fact, L0]
+    # L = [L0, L0 * L_fact]
+    solver = lm.DPStokes("periodic", "periodic", "open")
+    solver.setParameters(Lx=L[0], Ly=L[1], zmin=-8.0, zmax=8.0)
+    solver.initialize(hydrodynamicRadius=a, viscosity=eta)
+
+    pos = np.random.uniform(-8, 8, (3)).astype(np.float32)
+    forces = np.random.uniform(-10, 10, (3)).astype(np.float32)
+    # forces = np.array([1.0, 0.0, 0.0], dtype=np.float32)
+
+    n_reps = 1
+    pos_tiled = np.tile(pos, (n_reps, 1))
+    z_facts = np.arange(-(n_reps // 2), n_reps // 2 + 1)
+    pos_tiled[:, 2] = pos_tiled[:, 2] + 16 * z_facts
+    forces_tiled = np.tile(forces, (n_reps, 1))
+    solver.setPositions(pos_tiled)
+    mf, _ = solver.Mdot(forces=forces_tiled)
+
+    print(pos_tiled)
+
+    # solver.setPositions(pos)
+    # mf, _ = solver.Mdot(forces=forces)
+
+    mf_center = mf[n_reps // 2]
+    # mf_center = mf
+
+    Km = 2.83
+    a_x = Km / L[0] + 6 * np.pi * eta * mf_center[0] / forces[0]
+    a_y = Km / L[1] + 6 * np.pi * eta * mf_center[1] / forces[1]
+    a_z = Km / L[1] + 6 * np.pi * eta * mf_center[2] / forces[2]
+    #
+    print("1/a:", 1 / a)
+    print(a_x, a_y, a_z)
+    # print("1/6 pi eta a:", 1 / (6 * np.pi * eta * a))
+    # print("mf: ", mf_center)
