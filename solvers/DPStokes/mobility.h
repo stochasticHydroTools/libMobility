@@ -73,10 +73,17 @@ public:
       h = this->dppar.hydrodynamicRadius / 1.731;
       this->dppar.alpha_d = this->dppar.w_d * 0.5;
     } else {
-      this->dppar.w = 4;
-      this->dppar.beta_x = 1.785 * this->dppar.w;
-      this->dppar.beta_y = 1.785 * this->dppar.w;
-      h = this->dppar.hydrodynamicRadius / 1.205;
+      // w=4
+      // this->dppar.w = 4;
+      // this->dppar.beta_x = 1.785 * this->dppar.w;
+      // this->dppar.beta_y = 1.785 * this->dppar.w;
+      // h = this->dppar.hydrodynamicRadius / 1.205;
+
+      // w=6
+      this->dppar.w = 6;
+      this->dppar.beta_x = 1.714 * this->dppar.w;
+      this->dppar.beta_y = 1.714 * this->dppar.w;
+      h = this->dppar.hydrodynamicRadius / 1.554;
     }
     this->dppar.alpha = this->dppar.w * 0.5;
     this->dppar.tolerance = 1e-6;
@@ -97,7 +104,6 @@ public:
       real h_x = this->dppar.Lx / Nx;
       real h_y = this->dppar.Ly / Ny;
       std::cout << "h_x: " << h_x << ", h_y: " << h_y << std::endl;
-      h = std::min(this->dppar.Lx / Nx, this->dppar.Ly / Ny);
       double arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h_y);
       this->dppar.beta_x =
           dpstokes_polys::polyEval(dpstokes_polys::cbetam_inv, arg);
