@@ -72,9 +72,12 @@ public:
       h = this->dppar.hydrodynamicRadius / 1.731;
       this->dppar.alpha_d = this->dppar.w_d * 0.5;
     } else {
-      this->dppar.w = 4;
-      this->dppar.beta = 1.785 * this->dppar.w;
-      h = this->dppar.hydrodynamicRadius / 1.205;
+      // this->dppar.w = 4;
+      this->dppar.w = 6;
+      this->dppar.beta = 1.714 * this->dppar.w;
+      // this->dppar.beta = 1.785 * this->dppar.w;
+      // h = this->dppar.hydrodynamicRadius / 1.205;
+      h = this->dppar.hydrodynamicRadius / 1.554;
     }
     this->dppar.alpha = this->dppar.w * 0.5;
     this->dppar.tolerance = 1e-6;
@@ -92,6 +95,7 @@ public:
       this->dppar.Lx = Nx * h;
       this->dppar.Ly = Ny * h;
     } else { // adjust h so that L/h is an integer
+      // TODO this is wrong?
       h = std::min(this->dppar.Lx / Nx, this->dppar.Ly / Ny);
       double arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h);
       this->dppar.beta =
