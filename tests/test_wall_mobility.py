@@ -68,10 +68,7 @@ def test_self_mobility_linear(Solver, periodicity, ref_file, wallHeight):
         np.diag(matrix)[0:3] for matrix in refM
     ]  # only take diagonal elements from forces
 
-    for diag, ref_diag in zip(diags, ref_diags):
-        assert np.allclose(
-            diag, ref_diag, rtol=tol, atol=tol
-        ), f"Self mobility does not match reference"
+    assert np.allclose(diags, ref_diags, rtol=tol, atol=tol)
 
 
 @pytest.mark.parametrize(

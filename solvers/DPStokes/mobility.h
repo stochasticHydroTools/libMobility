@@ -89,9 +89,9 @@ public:
     this->dppar.alpha = this->dppar.w * 0.5;
     this->dppar.tolerance = 1e-6;
 
-    int Nx = ceil(this->dppar.Lx / h);
+    int Nx = floor(this->dppar.Lx / h);
     Nx += Nx % 2;
-    int Ny = ceil(this->dppar.Ly / h);
+    int Ny = floor(this->dppar.Ly / h);
     Ny += Ny % 2;
 
     this->dppar.nx = Nx;
