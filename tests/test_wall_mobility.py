@@ -8,7 +8,7 @@ import os
 # NOTE: Some of the following tests will only pass if compiled with double precision.
 # This is because the reference data was generated in double precision.
 
-precision_str = "float" if NBody.precision == "float" else "double"
+precision_str = "single" if NBody.precision == "float" else "double"
 ref_dir = os.path.dirname(os.path.abspath(__file__)) + "/ref/"
 
 
