@@ -97,13 +97,13 @@ public:
     this->dppar.nx = Nx;
     this->dppar.ny = Ny;
 
-    // note: this part is only configured for square boxes
     if (this->dppar.allowChangingBoxSize) { // adjust box size to suit h
       this->dppar.Lx = Nx * h;
       this->dppar.Ly = Ny * h;
     } else { // adjust h so that L/h is an integer
       real h_x = this->dppar.Lx / Nx;
       real h_y = this->dppar.Ly / Ny;
+      h = min(h_x, h_y);
       double arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h_x);
       real beta_x =
           dpstokes_polys::polyEval(dpstokes_polys::cbeta_monopole_inv, arg);
