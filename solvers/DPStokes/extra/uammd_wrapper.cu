@@ -55,11 +55,11 @@ auto createFCMParameters(PyParameters pypar) {
   par.cells = {pypar.nx, pypar.ny, pypar.nz};
   par.kernel =
       std::make_shared<FCM_BM>(pypar.w, pypar.alpha,
-                               pypar.beta_x, // TODO beta parameter may need to
+                               pypar.beta.x, // TODO beta parameter may need to
                                              // be adjusted for non-square?
                                pypar.Lx / pypar.nx);
   par.kernelTorque = std::make_shared<FCM_BM>(
-      pypar.w_d, pypar.alpha_d, pypar.beta_xd, pypar.Lx / pypar.nx);
+      pypar.w_d, pypar.alpha_d, pypar.beta_d.x, pypar.Lx / pypar.nx);
   return par;
 }
 
@@ -87,12 +87,8 @@ auto createDPStokesParameters(PyParameters pypar) {
   par.w = pypar.w;
   par.w_d = pypar.w_d;
   par.hydrodynamicRadius = pypar.hydrodynamicRadius;
-  par.beta_x = pypar.beta_x;
-  par.beta_y = pypar.beta_y;
-  par.beta_z = pypar.beta_z;
-  par.beta_xd = pypar.beta_xd;
-  par.beta_yd = pypar.beta_yd;
-  par.beta_zd = pypar.beta_zd;
+  par.beta = pypar.beta;
+  par.beta_d = pypar.beta_d;
   par.alpha = pypar.alpha;
   par.alpha_d = pypar.alpha_d;
   par.mode = stringToWallMode(pypar.mode);

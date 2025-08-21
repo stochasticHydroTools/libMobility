@@ -67,23 +67,23 @@ public:
     if (ipar.includeAngular) {
       this->dppar.w = 6;
       this->dppar.w_d = 6;
-      this->dppar.beta_x = 1.327 * this->dppar.w;
-      this->dppar.beta_y = 1.327 * this->dppar.w;
-      this->dppar.beta_xd = 2.217 * this->dppar.w_d;
-      this->dppar.beta_yd = 2.217 * this->dppar.w_d;
+      this->dppar.beta = {real(1.327) * this->dppar.w,
+                          real(1.327) * this->dppar.w, -1.0};
+      this->dppar.beta_d = {real(2.217) * this->dppar.w_d,
+                            real(2.217) * this->dppar.w_d, -1.0};
       h = this->dppar.hydrodynamicRadius / 1.731;
       this->dppar.alpha_d = this->dppar.w_d * 0.5;
     } else {
       // w=4
       this->dppar.w = 4;
-      this->dppar.beta_x = 1.785 * this->dppar.w;
-      this->dppar.beta_y = 1.785 * this->dppar.w;
+      this->dppar.beta = {real(1.785) * this->dppar.w,
+                          real(1.785) * this->dppar.w, -1.0};
       h = this->dppar.hydrodynamicRadius / 1.205;
 
       // w=6
       // this->dppar.w = 6;
-      // this->dppar.beta_x = 1.714 * this->dppar.w;
-      // this->dppar.beta_y = 1.714 * this->dppar.w;
+      // this->dppar.beta = {real(1.714) * this->dppar.w, real(1.714) *
+      // this->dppar.w, -1.0};
       // h = this->dppar.hydrodynamicRadius / 1.554;
     }
     this->dppar.alpha = this->dppar.w * 0.5;
@@ -118,12 +118,9 @@ public:
             "a square domain.");
       }
 
-      this->dppar.beta_x = beta_x;
-      this->dppar.beta_y = beta_y;
-      this->dppar.beta_z = min(beta_x, beta_y);
+      this->dppar.beta = {beta_x, beta_y, min(beta_x, beta_y)};
 
       if (ipar.includeAngular) {
-        // TODO I think these need to use different polynomial coeffs
         arg = this->dppar.hydrodynamicRadius / (this->dppar.w_d * h_x);
         real beta_xd =
             dpstokes_polys::polyEval(dpstokes_polys::cbeta_dipole_inv, arg);
@@ -138,9 +135,7 @@ public:
               "try "
               "a square domain.");
         }
-        this->dppar.beta_xd = beta_xd;
-        this->dppar.beta_yd = beta_yd;
-        this->dppar.beta_zd = min(beta_xd, beta_yd);
+        this->dppar.beta_d = {beta_xd, beta_yd, min(beta_xd, beta_yd)};
       }
     }
 
