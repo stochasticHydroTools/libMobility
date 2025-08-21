@@ -273,3 +273,47 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file, offset, wallHeight
             allM[i, k] = M
 
     assert np.allclose(allM, refM, atol=tol, rtol=tol)
+
+
+def test_dpstokes_matching_rpy():
+
+    a = np.random.uniform(0.5, 2.0)
+    eta = 1 / (6 * np.pi * a)
+    L_min = 100 * a  # need a fairly large domain to neglect periodic effects
+    L_fact = np.random.uniform(1.0, 3.0)
+    L = L_min * L_fact
+    max_height = 10.0 * a
+    min_height = 2.0 * a  # need a buffer for regularized kernels to match
+
+    solver = DPStokes("periodic", "periodic", "single_wall")
+    solver.setParameters(Lx=L, Ly=L, zmin=0.0, zmax=max_height)
+    solver.initialize(hydrodynamicRadius=a, viscosity=eta, includeAngular=True)
+
+    rpy = NBody("open", "open", "single_wall")
+    rpy.setParameters(wallHeight=0.0)
+    rpy.initialize(hydrodynamicRadius=a, viscosity=eta, includeAngular=True)
+
+    nP = 10
+    # generate particles in interior of domain to avoid periodic artifacts
+    pos = np.random.uniform(L / 4, 3 * L / 4, (nP, 3)).astype(np.float32)
+    pos_z = np.random.uniform(min_height, max_height, nP).astype(np.float32)
+    pos[:, 2] = pos_z
+    F = np.eye(6 * nP)
+
+    results_dpstokes = np.zeros((2 * 6 * nP, 3 * nP))
+    results_rpy = np.zeros((2 * 6 * nP, 3 * nP))
+
+    rpy.setPositions(pos)
+    solver.setPositions(pos)
+    for j in range(6 * nP):
+        f_j = F[: 3 * nP, j].copy()
+        t_j = F[3 * nP :, j].copy()
+        mf_j, mt_j = solver.Mdot(forces=f_j, torques=t_j)
+        results_dpstokes[j] += mf_j
+        results_dpstokes[j + 6 * nP] += mt_j
+
+        mf_j, mt_j = rpy.Mdot(forces=f_j, torques=t_j)
+        results_rpy[j] += mf_j
+        results_rpy[j + 6 * nP] += mt_j
+
+    assert np.allclose(results_dpstokes, results_rpy, rtol=1e-3, atol=1e-2)
