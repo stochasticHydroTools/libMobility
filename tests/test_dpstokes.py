@@ -126,7 +126,3 @@ def test_non_square_matching_rpy():
             results_rpy[i + 3] += mt_j
 
     assert np.allclose(results_dpstokes, results_rpy, rtol=1e-3, atol=1e-2)
-
-    # assert np.allclose(results_dpstokes[:, 0], results_rpy[:, 0], rtol=1e-3, atol=1e-2)
-    # assert np.allclose(results_dpstokes[:, 1], results_rpy[:, 1], rtol=1e-3, atol=1e-2)
-    # assert np.allclose(results_dpstokes[:, 2], results_rpy[:, 2], rtol=1e-3, atol=1e-2)
