@@ -106,8 +106,8 @@ def test_non_square_matching_rpy():
 
     heights = np.linspace(min_height, max_height, 20)
 
-    results_dpstokes = np.zeros((2*len(heights), 3))
-    results_rpy = np.zeros((2*len(heights), 3))
+    results_dpstokes = np.zeros((2 * len(heights), 3))
+    results_rpy = np.zeros((2 * len(heights), 3))
 
     for i, h in enumerate(heights):
         pos = np.array([0.0, 0.0, h])
@@ -119,11 +119,11 @@ def test_non_square_matching_rpy():
             t_j = F[3:6, j].copy()
             mf_j, mt_j = solver.Mdot(forces=f_j, torques=t_j)
             results_dpstokes[i] += mf_j
-            results_dpstokes[i+3] += mt_j
+            results_dpstokes[i + 3] += mt_j
 
             mf_j, mt_j = rpy.Mdot(forces=f_j, torques=t_j)
             results_rpy[i] += mf_j
-            results_rpy[i+3] += mt_j
+            results_rpy[i + 3] += mt_j
 
     assert np.allclose(results_dpstokes, results_rpy, rtol=1e-3, atol=1e-2)
 
