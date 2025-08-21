@@ -3,7 +3,7 @@ import libMobility as lm
 
 
 def compute_with_dpstokes(pos, forces, lx, ly):
-    params = {"viscosity": 1 / (6 * np.pi), "hydrodynamicRadius": 1.0}
+    params = {"viscosity": 1 / (6 * np.pi), "hydrodynamicRadius": 1.73}
     dpstokes = lm.DPStokes(
         periodicityX="periodic", periodicityY="periodic", periodicityZ="single_wall"
     )
@@ -15,27 +15,26 @@ def compute_with_dpstokes(pos, forces, lx, ly):
 
 
 def test_non_square_box():
-    nP = 2
+    nP = 10
     pos_or = np.random.uniform(-8, 8, (nP, 3)).astype(np.float32)
     forces_or = np.random.uniform(-1, 1, (nP, 3)).astype(np.float32)
     forces_or -= np.mean(forces_or, axis=0)  # Center the forces around zero
 
-    L_mult = 1.0
-    L_short = 16.0 * L_mult
-    L_fact = 2.0 * L_mult
+    L_fact = 2.0
+    L_short = 16.0
     L_long = L_short * L_fact
 
     mf_dp_cube = compute_with_dpstokes(pos_or, forces_or, lx=L_short, ly=L_short)
 
     # This must be identical than doubling the box size in x and repeating the particles
-    pos = np.vstack((pos_or, pos_or + np.array([L_short, 0.0, 0.0])))
+    pos = np.vstack((pos_or, pos_or + np.array([0.5 * L_long, 0.0, 0.0])))
     forces = np.vstack((forces_or, forces_or))
     mf_dp_lx = compute_with_dpstokes(pos, forces, lx=L_long, ly=L_short)[
         : len(pos_or), :
     ]
 
     # And the same for doubling the box size in y
-    pos = np.vstack((pos_or, pos_or + np.array([0.0, L_short, 0.0])))
+    pos = np.vstack((pos_or, pos_or + np.array([0.0, 0.5 * L_long, 0.0])))
     forces = np.vstack((forces_or, forces_or))
     mf_dp_ly = compute_with_dpstokes(pos, forces, lx=L_short, ly=L_long)[
         : len(pos_or), :
@@ -70,43 +69,44 @@ def test_isotropy():
         assert np.allclose(mf_x[2], mf_y[2], rtol=1e-3, atol=1e-2)
 
 
-def test_hydro_radius():
-    eta = 2.5
-    a = 1.2
-    L0 = 50.0
-    L_fact = 1.0
-    L = [L0 * L_fact, L0]
-    # L = [L0, L0 * L_fact]
-    solver = lm.DPStokes("periodic", "periodic", "open")
-    solver.setParameters(Lx=L[0], Ly=L[1], zmin=-8.0, zmax=8.0)
+def test_non_square_matching_rpy():
+
+    a = np.random.uniform(0.5, 2.0)
+    eta = 1 / (6 * np.pi * a)
+    L_min = 100 * a  # need a fairly large domain to neglect periodic effects
+    Lx = np.random.uniform(L_min, 4.0 * L_min)
+    Ly = np.random.uniform(L_min, 4.0 * L_min)
+    max_height = 10.0 * a
+    min_height = 1.5 * a  # need a buffer for regularized kernels to match
+
+    solver = lm.DPStokes("periodic", "periodic", "single_wall")
+    solver.setParameters(Lx=Lx, Ly=Ly, zmin=0.0, zmax=max_height)
     solver.initialize(hydrodynamicRadius=a, viscosity=eta)
 
-    pos = np.random.uniform(-8, 8, (3)).astype(np.float32)
-    forces = np.random.uniform(-10, 10, (3)).astype(np.float32)
-    # forces = np.array([1.0, 0.0, 0.0], dtype=np.float32)
+    rpy = lm.NBody("open", "open", "single_wall")
+    rpy.setParameters(wallHeight=0.0)
+    rpy.initialize(hydrodynamicRadius=a, viscosity=eta)
 
-    n_reps = 1
-    pos_tiled = np.tile(pos, (n_reps, 1))
-    z_facts = np.arange(-(n_reps // 2), n_reps // 2 + 1)
-    pos_tiled[:, 2] = pos_tiled[:, 2] + 16 * z_facts
-    forces_tiled = np.tile(forces, (n_reps, 1))
-    solver.setPositions(pos_tiled)
-    mf, _ = solver.Mdot(forces=forces_tiled)
+    F = np.eye(3)
 
-    print(pos_tiled)
+    heights = np.linspace(min_height, max_height, 20)
 
-    # solver.setPositions(pos)
-    # mf, _ = solver.Mdot(forces=forces)
+    results_dpstokes = np.zeros((len(heights), 3))
+    results_rpy = np.zeros((len(heights), 3))
 
-    mf_center = mf[n_reps // 2]
-    # mf_center = mf
+    for i, h in enumerate(heights):
+        pos = np.array([0.0, 0.0, h])
 
-    Km = 2.83
-    a_x = Km / L[0] + 6 * np.pi * eta * mf_center[0] / forces[0]
-    a_y = Km / L[1] + 6 * np.pi * eta * mf_center[1] / forces[1]
-    a_z = Km / L[1] + 6 * np.pi * eta * mf_center[2] / forces[2]
-    #
-    print("1/a:", 1 / a)
-    print(a_x, a_y, a_z)
-    # print("1/6 pi eta a:", 1 / (6 * np.pi * eta * a))
-    # print("mf: ", mf_center)
+        rpy.setPositions(pos)
+        solver.setPositions(pos)
+        for j in range(3):
+            f_j = F[:, j].copy()
+            mf_j = solver.Mdot(forces=f_j)[0]
+            results_dpstokes[i] += mf_j
+
+            mf_j = rpy.Mdot(forces=f_j)[0]
+            results_rpy[i] += mf_j
+
+    assert np.allclose(results_dpstokes[:, 0], results_rpy[:, 0], rtol=1e-3, atol=1e-2)
+    assert np.allclose(results_dpstokes[:, 1], results_rpy[:, 1], rtol=1e-3, atol=1e-2)
+    assert np.allclose(results_dpstokes[:, 2], results_rpy[:, 2], rtol=1e-3, atol=1e-2)
