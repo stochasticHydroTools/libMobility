@@ -89,6 +89,7 @@ auto createDPStokesParameters(PyParameters pypar) {
   par.hydrodynamicRadius = pypar.hydrodynamicRadius;
   par.beta_x = pypar.beta_x;
   par.beta_y = pypar.beta_y;
+  par.beta_z = pypar.beta_z;
   par.beta_d = pypar.beta_d;
   par.alpha = pypar.alpha;
   par.alpha_d = pypar.alpha_d;

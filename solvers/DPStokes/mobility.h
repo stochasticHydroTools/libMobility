@@ -74,23 +74,23 @@ public:
       this->dppar.alpha_d = this->dppar.w_d * 0.5;
     } else {
       // w=4
-      // this->dppar.w = 4;
-      // this->dppar.beta_x = 1.785 * this->dppar.w;
-      // this->dppar.beta_y = 1.785 * this->dppar.w;
-      // h = this->dppar.hydrodynamicRadius / 1.205;
+      this->dppar.w = 4;
+      this->dppar.beta_x = 1.785 * this->dppar.w;
+      this->dppar.beta_y = 1.785 * this->dppar.w;
+      h = this->dppar.hydrodynamicRadius / 1.205;
 
       // w=6
-      this->dppar.w = 6;
-      this->dppar.beta_x = 1.714 * this->dppar.w;
-      this->dppar.beta_y = 1.714 * this->dppar.w;
-      h = this->dppar.hydrodynamicRadius / 1.554;
+      // this->dppar.w = 6;
+      // this->dppar.beta_x = 1.714 * this->dppar.w;
+      // this->dppar.beta_y = 1.714 * this->dppar.w;
+      // h = this->dppar.hydrodynamicRadius / 1.554;
     }
     this->dppar.alpha = this->dppar.w * 0.5;
     this->dppar.tolerance = 1e-6;
 
-    int Nx = floor(this->dppar.Lx / h);
+    int Nx = ceil(this->dppar.Lx / h);
     Nx += Nx % 2;
-    int Ny = floor(this->dppar.Ly / h);
+    int Ny = ceil(this->dppar.Ly / h);
     Ny += Ny % 2;
 
     this->dppar.nx = Nx;
@@ -103,13 +103,21 @@ public:
     } else { // adjust h so that L/h is an integer
       real h_x = this->dppar.Lx / Nx;
       real h_y = this->dppar.Ly / Ny;
-      std::cout << "h_x: " << h_x << ", h_y: " << h_y << std::endl;
-      double arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h_y);
-      this->dppar.beta_x =
-          dpstokes_polys::polyEval(dpstokes_polys::cbetam_inv, arg);
-      arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h_x);
-      this->dppar.beta_y =
-          dpstokes_polys::polyEval(dpstokes_polys::cbetam_inv, arg);
+      double arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h_x);
+      real beta_x = dpstokes_polys::polyEval(dpstokes_polys::cbetam_inv, arg);
+      arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h_y);
+      real beta_y = dpstokes_polys::polyEval(dpstokes_polys::cbetam_inv, arg);
+
+      if (beta_x < 4.0 || beta_x > 18.0 || beta_y < 4.0 || beta_y > 18.0) {
+        throw std::runtime_error(
+            "[DPStokes] Could not find (h,beta) within interp range. This "
+            "means the particle radius and grid spacing are incompatible- try "
+            "a square domain.");
+      }
+
+      this->dppar.beta_x = beta_x;
+      this->dppar.beta_y = beta_y;
+      this->dppar.beta_z = min(beta_x, beta_y);
     }
 
     // Add a buffer of 1.5*w*h/2 when there is an open boundary
