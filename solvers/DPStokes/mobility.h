@@ -67,26 +67,31 @@ public:
     if (ipar.includeAngular) {
       this->dppar.w = 6;
       this->dppar.w_d = 6;
-      this->dppar.beta = 1.327 * this->dppar.w;
-      this->dppar.beta_d = 2.217 * this->dppar.w;
+      this->dppar.beta_x = 1.327 * this->dppar.w;
+      this->dppar.beta_y = 1.327 * this->dppar.w;
+      this->dppar.beta_xd = 2.217 * this->dppar.w_d;
+      this->dppar.beta_yd = 2.217 * this->dppar.w_d;
       h = this->dppar.hydrodynamicRadius / 1.731;
       this->dppar.alpha_d = this->dppar.w_d * 0.5;
     } else {
-      // w=6 params
-      // this->dppar.w = 6;
-      // this->dppar.beta = 1.714 * this->dppar.w;
-      // h = this->dppar.hydrodynamicRadius / 1.554;
-      // w=4 params
+      // w=4
       this->dppar.w = 4;
-      this->dppar.beta = 1.785 * this->dppar.w;
+      this->dppar.beta_x = 1.785 * this->dppar.w;
+      this->dppar.beta_y = 1.785 * this->dppar.w;
       h = this->dppar.hydrodynamicRadius / 1.205;
+
+      // w=6
+      // this->dppar.w = 6;
+      // this->dppar.beta_x = 1.714 * this->dppar.w;
+      // this->dppar.beta_y = 1.714 * this->dppar.w;
+      // h = this->dppar.hydrodynamicRadius / 1.554;
     }
     this->dppar.alpha = this->dppar.w * 0.5;
     this->dppar.tolerance = 1e-6;
 
-    int Nx = floor(this->dppar.Lx / h);
+    int Nx = ceil(this->dppar.Lx / h);
     Nx += Nx % 2;
-    int Ny = floor(this->dppar.Ly / h);
+    int Ny = ceil(this->dppar.Ly / h);
     Ny += Ny % 2;
 
     this->dppar.nx = Nx;
@@ -96,11 +101,45 @@ public:
     if (this->dppar.allowChangingBoxSize) { // adjust box size to suit h
       this->dppar.Lx = Nx * h;
       this->dppar.Ly = Ny * h;
-    } else {
-      h = std::min(this->dppar.Lx / Nx, this->dppar.Ly / Ny);
-      double arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h);
-      this->dppar.beta =
-          dpstokes_polys::polyEval(dpstokes_polys::cbetam_inv, arg);
+    } else { // adjust h so that L/h is an integer
+      real h_x = this->dppar.Lx / Nx;
+      real h_y = this->dppar.Ly / Ny;
+      double arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h_x);
+      real beta_x = dpstokes_polys::polyEval(dpstokes_polys::cbeta_monopole_inv, arg);
+      arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h_y);
+      real beta_y = dpstokes_polys::polyEval(dpstokes_polys::cbeta_monopole_inv, arg);
+
+      if (beta_x < 4.0 || beta_x > 18.0 || beta_y < 4.0 || beta_y > 18.0) {
+        throw std::runtime_error(
+            "[DPStokes] Could not find (h,beta) within interp range. This "
+            "means the particle radius and grid spacing are incompatible- try "
+            "a square domain.");
+      }
+
+      this->dppar.beta_x = beta_x;
+      this->dppar.beta_y = beta_y;
+      this->dppar.beta_z = min(beta_x, beta_y);
+
+      if (ipar.includeAngular) {
+        // TODO I think these need to use different polynomial coeffs
+        arg = this->dppar.hydrodynamicRadius / (this->dppar.w_d * h_x);
+        real beta_xd =
+            dpstokes_polys::polyEval(dpstokes_polys::cbeta_dipole_inv, arg);
+        arg = this->dppar.hydrodynamicRadius / (this->dppar.w_d * h_y);
+        real beta_yd =
+            dpstokes_polys::polyEval(dpstokes_polys::cbeta_dipole_inv, arg);
+        if (beta_xd < 4.0 || beta_xd > 18.0 || beta_yd < 4.0 ||
+            beta_yd > 18.0) {
+          throw std::runtime_error(
+              "[DPStokes] Could not find (h,beta) within interp range. This "
+              "means the particle radius and grid spacing are incompatible- "
+              "try "
+              "a square domain.");
+        }
+        this->dppar.beta_xd = beta_xd;
+        this->dppar.beta_yd = beta_yd;
+        this->dppar.beta_zd = min(beta_xd, beta_yd);
+      }
     }
 
     // Add a buffer of 1.5*w*h/2 when there is an open boundary
@@ -116,7 +155,8 @@ public:
     // sets chebyshev node spacing at its coarsest (in the middle) to be h
     real nz_actual = M_PI / (asin(h / H)) + 1;
 
-    // pick nearby N such that 2(Nz-1) has two factors of 2 and is FFT friendly
+    // pick nearby N such that 2(Nz-1) has two factors of 2 and is FFT
+    // friendly
     this->dppar.nz = floor(nz_actual);
     this->dppar.nz += (int)ceil(nz_actual) % 2;
 
