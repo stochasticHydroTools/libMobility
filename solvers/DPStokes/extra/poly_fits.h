@@ -37,9 +37,17 @@ double polyEval(std::vector<double> polyCoeffs, double x) {
 }
 
 // Coefficients for the polynomial fit of c^{-1} from [1]
-std::vector<double> cbetam_inv = {
+// the magic numbers come from the original DPStokes repo
+// https://github.com/stochasticHydroTools/DoublyPeriodicStokes/blob/main/source/cpu/python/GridAndKernelConfig.py
+std::vector<double> cbeta_monopole_inv = {
     4131643418.193291,  -10471683395.26777, 11833009228.6429,
     -7851132955.882548, 3388121732.651829,  -994285251.2185925,
     201183449.7086889,  -27776767.88241613, 2515647.646492857,
     -136305.2970161326, 3445.959503226691};
+
+std::vector<double> cbeta_dipole_inv = {
+    39129605.95992675,  -141095001.9380851, 226461386.9399433,
+    -213225975.7007014, 130589579.4920038,  -54470021.75408537,
+    15723274.21737542,  -3119398.842468358, 411336.473729197,
+    -33239.91568304499, 1311.988715157221};
 } // namespace dpstokes_polys

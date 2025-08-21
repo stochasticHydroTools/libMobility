@@ -69,7 +69,8 @@ public:
       this->dppar.w_d = 6;
       this->dppar.beta_x = 1.327 * this->dppar.w;
       this->dppar.beta_y = 1.327 * this->dppar.w;
-      this->dppar.beta_d = 2.217 * this->dppar.w_d;
+      this->dppar.beta_xd = 2.217 * this->dppar.w_d;
+      this->dppar.beta_yd = 2.217 * this->dppar.w_d;
       h = this->dppar.hydrodynamicRadius / 1.731;
       this->dppar.alpha_d = this->dppar.w_d * 0.5;
     } else {
@@ -104,9 +105,9 @@ public:
       real h_x = this->dppar.Lx / Nx;
       real h_y = this->dppar.Ly / Ny;
       double arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h_x);
-      real beta_x = dpstokes_polys::polyEval(dpstokes_polys::cbetam_inv, arg);
+      real beta_x = dpstokes_polys::polyEval(dpstokes_polys::cbeta_monopole_inv, arg);
       arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h_y);
-      real beta_y = dpstokes_polys::polyEval(dpstokes_polys::cbetam_inv, arg);
+      real beta_y = dpstokes_polys::polyEval(dpstokes_polys::cbeta_monopole_inv, arg);
 
       if (beta_x < 4.0 || beta_x > 18.0 || beta_y < 4.0 || beta_y > 18.0) {
         throw std::runtime_error(
@@ -118,6 +119,27 @@ public:
       this->dppar.beta_x = beta_x;
       this->dppar.beta_y = beta_y;
       this->dppar.beta_z = min(beta_x, beta_y);
+
+      if (ipar.includeAngular) {
+        // TODO I think these need to use different polynomial coeffs
+        arg = this->dppar.hydrodynamicRadius / (this->dppar.w_d * h_x);
+        real beta_xd =
+            dpstokes_polys::polyEval(dpstokes_polys::cbeta_dipole_inv, arg);
+        arg = this->dppar.hydrodynamicRadius / (this->dppar.w_d * h_y);
+        real beta_yd =
+            dpstokes_polys::polyEval(dpstokes_polys::cbeta_dipole_inv, arg);
+        if (beta_xd < 4.0 || beta_xd > 18.0 || beta_yd < 4.0 ||
+            beta_yd > 18.0) {
+          throw std::runtime_error(
+              "[DPStokes] Could not find (h,beta) within interp range. This "
+              "means the particle radius and grid spacing are incompatible- "
+              "try "
+              "a square domain.");
+        }
+        this->dppar.beta_xd = beta_xd;
+        this->dppar.beta_yd = beta_yd;
+        this->dppar.beta_zd = min(beta_xd, beta_yd);
+      }
     }
 
     // Add a buffer of 1.5*w*h/2 when there is an open boundary
@@ -133,7 +155,8 @@ public:
     // sets chebyshev node spacing at its coarsest (in the middle) to be h
     real nz_actual = M_PI / (asin(h / H)) + 1;
 
-    // pick nearby N such that 2(Nz-1) has two factors of 2 and is FFT friendly
+    // pick nearby N such that 2(Nz-1) has two factors of 2 and is FFT
+    // friendly
     this->dppar.nz = floor(nz_actual);
     this->dppar.nz += (int)ceil(nz_actual) % 2;
 
