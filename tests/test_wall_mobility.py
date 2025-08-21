@@ -132,11 +132,7 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, wallHeight):
             M /= normMat
             allM[i][k] = M
 
-    for i in range(0, nSeps):
-        for k in range(0, nHeights):
-            diff = abs(allM[i, k] - refM[i, k][0:6, 0:6])
-            assert np.all(diff < tol)
-
+    assert np.allclose(allM, refM, atol=tol, rtol=tol)
 
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "ref_file"),
@@ -148,7 +144,7 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, wallHeight):
 )
 @pytest.mark.parametrize("wallHeight", [0, 5.4, -10])
 def test_self_mobility_angular(Solver, periodicity, ref_file, wallHeight):
-    if precision_str == np.float32 and Solver.__name__ == "DPStokes":
+    if precision_str == "single" and Solver.__name__ == "DPStokes":
         pytest.skip(
             "The test is only valid for double precision due to how reference data was generated."
         )
@@ -197,9 +193,7 @@ def test_self_mobility_angular(Solver, periodicity, ref_file, wallHeight):
         M /= normMat
         allM[i] = M
 
-    for i in range(0, nHeights):
-        diff = abs(allM[i] - refM[i])
-        assert np.all(diff < tol)
+    assert np.allclose(allM, refM, atol=tol, rtol=tol)
 
 
 @pytest.mark.parametrize(
@@ -213,7 +207,7 @@ def test_self_mobility_angular(Solver, periodicity, ref_file, wallHeight):
 @pytest.mark.parametrize("offset", ["x", "y"])
 @pytest.mark.parametrize("wallHeight", [0, 5.4, -10])
 def test_pair_mobility_angular(Solver, periodicity, ref_file, offset, wallHeight):
-    if precision_str == np.float32 and Solver.__name__ == "DPStokes":
+    if precision_str == "single" and Solver.__name__ == "DPStokes":
         pytest.skip(
             "The test is only valid for double precision due to how reference data was generated."
         )
@@ -278,7 +272,4 @@ def test_pair_mobility_angular(Solver, periodicity, ref_file, offset, wallHeight
             M /= normMat
             allM[i, k] = M
 
-    for i in range(0, nSeps):
-        for k in range(0, nHeights):
-            diff = abs(allM[i, k] - refM[i, k])
-            assert np.all(diff < tol)
+    assert np.allclose(allM, refM, atol=tol, rtol=tol)
