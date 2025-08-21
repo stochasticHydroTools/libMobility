@@ -105,9 +105,11 @@ public:
       real h_x = this->dppar.Lx / Nx;
       real h_y = this->dppar.Ly / Ny;
       double arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h_x);
-      real beta_x = dpstokes_polys::polyEval(dpstokes_polys::cbeta_monopole_inv, arg);
+      real beta_x =
+          dpstokes_polys::polyEval(dpstokes_polys::cbeta_monopole_inv, arg);
       arg = this->dppar.hydrodynamicRadius / (this->dppar.w * h_y);
-      real beta_y = dpstokes_polys::polyEval(dpstokes_polys::cbeta_monopole_inv, arg);
+      real beta_y =
+          dpstokes_polys::polyEval(dpstokes_polys::cbeta_monopole_inv, arg);
 
       if (beta_x < 4.0 || beta_x > 18.0 || beta_y < 4.0 || beta_y > 18.0) {
         throw std::runtime_error(
