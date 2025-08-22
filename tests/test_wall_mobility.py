@@ -132,7 +132,8 @@ def test_pair_mobility_linear(Solver, periodicity, ref_file, wallHeight):
             M /= normMat
             allM[i][k] = M
 
-    assert np.allclose(allM, refM, atol=tol, rtol=tol)
+    assert np.allclose(allM, refM[:, :, 0:6, 0:6], atol=tol, rtol=tol)
+
 
 @pytest.mark.parametrize(
     ("Solver", "periodicity", "ref_file"),
