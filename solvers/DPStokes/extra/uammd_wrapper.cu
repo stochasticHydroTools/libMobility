@@ -53,10 +53,13 @@ auto createFCMParameters(PyParameters pypar) {
   par.tolerance = pypar.tolerance;
   par.box = uammd::Box({pypar.Lx, pypar.Ly, pypar.zmax - pypar.zmin});
   par.cells = {pypar.nx, pypar.ny, pypar.nz};
-  par.kernel = std::make_shared<FCM_BM>(pypar.w, pypar.alpha, pypar.beta,
-                                        pypar.Lx / pypar.nx);
+  par.kernel =
+      std::make_shared<FCM_BM>(pypar.w, pypar.alpha,
+                               pypar.beta.x, // TODO beta parameter may need to
+                                             // be adjusted for non-square?
+                               pypar.Lx / pypar.nx);
   par.kernelTorque = std::make_shared<FCM_BM>(
-      pypar.w_d, pypar.alpha_d, pypar.beta_d, pypar.Lx / pypar.nx);
+      pypar.w_d, pypar.alpha_d, pypar.beta_d.x, pypar.Lx / pypar.nx);
   return par;
 }
 

@@ -32,14 +32,6 @@ def test_invalid_throws(Solver):
         solver = Solver("periodicasdas", "periodic", "open")
 
 
-def test_dpstokes_invalid_box():
-    with pytest.raises(RuntimeError):
-        Lx, Ly = 10, 20
-        solver = DPStokes("periodic", "periodic", "single_wall")
-        params = {"Lx": Lx, "Ly": Ly, "zmin": 0, "zmax": 19.2}
-        solver.setParameters(**params)
-
-
 @pytest.mark.parametrize(
     ("NBatch", "NperBatch"),
     [
