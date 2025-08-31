@@ -79,14 +79,12 @@ auto createDPStokesParameters(PyParameters pypar) {
   par.nx = pypar.nx;
   par.ny = pypar.ny;
   par.nz = pypar.nz;
-  par.dt = pypar.dt;
   par.viscosity = pypar.viscosity;
   par.Lx = pypar.Lx;
   par.Ly = pypar.Ly;
   par.H = pypar.zmax - pypar.zmin;
   par.w = pypar.w;
   par.w_d = pypar.w_d;
-  par.hydrodynamicRadius = pypar.hydrodynamicRadius;
   par.beta = pypar.beta;
   par.beta_d = pypar.beta_d;
   par.alpha = pypar.alpha;
@@ -101,8 +99,7 @@ private:
   auto computeHydrodynamicDisplacements(const auto *d_pos,
                                         const uammd::real4 *d_force,
                                         const uammd::real4 *d_torques,
-                                        int numberParticles, real dt,
-                                        real dtTorque, cudaStream_t st) {
+                                        int numberParticles, cudaStream_t st) {
     if (fcm) {
       return fcm->computeHydrodynamicDisplacements(
           (uammd::real4 *)(d_pos), (uammd::real4 *)(d_force),
@@ -195,8 +192,7 @@ public:
                       Real3ToReal4SubstractOriginZ(zOrigin));
     auto mob = this->computeHydrodynamicDisplacements(
         stored_positions.data().get(), force4.data().get(),
-        (includeAngular) ? torque4.data().get() : nullptr, numberParticles, 0.0,
-        0.0, st);
+        (includeAngular) ? torque4.data().get() : nullptr, numberParticles, st);
     // always copy linear translation but only angular if needed
     thrust::copy(thrust::cuda::par.on(st), mob.first.begin(), mob.first.end(),
                  (uammd::real3 *)h_MF);

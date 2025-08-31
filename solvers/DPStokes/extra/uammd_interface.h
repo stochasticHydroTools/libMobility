@@ -25,7 +25,6 @@ struct PyParameters {
   int nx = -1;
   int ny = -1;
   int nz = -1;
-  real dt = 0;
   real viscosity;
   real Lx;
   real Ly;
