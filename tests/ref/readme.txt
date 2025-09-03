@@ -2,6 +2,9 @@ Some of this data is generated from the original DoublyPeriodicStokes repository
 
 The reason we've regenerated data is that default parameter selection has been changed to fix the grid parameters to the values that best preserve the hydrodynamic radius. When data has been regenerated, consistency was checked by first matching the original DoublyPeriodicStokes repository by using their same parameters, then switching to the new parameter selection and regenerating.
 
+8/21/2025: Regenerated DPStokes data for angular tests since the procedure for selecting beta for torques was updated.
+           Agreed with previous data at tol=5e-2.
+
 Abbreviations: 
 bw- bottom wall
 sc- slit channel

@@ -8,8 +8,10 @@ namespace uammd_dpstokes {
 // Instead of using uammd::real I have to re define real here.
 #ifndef DOUBLE_PRECISION
 using real = float;
+using real3 = float3;
 #else
 using real = double;
+using real3 = double3;
 #endif
 
 // This function returns either 'single' or 'double' according to the UAMMD's
@@ -23,7 +25,6 @@ struct PyParameters {
   int nx = -1;
   int ny = -1;
   int nz = -1;
-  real dt = 0;
   real viscosity;
   real Lx;
   real Ly;
@@ -32,8 +33,8 @@ struct PyParameters {
   real tolerance = 1e-5;
   real w, w_d;
   real hydrodynamicRadius = -1;
-  real beta = -1;
-  real beta_d = -1;
+  real3 beta = {-1.0, -1.0, -1.0};
+  real3 beta_d = {-1.0, -1.0, -1.0};
   real alpha = -1;
   real alpha_d = -1;
   // Can be either none, bottom, slit or periodic

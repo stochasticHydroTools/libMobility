@@ -53,10 +53,13 @@ auto createFCMParameters(PyParameters pypar) {
   par.tolerance = pypar.tolerance;
   par.box = uammd::Box({pypar.Lx, pypar.Ly, pypar.zmax - pypar.zmin});
   par.cells = {pypar.nx, pypar.ny, pypar.nz};
-  par.kernel = std::make_shared<FCM_BM>(pypar.w, pypar.alpha, pypar.beta,
-                                        pypar.Lx / pypar.nx);
+  par.kernel =
+      std::make_shared<FCM_BM>(pypar.w, pypar.alpha,
+                               pypar.beta.x, // TODO beta parameter may need to
+                                             // be adjusted for non-square?
+                               pypar.Lx / pypar.nx);
   par.kernelTorque = std::make_shared<FCM_BM>(
-      pypar.w_d, pypar.alpha_d, pypar.beta_d, pypar.Lx / pypar.nx);
+      pypar.w_d, pypar.alpha_d, pypar.beta_d.x, pypar.Lx / pypar.nx);
   return par;
 }
 
@@ -76,14 +79,12 @@ auto createDPStokesParameters(PyParameters pypar) {
   par.nx = pypar.nx;
   par.ny = pypar.ny;
   par.nz = pypar.nz;
-  par.dt = pypar.dt;
   par.viscosity = pypar.viscosity;
   par.Lx = pypar.Lx;
   par.Ly = pypar.Ly;
   par.H = pypar.zmax - pypar.zmin;
   par.w = pypar.w;
   par.w_d = pypar.w_d;
-  par.hydrodynamicRadius = pypar.hydrodynamicRadius;
   par.beta = pypar.beta;
   par.beta_d = pypar.beta_d;
   par.alpha = pypar.alpha;
@@ -98,8 +99,7 @@ private:
   auto computeHydrodynamicDisplacements(const auto *d_pos,
                                         const uammd::real4 *d_force,
                                         const uammd::real4 *d_torques,
-                                        int numberParticles, real dt,
-                                        real dtTorque, cudaStream_t st) {
+                                        int numberParticles, cudaStream_t st) {
     if (fcm) {
       return fcm->computeHydrodynamicDisplacements(
           (uammd::real4 *)(d_pos), (uammd::real4 *)(d_force),
@@ -192,8 +192,7 @@ public:
                       Real3ToReal4SubstractOriginZ(zOrigin));
     auto mob = this->computeHydrodynamicDisplacements(
         stored_positions.data().get(), force4.data().get(),
-        (includeAngular) ? torque4.data().get() : nullptr, numberParticles, 0.0,
-        0.0, st);
+        (includeAngular) ? torque4.data().get() : nullptr, numberParticles, st);
     // always copy linear translation but only angular if needed
     thrust::copy(thrust::cuda::par.on(st), mob.first.begin(), mob.first.end(),
                  (uammd::real3 *)h_MF);
