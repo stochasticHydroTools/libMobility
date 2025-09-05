@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.24)
 project(libMobility)
 enable_language(CUDA)
+
+option(DOUBLEPRECISION "Build with double precision" OFF)
+option(INSTALL_TESTS "Install test files" OFF)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/" "$ENV{CONDA_PREFIX}/share/cmake/Modules")
 if(NOT DEFINED CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -61,8 +65,9 @@ endif()
 add_subdirectory(solvers)
 enable_testing()
 add_subdirectory(tests/cpp)
-
-install(DIRECTORY tests/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/libMobility/tests/ FILES_MATCHING PATTERN "*.py" PATTERN "*.npz")
+if (INSTALL_TESTS)
+  install(DIRECTORY tests/ DESTINATION ${CMAKE_INSTALL_PREFIX}/share/libMobility/tests/ FILES_MATCHING PATTERN "*.py" PATTERN "*.npz")
+endif()
 # Add a test for each Python file in the tests directory
 file(GLOB TESTS tests/*.py)
 foreach(TEST ${TESTS})
