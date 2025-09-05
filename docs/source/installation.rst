@@ -3,11 +3,11 @@ Installation
 
 We recommend working with a `conda <https://docs.conda.io/en/latest/>`_ environment.
 
-You can install libMobility's latest release through our conda channel:
+You can install libMobility's latest release through the conda-forge channel:
 
 .. code-block:: shell
 
-    $ conda install -c conda-forge -c stochasticHydroTools libmobility
+    $ conda install -c conda-forge libmobility
 
 
 

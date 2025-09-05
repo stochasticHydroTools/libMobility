@@ -39,7 +39,7 @@ This repository is organized into the following directories:
 You can install libMobility latest release through our conda channel:
 
 ```shell
-$ conda install -c conda-forge -c stochasticHydroTools libmobility
+$ conda install -c conda-forge libmobility
 ```
 
 Check the documentation for additional information on installation, such as how to compile from source.
