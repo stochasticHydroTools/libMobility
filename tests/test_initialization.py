@@ -97,3 +97,10 @@ def test_nbody_wall_height_parameter():
         )  # single_wall periodicity requires wall height param
 
     solver.setParameters(wallHeight=0.5)
+
+
+def test_dpstokes_narrow_channel():
+    solver = DPStokes("periodic", "periodic", "two_walls")
+    solver.setParameters(Lx=3.0, Ly=3.0, zmin=0.0, zmax=1.0)
+    with pytest.raises(RuntimeError, match="DPStokes"):
+        solver.initialize(hydrodynamicRadius=1.0, viscosity=1.0)
