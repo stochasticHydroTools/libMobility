@@ -148,14 +148,17 @@ public:
       this->dppar.zmax += 1.5 * this->dppar.w * h / 2;
     }
     real Lz = this->dppar.zmax - this->dppar.zmin;
+    if (Lz <= 2 * this->dppar.hydrodynamicRadius) {
+      throw std::runtime_error("[DPStokes] The box size in z is too small to "
+                               "fit the particles. Try increasing zmax.");
+    }
     real H = Lz / 2;
     // sets chebyshev node spacing at its coarsest (in the middle) to be h
     real nz_actual = M_PI / (asin(h / H)) + 1;
 
-    // pick nearby N such that 2(Nz-1) has two factors of 2 and is FFT
-    // friendly
-    this->dppar.nz = floor(nz_actual);
-    this->dppar.nz += (int)ceil(nz_actual) % 2;
+    // pick nearby N such that 2(Nz-1) has two factors of 2 and is FFT friendly
+    this->dppar.nz = (int)floor(nz_actual);
+    this->dppar.nz += (this->dppar.nz - 1) % 2;
 
     dpstokes->initialize(dppar);
     Mobility::initialize(ipar);
