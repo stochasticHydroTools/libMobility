@@ -31,12 +31,12 @@ This module will only accept periodic boundary conditions in the three direction
 )pbdoc";
 
 MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(
-    PSE,
-    solver.def(
-        "setParameters",
-        [](PSE &self, real psi, real Lx, real Ly, real Lz, real shearStrain) {
-          self.setParametersPSE({psi, Lx, Ly, Lz, shearStrain});
-        },
-        docstringSetParameters, "psi"_a, "Lx"_a, "Ly"_a, "Lz"_a,
-        "shearStrain"_a);
+    PSE, solver.def(
+             "setParameters",
+             [](PSE &self, real psi, real Lx, real Ly, real Lz,
+                std::optional<real> shearStrain) {
+               self.setParametersPSE({psi, Lx, Ly, Lz, shearStrain});
+             },
+             docstringSetParameters, "psi"_a, "Lx"_a, "Ly"_a, "Lz"_a,
+             "shearStrain"_a = std::nullopt);
     , docstring);

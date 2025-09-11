@@ -61,6 +61,11 @@ def test_nbody_default_parameters():
     positions = np.random.rand(10, 3)
     solver.setPositions(positions)
 
+def test_pse_no_shear():
+    solver = PSE("periodic", "periodic", "periodic")
+    solver.setParameters(psi=1.0, Lx=10.0, Ly=10.0, Lz=10.0)
+    solver.initialize(hydrodynamicRadius=1.0, viscosity=1.0)
+
 # NBody should use default alg and all particles in one batch if no params set
 def test_nbody_no_params():
     solver = NBody("open", "open", "open")
