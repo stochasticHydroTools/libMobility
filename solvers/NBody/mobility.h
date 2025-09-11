@@ -118,9 +118,6 @@ public:
     const auto numberParticles = this->getNumberParticles();
     int i_Nbatch = (this->Nbatch < 0) ? 1 : this->Nbatch;
     int i_NperBatch = (this->NperBatch < 0) ? numberParticles : this->NperBatch;
-    std::cout << "i_nbatch: " << i_Nbatch << " i_nper: " << i_NperBatch << std::endl;
-    std::cout << "obj nbatch: " << this->NperBatch << "obj nper: " << i_NperBatch << std::endl;
-    std::cout << "npart: " << numberParticles << std::endl;
     if (i_NperBatch * i_Nbatch != numberParticles)
       throw std::runtime_error("[Mobility] Invalid batch parameters for NBody. "
                                "If in doubt, use the defaults.");
