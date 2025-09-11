@@ -61,6 +61,17 @@ def test_nbody_default_parameters():
     positions = np.random.rand(10, 3)
     solver.setPositions(positions)
 
+# NBody should use default alg and all particles in one batch if no params set
+def test_nbody_no_params():
+    solver = NBody("open", "open", "open")
+    solver.initialize(
+        viscosity=1.0,
+        hydrodynamicRadius=1.5,
+    )
+    positions = np.random.rand(10, 3)
+    solver.setPositions(positions)
+    mf, _ = solver.Mdot(positions)
+
 
 @pytest.mark.parametrize(
     ("NBatch", "NperBatch", "numberParticles"),
