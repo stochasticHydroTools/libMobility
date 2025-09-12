@@ -30,8 +30,8 @@ class NBody : public libmobility::Mobility {
   real wallHeight; // location of the wall in z
 
   // Batched functionality configuration
-  int Nbatch;
-  int NperBatch;
+  int Nbatch = -1;
+  int NperBatch = -1;
 
   std::mt19937 rng;
 

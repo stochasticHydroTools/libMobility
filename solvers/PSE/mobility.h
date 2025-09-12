@@ -4,6 +4,7 @@
 #include "extra/uammd_interface.h"
 #include <MobilityInterface/MobilityInterface.h>
 #include <cmath>
+#include <optional>
 #include <type_traits>
 #include <vector>
 
@@ -50,7 +51,8 @@ public:
   }
 
   struct PSEParameters {
-    real psi, Lx, Ly, Lz, shearStrain;
+    real psi, Lx, Ly, Lz;
+    std::optional<real> shearStrain = std::nullopt;
   };
 
   void setParametersPSE(PSEParameters i_par) {
@@ -58,7 +60,7 @@ public:
     psepar.Lx = i_par.Lx;
     psepar.Ly = i_par.Ly;
     psepar.Lz = i_par.Lz;
-    psepar.shearStrain = i_par.shearStrain;
+    psepar.shearStrain = i_par.shearStrain ? i_par.shearStrain.value() : 0.0;
   }
 
   void setPositions(device_span<const real> ipositions) override {
