@@ -11,11 +11,11 @@ d\boldsymbol{\tau}\end{bmatrix} = \boldsymbol{\mathcal{M}}\begin{bmatrix}\boldsy
 \boldsymbol{T}\end{bmatrix}dt + \text{prefactor}\sqrt{2 k_B T \boldsymbol{\mathcal{M}}}d\boldsymbol{W} +  k_BT\boldsymbol{\partial}_\boldsymbol{X}\cdot \boldsymbol{\mathcal{M}}dt$$  
 
 
-Where $d\boldsymbol{X}$ are the linear displacements, $\boldsymbol{d\tau}$ are the angular displacements, $\boldsymbol{\mathcal{M}}$ is the grand mobility tensor, $\boldsymbol{F}$ are the forces, $\boldsymbol{T}$ are the torques, $\text{prefactor}$ is an user provided prefactor and $d\boldsymbol{W}$ is a collection of i.i.d Weinner processes and $T$ is the temperature.
+Where $d\boldsymbol{X}$ are the linear displacements, $\boldsymbol{d\tau}$ are the angular displacements, $\boldsymbol{\mathcal{M}}$ is the grand mobility tensor, $\boldsymbol{F}$ are the forces, $\boldsymbol{T}$ are the torques, $\text{prefactor}$ is a user-provided prefactor, and $d\boldsymbol{W}$ is a collection of i.i.d Weinner processes and $T$ is the temperature.
 
-Each solver in libMobility allows to compute either the deterministic term, the stochastic term, or both at the same time.  
+Each solver in libMobility allows for computing either the deterministic term, the stochastic term, or both at the same time.  
 
-For each solver, a python interface is provided. All solvers have the same interface, although some input parameters might change (an open boundaries solver does not accept a box size as a parameter).  
+For each solver, a Python interface is provided. All solvers have the same interface, although some input parameters might change (an open boundaries solver does not accept a box size as a parameter).  
 
 ## Repository Structure  
 
@@ -27,7 +27,7 @@ This repository is organized into the following directories:
 
 - **include/**: Includes the essential C++ base classes and utility files needed to construct the modules.  
 
-- **devtools/**: Contains dev specific scripts and files, like a meta.yaml file to build a conda package for libMobility using conda-build.  
+- **devtools/**: Contains dev-specific scripts and files, like a meta.yaml file to build a conda package for libMobility using conda-build.  
 
 - **docs/**: Contains the source files for the documentation.  
 
@@ -36,7 +36,7 @@ This repository is organized into the following directories:
 
 ## Installation
 
-You can install libMobility latest release through our conda channel:
+You can install the latest libMobility release through the conda-forge channel:
 
 ```shell
 $ conda install -c conda-forge libmobility
@@ -49,9 +49,9 @@ Check the documentation for additional information on installation, such as how 
 
 Importing libMobility will make available any module under "solvers".  
 
-An usage example is available in python/example.py.  
+A usage example is available in python/example.py.  
 Calling
 ```python
 	help(SolverName)
 ```
-will provide more in depth information about the solver.  
+will provide more in-depth information about the solver.  
