@@ -37,6 +37,8 @@ requirements:
     - python ={{ PYTHON_VERSION }}
     - cuda-version >={{ CUDA_VERSION }}
     - cuda-cudart
+  run_constrained:
+    - libopenblas=*=openmp*
 
 test:
   requires:
