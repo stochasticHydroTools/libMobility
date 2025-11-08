@@ -12,6 +12,7 @@
  */
 #ifndef NBODY_RPY_CUH
 #define NBODY_RPY_CUH
+#include <thrust/extrema.h>
 #include "hydrodynamicKernels.cuh"
 #include "interface.h"
 #include "vector.cuh"
