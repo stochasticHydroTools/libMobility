@@ -406,7 +406,9 @@ VECATTR float4 make_float4(double4_16a a) {
   return make_float4(float(a.x), float(a.y), float(a.z), float(a.w));
 }
 
-VECATTR double4_16a make_double4_16a(double s) { return make_double4_16a(s, s, s, s); }
+VECATTR double4_16a make_double4_16a(double s) {
+  return make_double4_16a(s, s, s, s);
+}
 VECATTR double4_16a make_double4_16a(double3 a) {
   return make_double4_16a(a.x, a.y, a.z, 0.0f);
 }
@@ -436,7 +438,9 @@ VECATTR void operator+=(double4_16a &a, const double4_16a &b) {
 VECATTR double4_16a operator+(const double4_16a &a, const double &b) {
   return make_double4_16a(a.x + b, a.y + b, a.z + b, a.w + b);
 }
-VECATTR double4_16a operator+(const double &b, const double4_16a &a) { return a + b; }
+VECATTR double4_16a operator+(const double &b, const double4_16a &a) {
+  return a + b;
+}
 VECATTR void operator+=(double4_16a &a, const double &b) {
   a.x += b;
   a.y += b;
@@ -477,7 +481,9 @@ VECATTR void operator*=(double4_16a &a, const double4_16a &b) {
 VECATTR double4_16a operator*(const double4_16a &a, const double &b) {
   return make_double4_16a(a.x * b, a.y * b, a.z * b, a.w * b);
 }
-VECATTR double4_16a operator*(const double &b, const double4_16a &a) { return a * b; }
+VECATTR double4_16a operator*(const double &b, const double4_16a &a) {
+  return a * b;
+}
 VECATTR void operator*=(double4_16a &a, const double &b) {
   a.x *= b;
   a.y *= b;
