@@ -15,6 +15,7 @@
 #include "hydrodynamicKernels.cuh"
 #include "interface.h"
 #include "vector.cuh"
+#include <thrust/extrema.h>
 
 namespace nbody_rpy {
 

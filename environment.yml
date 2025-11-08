@@ -5,8 +5,8 @@ channels:
 dependencies:
   - python <3.13
   - cmake >=3.24
-  - cuda-version 12.*
-  - gxx >9
+  # - cuda-version 13.* # uncomment for a specific cuda version
+  - gxx >9,<15
   - cuda-libraries-dev
   - cuda-nvcc 
   - make
