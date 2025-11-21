@@ -28,6 +28,7 @@ class NBody : public libmobility::Mobility {
   nbody_rpy::algorithm algorithm = nbody_rpy::algorithm::advise;
 
   real wallHeight; // location of the wall in z
+  real delta;      // finite difference step size for random finite differences
 
   // Batched functionality configuration
   int Nbatch = -1;
@@ -53,6 +54,7 @@ public:
     int Nbatch = -1;
     int NperBatch = -1;
     std::optional<real> wallHeight = std::nullopt;
+    real delta = 1e-3;
   };
   /**
    * @brief Sets the parameters for the N-body computation
@@ -196,7 +198,8 @@ public:
     device_vector thermal_drift_d(iangular.size(), 0);
 
     libmobility::random_finite_differences(mdot, original_pos, thermal_drift_m,
-                                           thermal_drift_d, seed, prefactor);
+                                           thermal_drift_d, seed, this->delta,
+                                           prefactor);
     device_adapter<real> linear(ilinear, device::cuda);
     this->setPositions(original_pos);
     thrust::transform(thrust::cuda::par, thermal_drift_m.begin(),

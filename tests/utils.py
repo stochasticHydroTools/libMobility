@@ -4,14 +4,15 @@ from libMobility import SelfMobility, NBody, PSE, DPStokes
 
 sane_parameters = {
     "PSE": {"psi": 1.0, "Lx": 32, "Ly": 32, "Lz": 32, "shearStrain": 0.0},
-    "NBody": {"algorithm": "advise"},
-    "NBody_wall": {"algorithm": "advise", "wallHeight": 0.0},
+    "NBody": {"algorithm": "advise", "delta": 1e-3},
+    "NBody_wall": {"algorithm": "advise", "wallHeight": 0.0, "delta": 1e-3},
     "DPStokes": {
         "Lx": 16,
         "Ly": 16,
         "zmin": -6,
         "zmax": 6,
         "allowChangingBoxSize": False,
+        "delta": 1e-3,
     },
     "SelfMobility": {"parameter": 5.0},
 }

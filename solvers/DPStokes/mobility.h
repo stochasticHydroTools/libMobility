@@ -223,7 +223,8 @@ public:
     device_vector thermal_drift_m(ilinear.size(), 0);
     device_vector thermal_drift_d(iangular.size(), 0);
     libmobility::random_finite_differences(mdot, original_pos, thermal_drift_m,
-                                           thermal_drift_d, seed, prefactor);
+                                           thermal_drift_d, seed,
+                                           this->dppar.delta, prefactor);
     this->setPositions(original_pos);
     thrust::transform(thrust::cuda::par, thermal_drift_m.begin(),
                       thermal_drift_m.end(), linear.begin(), linear.begin(),

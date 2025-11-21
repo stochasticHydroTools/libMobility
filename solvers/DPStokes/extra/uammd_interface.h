@@ -31,6 +31,7 @@ struct PyParameters {
   real zmin, zmax;
   // Tolerance will be ignored in DP mode, TP will use only tolerance and nxy/nz
   real tolerance = 1e-5;
+  real delta = 1e-3; // RFD step size
   real w, w_d;
   real hydrodynamicRadius = -1;
   real3 beta = {-1.0, -1.0, -1.0};

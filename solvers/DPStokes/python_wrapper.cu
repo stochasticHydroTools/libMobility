@@ -22,6 +22,8 @@ zmax : float
 		The maximum value of the z coordinate. This is the position of the top wall if the Z periodicity is `two_walls`.
 allowChangingBoxSize : bool
     Whether the periodic extents Lx & Ly can be modified during parameter selection. Default: false.
+delta : float
+        The finite difference step size for random finite differences. Default is 1e-3, units of length.
 )pbdoc";
 
 static const char *docstring = R"pbdoc(
@@ -35,18 +37,20 @@ The periodicity must be set to `periodic` in the X and Y directions. The Z perio
 )pbdoc";
 
 MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(
-    DPStokes, solver.def(
-                  "setParameters",
-                  [](DPStokes &self, real Lx, real Ly, real zmin, real zmax,
-                     bool allowChangingBoxSize) {
-                    DPStokesParameters params;
-                    params.Lx = Lx;
-                    params.Ly = Ly;
-                    params.zmin = zmin;
-                    params.zmax = zmax;
-                    params.allowChangingBoxSize = allowChangingBoxSize;
-                    self.setParametersDPStokes(params);
-                  },
-                  "Lx"_a, "Ly"_a, "zmin"_a, "zmax"_a,
-                  "allowChangingBoxSize"_a = false, setparameters_docstring);
+    DPStokes,
+    solver.def(
+        "setParameters",
+        [](DPStokes &self, real Lx, real Ly, real zmin, real zmax,
+           bool allowChangingBoxSize, real delta) {
+          DPStokesParameters params;
+          params.Lx = Lx;
+          params.Ly = Ly;
+          params.zmin = zmin;
+          params.zmax = zmax;
+          params.allowChangingBoxSize = allowChangingBoxSize;
+          params.delta = delta;
+          self.setParametersDPStokes(params);
+        },
+        "Lx"_a, "Ly"_a, "zmin"_a, "zmax"_a, "allowChangingBoxSize"_a = false,
+        "delta"_a = 1e-3, setparameters_docstring);
     , docstring);
