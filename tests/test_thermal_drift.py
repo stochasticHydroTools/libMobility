@@ -21,9 +21,75 @@ def average(function, num_averages):
     return result_m / num_averages, result_d
 
 
-def divM_rfd(solver, positions):
+def average_with_error(function, num_averages, soln, N):
+    # Track cumulative (running) error: error of the running average after each new sample
+    avg_err_m = np.zeros(num_averages)
+    rfd_m = np.zeros(3 * N)
+    avg_err_d = np.zeros(num_averages)
+    rfd_d = np.zeros(3 * N)
+
+    for i in range(num_averages):
+        new_result_m, new_result_d = function()
+        rfd_m += new_result_m
+        running_m = rfd_m / float(i + 1)
+        avg_err_m[i] = np.linalg.norm(running_m - soln)
+        if new_result_d is not None:
+            rfd_d += new_result_d
+            running_d = rfd_d / float(i + 1)
+            avg_err_d[i] = np.linalg.norm(running_d - soln) / np.linalg.norm(soln)
+
+    rfd_m /= float(num_averages)
+    rfd_d /= float(num_averages)
+
+    import matplotlib.pyplot as plt
+
+    plt.figure()
+    n = np.arange(num_averages)
+    plt.loglog(n, avg_err_m, marker="o", linestyle="-")
+    plt.loglog(n, 0.1 * 1 / np.sqrt(n), linestyle="--")
+    plt.legend(["Measured error", "O(1/sqrt(N))"])
+    # plt.plot(
+    #     np.arange(num_averages),
+    #     avg_err_d,
+    #     linestyle="--",
+    #     color="red",
+    # )
+    plt.xlabel("Sample index")
+    plt.ylabel("Error (||running_avg - sol||) or relative for dipole")
+    plt.title("Cumulative running error of the averaged estimate (linear)")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig("avg_err_m.png", dpi=150)
+    plt.close()
+    return rfd_m, rfd_d
+
+
+def deterministic_div_m(solver, positions, delta):
+    N = np.size(positions) // 3
+    print("Number of particles:", N)
+
+    positions = positions.flatten()
+    div_M = np.zeros(3 * N, dtype=positions.dtype)
+    for i in range(3 * N):
+        for j in range(3 * N):
+            pos_plus = positions.copy()
+            pos_minus = positions.copy()
+            pos_plus[j] += 0.5 * delta
+            pos_minus[j] -= 0.5 * delta
+            solver.setPositions(pos_plus)
+            e_j = np.zeros(3 * N, dtype=positions.dtype)
+            e_j[j] = 1.0
+            M_plus, _ = solver.Mdot(e_j)
+            solver.setPositions(pos_minus)
+            M_minus, _ = solver.Mdot(e_j)
+            div_M[i] += M_plus[i] - M_minus[i]
+
+    div_M /= delta
+    return div_M
+
+
+def divM_rfd(solver, positions, delta):
     # RFD works by approximating \partial_q \dot M = 1/\delta \langle M(q+\delta/2 W)W - M(q-\delta/2 W)W \rangle
-    delta = 1e-3
 
     def rfd_func():
         W = np.random.normal(size=positions.shape).astype(positions.dtype)
@@ -40,6 +106,40 @@ def divM_rfd(solver, positions):
     solver.setPositions(positions)
     tdrift_m, tdrift_d = average(lambda: average(rfd_func, 400), 100)
     return tdrift_m, tdrift_d
+
+
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
+def test_deterministic_divM_matches_rfd(Solver, periodicity):
+    solver = Solver(*periodicity)
+    parameters = get_sane_params(Solver.__name__, periodicity[2])
+    solver.setParameters(**parameters)
+    precision = np.float32 if solver.precision == "float" else np.float64
+    solver.initialize(
+        viscosity=1.0,
+        hydrodynamicRadius=1.0,
+        includeAngular=False,
+    )
+    numberParticles = 10
+    positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
+    solver.setPositions(positions)
+
+    delta = 1e-3
+    det_div_m = deterministic_div_m(solver, positions, delta)
+    # rfd_dM, _ = divM_rfd(solver, positions, delta)
+    # rfd_m, rfd_d = average(solver.divM, 10000)
+    m, d = average_with_error(solver.divM, 10000, det_div_m, numberParticles)
+
+    breakpoint()
+    print("-----------------------")
+    print("Deterministic divM:", det_div_m)
+    print("RFD divM:", rfd_m)
+
+    assert np.allclose(
+        det_div_m,
+        rfd_m,
+        atol=1e-3,
+        rtol=1e-3,
+    ), f"Deterministic divM does not match RFD divM: {np.max(np.abs(det_div_m - rfd_m))}"
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
