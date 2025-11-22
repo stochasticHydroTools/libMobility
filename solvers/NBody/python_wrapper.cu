@@ -5,21 +5,21 @@
 #include <nanobind/stl/optional.h>
 
 static const char *docstringSetParameters = R"pbdoc(
-        Set the parameters for the NBody solver.
+Set the parameters for the NBody solver.
 
-        Parameters
-        ----------
-        algorithm : str
-                The algorithm to use. Options are "naive", "fast", "block" and "advise". Default is "advise".
-        NBatch : int
-                The number of batches to use. If -1 (default), the number of batches is automatically determined.
-        NperBatch : int
-                The number of particles per batch. If -1 (default), the number of particles per batch is automatically determined.
-        wallHeight : float
-                The height of the wall. Only valid if periodicityZ is single_wall.
-        delta : float
-                The finite difference step size for random finite differences. Default is 1e-3, units of length.
-        )pbdoc";
+Parameters
+----------
+algorithm : str
+        The algorithm to use. Options are "naive", "fast", "block" and "advise". Default is "advise".
+NBatch : int
+        The number of batches to use. If -1 (default), the number of batches is automatically determined.
+NperBatch : int
+        The number of particles per batch. If -1 (default), the number of particles per batch is automatically determined.
+wallHeight : float
+        The height of the wall. Only valid if periodicityZ is single_wall.
+delta : float
+        The finite difference step size for random finite differences. Specified in units of hydrodynamicRadius. Default is 1e-3.
+)pbdoc";
 
 static const char *docstring = R"pbdoc(
 This module computes hydrodynamic interactions using an :math:`O(N^2)` algorithm.

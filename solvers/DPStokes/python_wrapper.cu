@@ -23,7 +23,7 @@ zmax : float
 allowChangingBoxSize : bool
     Whether the periodic extents Lx & Ly can be modified during parameter selection. Default: false.
 delta : float
-        The finite difference step size for random finite differences. Default is 1e-3, units of length.
+    The finite difference step size for random finite differences. Specified in units of hydrodynamicRadius. Default is 1e-3.
 )pbdoc";
 
 static const char *docstring = R"pbdoc(

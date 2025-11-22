@@ -54,7 +54,7 @@ public:
     int Nbatch = -1;
     int NperBatch = -1;
     std::optional<real> wallHeight = std::nullopt;
-    real delta = 1e-3;
+    real delta = 1e-3; // in units of particle radius
   };
   /**
    * @brief Sets the parameters for the N-body computation
@@ -96,6 +96,7 @@ public:
           "you want to use a wall, set periodicityZ to single_wall in the "
           "configuration.");
     }
+    this->delta = par.delta;
   }
 
   void initialize(Parameters ipar) override {
@@ -197,9 +198,9 @@ public:
     device_vector thermal_drift_m(ilinear.size(), 0);
     device_vector thermal_drift_d(iangular.size(), 0);
 
-    libmobility::random_finite_differences(mdot, original_pos, thermal_drift_m,
-                                           thermal_drift_d, seed, this->delta,
-                                           prefactor);
+    libmobility::random_finite_differences(
+        mdot, original_pos, thermal_drift_m, thermal_drift_d, seed,
+        this->delta * this->hydrodynamicRadius, prefactor);
     device_adapter<real> linear(ilinear, device::cuda);
     this->setPositions(original_pos);
     thrust::transform(thrust::cuda::par, thermal_drift_m.begin(),
