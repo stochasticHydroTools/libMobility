@@ -21,8 +21,8 @@ def average(function, num_averages):
     return result_m / num_averages, result_d
 
 
-def average_with_error(function, num_averages, soln, N, includeAngular):
-    # track error of the running average of RFDs after each new sample
+def average_until_error_tolerance(function, num_averages, soln, N, includeAngular, tol):
+    # track error of the running average of RFDs after each new sample. exit early if the error is below the tolerance
     avg_err_m = np.zeros(num_averages)
     rfd_m = np.zeros(3 * N)
     avg_err_d = np.zeros(num_averages)
@@ -31,6 +31,10 @@ def average_with_error(function, num_averages, soln, N, includeAngular):
     soln_m = soln[0 : 3 * N]
     soln_d = soln[3 * N :] if includeAngular else None
 
+    err_check_iter = 0
+    check_every = 5000
+    exit_early = False
+    last_iter = -1
     for i in range(num_averages):
         new_result_m, new_result_d = function()
         rfd_m += new_result_m
@@ -41,16 +45,41 @@ def average_with_error(function, num_averages, soln, N, includeAngular):
             running_d = rfd_d / float(i + 1)
             avg_err_d[i] = np.linalg.norm((running_d - soln_d))
 
+        if err_check_iter == check_every:
+            err_m = np.allclose(running_m, soln_m, atol=tol, rtol=tol)
+            errs = [err_m]
+            if includeAngular:
+                err_d = np.allclose(running_d, soln_d, atol=tol, rtol=tol)
+                errs.append(err_d)
+            if all(errs):
+                last_iter = i
+                exit_early = True
+                break
+            err_check_iter = 0
+        err_check_iter += 1
+
+    if exit_early:
+        num_averages = last_iter + 1
+
     rfd_m /= float(num_averages)
     rfd_d /= float(num_averages)
 
+    avg_err_m = avg_err_m[:num_averages]
+    avg_err_d = avg_err_d[:num_averages]
+
+    # plot_error(avg_err_m, avg_err_d, num_averages, includeAngular, delta, a)
+
+    return rfd_m, rfd_d
+
+
+def plot_error(avg_err_m, avg_err_d, num_averages, includeAngular):
     import matplotlib.pyplot as plt
 
     plt.figure()
-    n = np.arange(num_averages)
+    n = np.arange(1, num_averages + 1)
     plt.loglog(n, avg_err_m, marker="o", linestyle="-")
     plt.loglog(n, avg_err_d, marker="o", linestyle="-")
-    plt.loglog(n, 0.1 * 1 / np.sqrt(n + 1), linestyle="--", color="black")
+    plt.loglog(n, 0.1 * 1 / np.sqrt(n), linestyle="--", color="black")
     if includeAngular:
         plt.legend(
             ["Measured error (linear)", "Measured error (dipole)", "O(1/sqrt(N))"]
@@ -62,13 +91,11 @@ def average_with_error(function, num_averages, soln, N, includeAngular):
     plt.title("Error of running average of RFDs compared to deterministic divM")
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig("avg_err_m.png", dpi=150)
+    plt.savefig("rfd_error.png", dpi=150)
     plt.close()
-    return rfd_m, rfd_d
 
 
-def deterministic_div_m(solver, positions, includeAngular):
-    delta = 1e-3
+def deterministic_div_m(solver, positions, includeAngular, delta):
     N = np.size(positions) // 3
     size = 6 * N if includeAngular else 3 * N
 
@@ -120,33 +147,38 @@ def divM_rfd(solver, positions, delta):
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
-def test_deterministic_divM_matches_rfd(Solver, periodicity):
+@pytest.mark.parametrize("includeAngular", [True, False])
+@pytest.mark.parametrize("a", [0.4, 1.0, 2.5])
+def test_deterministic_divM_matches_rfd(Solver, periodicity, a, includeAngular):
+    if Solver.__name__ == "PSE" and includeAngular:
+        pytest.skip("PSE does not support torques")
+    N_iter = 100001 if Solver.__name__ == "NBody" else 25001
+    tol = 1e-2 if Solver.__name__ == "DPStokes" else 1e-3
     solver = Solver(*periodicity)
-    includeAngular = True
     parameters = get_sane_params(Solver.__name__, periodicity[2])
+    delta = 1e-3
+    if "delta" in parameters:
+        parameters["delta"] = delta
     solver.setParameters(**parameters)
     precision = np.float32 if solver.precision == "float" else np.float64
     solver.initialize(
         viscosity=1.0,
-        hydrodynamicRadius=1.0,
+        hydrodynamicRadius=a,
         includeAngular=includeAngular,
     )
     numberParticles = 10
     positions = generate_positions_in_box(parameters, numberParticles).astype(precision)
     solver.setPositions(positions)
 
-    det_div_m = deterministic_div_m(solver, positions, includeAngular)
-    # rfd_dM, _ = divM_rfd(solver, positions, delta)
-    # rfd_m, rfd_d = average(solver.divM, 10000)
-    rfd_m, rfd_d = average_with_error(
-        solver.divM, 10000, det_div_m, numberParticles, includeAngular
+    # use delta*a in deterministic since libMobility solvers expect delta to be in units of a
+    det_div_m = deterministic_div_m(solver, positions, includeAngular, delta * a)
+    rfd_m, rfd_d = average_until_error_tolerance(
+        solver.divM, N_iter, det_div_m, numberParticles, includeAngular, tol
     )
 
-    assert np.allclose(det_div_m[0 : 3 * numberParticles], rfd_m, atol=1e-3, rtol=1e-3)
+    assert np.allclose(det_div_m[0 : 3 * numberParticles], rfd_m, atol=tol, rtol=tol)
     if includeAngular:
-        assert np.allclose(
-            det_div_m[3 * numberParticles :], rfd_d, atol=1e-3, rtol=1e-3
-        )
+        assert np.allclose(det_div_m[3 * numberParticles :], rfd_d, atol=tol, rtol=tol)
 
 
 @pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
