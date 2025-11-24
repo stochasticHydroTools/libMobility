@@ -31,8 +31,7 @@ template <typename Mdot>
 void random_finite_differences(Mdot mdot, device_span<const real> positions,
                                device_span<real> ilinear,
                                device_span<real> iangular, uint seed,
-                               real prefactor = 1) {
-  constexpr real delta = 1e-3;
+                               const real delta, real prefactor = 1) {
   const uint N = ilinear.size() / 3;
   using device_vector =
       thrust::device_vector<real, allocator::thrust_cached_allocator<real>>;
