@@ -46,9 +46,7 @@ solver_configs_torques = [
 ]
 
 
-def initialize_solver(
-    Solver, periodicity, includeAngular=False, parameters=None, **kwargs
-):
+def initialize_solver(Solver, periodicity, includeAngular=False, parameters=None):
     solver = Solver(*periodicity)
     if parameters is not None:
         solver.setParameters(**parameters)

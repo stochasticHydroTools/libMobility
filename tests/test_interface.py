@@ -159,9 +159,7 @@ def test_returns_mf_mt(Solver, periodicity):
 def test_returns_sqrtM(Solver, periodicity):
     numberParticles = 1
     parameters = get_sane_params(Solver.__name__, periodicity[2])
-    solver = initialize_solver(
-        Solver, periodicity, parameters=parameters, temperature=1.0
-    )
+    solver = initialize_solver(Solver, periodicity, parameters=parameters)
     # Set precision to be the same as compiled precision
     positions = generate_positions_in_box(parameters, numberParticles)
     solver.setPositions(positions)
@@ -178,9 +176,7 @@ def test_returns_sqrtM(Solver, periodicity):
 def test_returns_divM(Solver, periodicity):
     numberParticles = 1
     parameters = get_sane_params(Solver.__name__, periodicity[2])
-    solver = initialize_solver(
-        Solver, periodicity, parameters=parameters, temperature=1.0
-    )
+    solver = initialize_solver(Solver, periodicity, parameters=parameters)
 
     positions = generate_positions_in_box(parameters, numberParticles)
     solver.setPositions(positions)
@@ -198,11 +194,7 @@ def test_returns_hydrodisp(Solver, periodicity):
     numberParticles = 1
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver = initialize_solver(
-        Solver,
-        periodicity,
-        parameters=parameters,
-        temperature=1.0,
-        includeAngular=False,
+        Solver, periodicity, parameters=parameters, includeAngular=False
     )
 
     shapes = [(3,), (1, 3), (1, 3), (3,)]
@@ -231,7 +223,7 @@ def test_returns_hydrodisp_torques(Solver, periodicity):
     numberParticles = 1
     parameters = get_sane_params(Solver.__name__, periodicity[2])
     solver = initialize_solver(
-        Solver, periodicity, parameters=parameters, temperature=1.0, includeAngular=True
+        Solver, periodicity, parameters=parameters, includeAngular=True
     )
 
     shapes = [[(3,), (1, 3)], [(1, 3), (3,)], [(1, 3), (1, 3)], [(3,), (3,)]]
@@ -347,11 +339,7 @@ def test_hydrodisp_equivalent(Solver, periodicity, includeAngular):
         pytest.skip("PSE does not support torques")
 
     numberParticles = 1
-    solver = initialize_solver(
-        Solver,
-        periodicity,
-        includeAngular=includeAngular,
-    )
+    solver = initialize_solver(Solver, periodicity, includeAngular=includeAngular)
 
     # Set precision to be the same as compiled precision
     precision = np.float32 if Solver.precision == "float" else np.float64
@@ -373,12 +361,7 @@ def test_changing_number_particles(Solver, periodicity, includeAngular):
     if includeAngular and Solver.__name__ == "PSE":
         pytest.skip("PSE does not support torques")
 
-    solver = initialize_solver(
-        Solver,
-        periodicity,
-        includeAngular=includeAngular,
-        temperature=1.0,
-    )
+    solver = initialize_solver(Solver, periodicity, includeAngular=includeAngular)
     for numberParticles in [1, 2, 3]:
         # Set precision to be the same as compiled precision
         positions = np.random.rand(numberParticles, 3)
@@ -396,3 +379,23 @@ def test_changing_number_particles(Solver, periodicity, includeAngular):
             assert bothmt.shape == (numberParticles, 3)
             assert dmt.shape == (numberParticles, 3)
             assert mt.shape == (numberParticles, 3)
+
+
+# def test_prefactor(Solver, periodicity):
+#     solver = initialize_solver(Solver, periodicity)
+#     numberParticles = 1
+
+#     precision = np.float32 if Solver.precision == "float" else np.float64
+#     positions = np.random.rand(numberParticles, 3).astype(precision)
+#     forces = np.random.rand(numberParticles, 3).astype(precision)
+#     solver.setPositions(positions)
+
+#     mf, mt = solver.Mdot(forces=forces, prefactor=2.0)
+#     mf_no_prefac, mt_no_prefac = solver.Mdot(forces=forces, prefactor=1.0)
+#     assert np.allclose(mf, 2.0 * mf_no_prefac, atol=1e-6)
+#     if mt is not None:
+#         assert np.allclose(mt, 2.0 * mt_no_prefac, atol=1e-6)
+
+#     sqrtmw, _ = solver.sqrtMdotW(prefactor=2.0)
+#     sqrtmw_no_prefac, _ = solver.sqrtMdotW(prefactor=1.0)
+#     assert np.allclose(sqrtmw, np.sqrt(2.0) * sqrtmw_no_prefac, atol=1e-6)
