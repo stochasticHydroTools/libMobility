@@ -11,6 +11,17 @@
 #include <random>
 #include <stdexcept>
 #include <vector>
+
+namespace detail {
+// scales lanczos output and add to output vector
+struct PrefactorMult {
+  const real prefactor;
+  __device__ real operator()(const real lacnzosVec, const real out) const {
+    return prefactor * lacnzosVec + out;
+  }
+};
+} // namespace detail
+
 namespace libmobility {
 
 enum class periodicity_mode {
@@ -163,15 +174,17 @@ public:
           device_span<real> s_mv({mv, mv + 3 * N}, dev);
           Mdot(s_f, s_t, s_mv, s_mt);
         },
-        lanczosOutput.data().get(), numberElements, lanczosCallback, prefactor);
+        lanczosOutput.data().get(), numberElements, lanczosCallback);
+
     thrust::transform(thrust::cuda::par, lanczosOutput.begin(),
                       lanczosOutput.begin() + 3 * numberParticles,
-                      linear.begin(), linear.begin(), thrust::plus<real>());
+                      linear.begin(), linear.begin(),
+                      detail::PrefactorMult{prefactor});
     if (this->includeAngular)
       thrust::transform(thrust::cuda::par,
                         lanczosOutput.begin() + 3 * numberParticles,
                         lanczosOutput.end(), angular.begin(), angular.begin(),
-                        thrust::plus<real>());
+                        detail::PrefactorMult{prefactor});
   }
 
   // computes velocities according to the Langevin equation.
