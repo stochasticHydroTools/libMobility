@@ -381,21 +381,38 @@ def test_changing_number_particles(Solver, periodicity, includeAngular):
             assert mt.shape == (numberParticles, 3)
 
 
-# def test_prefactor(Solver, periodicity):
-#     solver = initialize_solver(Solver, periodicity)
-#     numberParticles = 1
+@pytest.mark.parametrize(("Solver", "periodicity"), solver_configs_all)
+@pytest.mark.parametrize("includeAngular", [True, False])
+def test_prefactor(Solver, periodicity, includeAngular):
 
-#     precision = np.float32 if Solver.precision == "float" else np.float64
-#     positions = np.random.rand(numberParticles, 3).astype(precision)
-#     forces = np.random.rand(numberParticles, 3).astype(precision)
-#     solver.setPositions(positions)
+    if Solver.__name__ == "PSE":
+        pytest.skip("TODO PSE needs more changes to support seeding random noise")
 
-#     mf, mt = solver.Mdot(forces=forces, prefactor=2.0)
-#     mf_no_prefac, mt_no_prefac = solver.Mdot(forces=forces, prefactor=1.0)
-#     assert np.allclose(mf, 2.0 * mf_no_prefac, atol=1e-6)
-#     if mt is not None:
-#         assert np.allclose(mt, 2.0 * mt_no_prefac, atol=1e-6)
+    rng = np.random.default_rng()
+    seed = rng.integers(0, int(1e6))
 
-#     sqrtmw, _ = solver.sqrtMdotW(prefactor=2.0)
-#     sqrtmw_no_prefac, _ = solver.sqrtMdotW(prefactor=1.0)
-#     assert np.allclose(sqrtmw, np.sqrt(2.0) * sqrtmw_no_prefac, atol=1e-6)
+    solver_pf = initialize_solver(
+        Solver, periodicity, seed=seed, includeAngular=includeAngular
+    )
+    solver_nopf = initialize_solver(
+        Solver, periodicity, seed=seed, includeAngular=includeAngular
+    )
+    numberParticles = 1
+
+    precision = np.float32 if Solver.precision == "float" else np.float64
+    positions = np.random.rand(numberParticles, 3).astype(precision)
+    solver_pf.setPositions(positions)
+    solver_nopf.setPositions(positions)
+
+    prefactor = 2.45
+    mwf_pf, mwt_pf = solver_pf.sqrtMdotW(prefactor=prefactor)
+    mwf, mwt = solver_nopf.sqrtMdotW()
+    assert np.allclose(mwf_pf, prefactor * mwf, atol=1e-4)
+    if includeAngular:
+        assert np.allclose(mwt_pf, prefactor * mwt, atol=1e-4)
+
+    divm_pf, divmt_pf = solver_pf.divM(prefactor=prefactor)
+    divm, divmt = solver_nopf.divM()
+    assert np.allclose(divm_pf, prefactor * divm, atol=1e-4)
+    if includeAngular:
+        assert np.allclose(divmt_pf, prefactor * divmt, atol=1e-4)
