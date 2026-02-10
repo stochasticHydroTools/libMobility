@@ -48,6 +48,11 @@ public:
     currentpsepar = psepar;
     if (ipar.includeAngular)
       throw std::runtime_error("[PSE] Torque is not implemented");
+
+    if (ipar.seed)
+      throw std::runtime_error(
+          "[PSE] This solver does not currently accept a seed. The seed is "
+          "generated internally and cannot be set by the user.");
   }
 
   struct PSEParameters {
@@ -147,7 +152,7 @@ public:
                                           linear.data(), temperature,
                                           sqrtM_prefactor);
   }
-  void clean() { pse->clean(); }
+  void clean() override { pse->clean(); }
 
 private:
   bool onlyShearStrainChanged(Parameters i_par) {

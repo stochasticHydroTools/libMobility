@@ -386,7 +386,7 @@ def test_changing_number_particles(Solver, periodicity, includeAngular):
 def test_prefactor(Solver, periodicity, includeAngular):
 
     if Solver.__name__ == "PSE":
-        pytest.skip("TODO PSE needs more changes to support seeding random noise")
+        pytest.skip("TODO PSE changes in UAMMD to support seeding random noise")
 
     rng = np.random.default_rng()
     seed = rng.integers(0, int(1e6))

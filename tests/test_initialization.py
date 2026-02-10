@@ -68,6 +68,13 @@ def test_pse_no_shear():
     solver.initialize(hydrodynamicRadius=1.0, viscosity=1.0)
 
 
+def test_pse_seed_unsupported():
+    solver = PSE("periodic", "periodic", "periodic")
+    solver.setParameters(psi=1.0, Lx=10.0, Ly=10.0, Lz=10.0)
+    with pytest.raises(RuntimeError):
+        solver.initialize(hydrodynamicRadius=1.0, viscosity=1.0, seed=12345)
+
+
 # NBody should use default alg and all particles in one batch if no params set
 def test_nbody_no_params():
     solver = NBody("open", "open", "open")
