@@ -1,13 +1,12 @@
 import numpy as np
 from libMobility import SelfMobility, NBody, PSE, DPStokes
 
-
 sane_parameters = {
     "PSE": {"psi": 1.0, "Lx": 32, "Ly": 32, "Lz": 32, "shearStrain": 0.0},
     "NBody": {"algorithm": "advise", "delta": 1e-3},
     "NBody_wall": {"algorithm": "advise", "wallHeight": 0.0, "delta": 1e-3},
     "DPStokes": {
-        "Lx": 16,
+        "Lx": 16,  # if a smaller box size is used, fluctuation dissipation tests can fail due to numerical error in symmetry of DPStokes
         "Ly": 16,
         "zmin": -6,
         "zmax": 6,
@@ -46,16 +45,16 @@ solver_configs_torques = [
 ]
 
 
-def initialize_solver(Solver, periodicity, includeAngular=False, parameters=None):
+def initialize_solver(
+    Solver, periodicity, includeAngular=False, parameters=None, seed=None
+):
     solver = Solver(*periodicity)
     if parameters is not None:
         solver.setParameters(**parameters)
     else:
         solver.setParameters(**get_sane_params(Solver.__name__, periodicity[2]))
     solver.initialize(
-        viscosity=1.0,
-        hydrodynamicRadius=1.0,
-        includeAngular=includeAngular,
+        viscosity=1.0, hydrodynamicRadius=1.0, includeAngular=includeAngular, seed=seed
     )
     return solver
 
