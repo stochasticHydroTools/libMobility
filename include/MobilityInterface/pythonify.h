@@ -240,12 +240,15 @@ array_like
 
 template <class Solver>
 void call_initialize(Solver &myself, real eta, real a, bool includeAngular,
-                     real tol, std::optional<nb::callable> i_lanczosCallback) {
+                     real tol, std::optional<int> seed,
+                     std::optional<nb::callable> i_lanczosCallback) {
   libmobility::Parameters par;
   par.viscosity = eta;
   par.hydrodynamicRadius = {a};
   par.tolerance = tol;
   par.includeAngular = includeAngular;
+  par.seed =
+      seed.value_or(0); // zero gets a random seed within MobilityInterface
   std::function<void(int, real)> lanczosCallback;
   if (i_lanczosCallback.has_value() && bool(i_lanczosCallback.value())) {
     lanczosCallback = [i_lanczosCallback](int i, real err) {
@@ -369,7 +372,8 @@ auto define_module_content(
            "periodicityY"_a, "periodicityZ"_a)
       .def("initialize", call_initialize<MODULENAME>, initialize_docstring,
            "viscosity"_a, "hydrodynamicRadius"_a, "includeAngular"_a = false,
-           "tolerance"_a = 1e-4, "lanczos_callback"_a = nb::none())
+           "tolerance"_a = 1e-4, "seed"_a = nb::none(),
+           "lanczos_callback"_a = nb::none())
       .def("setPositions", call_setPositions<MODULENAME>,
            "The module will compute the mobility according to this set of "
            "positions.",
