@@ -1,23 +1,23 @@
-function(setup_nanobind_module NAME)
+function(compile_uammd_module NAME)
+uammd_setup_target(libMobility_${NAME})
+
   nanobind_add_module(
-    ${NAME}
-    STABLE_ABI
-    python_wrapper.cu
+      ${NAME}
+      STABLE_ABI
+      python_wrapper.cu
   )
+  uammd_setup_target(${NAME})
+  target_link_libraries(${NAME} PRIVATE libMobility_${NAME})
+  install(TARGETS libMobility_${NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+  install(TARGETS ${NAME} LIBRARY DESTINATION ${Python_SITEARCH}/libMobility)
 
   nanobind_add_stub(
-    ${NAME}_stub
-    MODULE ${NAME}
-    OUTPUT ${NAME}.pyi
-    DEPENDS ${NAME}
-    MARKER_FILE py.typed
-  )
-
-  install(
-    FILES
-      ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pyi
-      ${CMAKE_CURRENT_BINARY_DIR}/py.typed
-    DESTINATION ${Python_SITEARCH}/libMobility
+      ${NAME}_stub
+      INSTALL_TIME
+      MODULE ${NAME}
+      OUTPUT "${Python_SITEARCH}/libMobility/${NAME}.pyi"
+      PYTHON_PATH "${Python_SITEARCH}/libMobility"
+      MARKER_FILE "${Python_SITEARCH}/libMobility/py.typed"
   )
 
 endfunction()
