@@ -7,7 +7,8 @@ uammd_setup_target(libMobility_${NAME})
       python_wrapper.cu
   )
   uammd_setup_target(${NAME})
-  target_link_libraries(${NAME} PRIVATE libMobility_${NAME})
+  target_link_libraries(libMobility_${NAME} PRIVATE cblas)
+  target_link_libraries(${NAME} PRIVATE libMobility_${NAME} cblas)
   install(TARGETS libMobility_${NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
   install(TARGETS ${NAME} LIBRARY DESTINATION ${Python_SITEARCH}/libMobility)
 
