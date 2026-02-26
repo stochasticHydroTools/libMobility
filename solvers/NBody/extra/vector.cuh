@@ -8,12 +8,22 @@
 #include <MobilityInterface/defines.h>
 #include <math.h>
 
+#define VECATTR inline __host__ __device__
+
+namespace libmobility {
+#if defined(CUDART_VERSION) && (CUDART_VERSION >= 13000)
+using double4_type = double4_16a;
+#else
+using double4_type = double4;
+#endif
+} // namespace libmobility
+
 namespace nbody_rpy {
 using real = libmobility::real;
 #ifdef DOUBLE_PRECISION
 using real2 = double2;
 using real3 = double3;
-using real4 = double4;
+using real4 = libmobility::double4_type;
 #else
 using real2 = float2;
 using real3 = float3;
@@ -24,8 +34,6 @@ using real4 = float4;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long long int ullint;
-
-#define VECATTR inline __host__ __device__
 
 /////////////////////FLOAT2///////////////////////////////
 
@@ -290,6 +298,16 @@ VECATTR float dot(float4 a, float4 b) {
   return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 }
 
+VECATTR libmobility::double4_type make_libmobility_double4(double x, double y,
+                                                           double z, double w) {
+  libmobility::double4_type v;
+  v.x = x;
+  v.y = y;
+  v.z = z;
+  v.w = w;
+  return v;
+}
+
 namespace nbody_rpy {
 /////////////////REAL4////////////////////////////////
 
@@ -297,7 +315,7 @@ VECATTR real4 make_real4(real x, real y, real z, real w) {
 #ifdef SINGLE_PRECISION
   return make_float4(x, y, z, w);
 #else
-  return make_double4(x, y, z, w);
+  return make_libmobility_double4(x, y, z, w);
 #endif
 }
 
@@ -344,7 +362,9 @@ VECATTR real3 make_real3(real3 a) { return make_real3(a.x, a.y, a.z); }
 
 #ifdef SINGLE_PRECISION
 VECATTR real3 make_real3(double3 a) { return make_real3(a.x, a.y, a.z); }
-VECATTR real3 make_real3(double4 a) { return make_real3(a.x, a.y, a.z); }
+VECATTR real3 make_real3(libmobility::double4_type a) {
+  return make_real3(a.x, a.y, a.z);
+}
 #else
 template <typename T> VECATTR real3 make_real3(float2 a, T b) {
   return make_real3(a.x, a.y, b);
@@ -402,115 +422,147 @@ VECATTR double3 make_double3(nbody_rpy::real4 a) {
   return make_double3(a.x, a.y, a.z);
 }
 #endif
-VECATTR float4 make_float4(double4 a) {
+VECATTR float4 make_float4(libmobility::double4_type a) {
   return make_float4(float(a.x), float(a.y), float(a.z), float(a.w));
 }
 
-VECATTR double4 make_double4(double s) { return make_double4(s, s, s, s); }
-VECATTR double4 make_double4(double3 a) {
-  return make_double4(a.x, a.y, a.z, 0.0f);
+VECATTR libmobility::double4_type make_double4(double s) {
+  return make_libmobility_double4(s, s, s, s);
 }
-VECATTR double4 make_double4(double3 a, double w) {
-  return make_double4(a.x, a.y, a.z, w);
+VECATTR libmobility::double4_type make_double4(double3 a) {
+  return make_libmobility_double4(a.x, a.y, a.z, 0.0);
 }
-VECATTR double4 make_double4(int4 a) {
-  return make_double4(double(a.x), double(a.y), double(a.z), double(a.w));
+VECATTR libmobility::double4_type make_double4(double3 a, double w) {
+  return make_libmobility_double4(a.x, a.y, a.z, w);
 }
-VECATTR double4 make_double4(uint4 a) {
-  return make_double4(double(a.x), double(a.y), double(a.z), double(a.w));
+VECATTR libmobility::double4_type make_double4(int4 a) {
+  return make_libmobility_double4(double(a.x), double(a.y), double(a.z),
+                                  double(a.w));
 }
-VECATTR double4 make_double4(float4 a) {
-  return make_double4(double(a.x), double(a.y), double(a.z), double(a.w));
+VECATTR libmobility::double4_type make_double4(uint4 a) {
+  return make_libmobility_double4(double(a.x), double(a.y), double(a.z),
+                                  double(a.w));
+}
+VECATTR libmobility::double4_type make_double4(float4 a) {
+  return make_libmobility_double4(double(a.x), double(a.y), double(a.z),
+                                  double(a.w));
 }
 
 //////DOUBLE4///////////////
-VECATTR double4 operator+(const double4 &a, const double4 &b) {
-  return make_double4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
+VECATTR libmobility::double4_type
+operator+(const libmobility::double4_type &a,
+          const libmobility::double4_type &b) {
+  return make_libmobility_double4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
 }
-VECATTR void operator+=(double4 &a, const double4 &b) {
+VECATTR void operator+=(libmobility::double4_type &a,
+                        const libmobility::double4_type &b) {
   a.x += b.x;
   a.y += b.y;
   a.z += b.z;
   a.w += b.w;
 }
-VECATTR double4 operator+(const double4 &a, const double &b) {
-  return make_double4(a.x + b, a.y + b, a.z + b, a.w + b);
+VECATTR libmobility::double4_type operator+(const libmobility::double4_type &a,
+                                            const double &b) {
+  return make_libmobility_double4(a.x + b, a.y + b, a.z + b, a.w + b);
 }
-VECATTR double4 operator+(const double &b, const double4 &a) { return a + b; }
-VECATTR void operator+=(double4 &a, const double &b) {
+VECATTR libmobility::double4_type
+operator+(const double &b, const libmobility::double4_type &a) {
+  return a + b;
+}
+VECATTR void operator+=(libmobility::double4_type &a, const double &b) {
   a.x += b;
   a.y += b;
   a.z += b;
   a.w += b;
 }
 
-VECATTR double4 operator-(const double4 &a, const double4 &b) {
-  return make_double4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
+VECATTR libmobility::double4_type
+operator-(const libmobility::double4_type &a,
+          const libmobility::double4_type &b) {
+  return make_libmobility_double4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
 }
-VECATTR void operator-=(double4 &a, const double4 &b) {
+VECATTR void operator-=(libmobility::double4_type &a,
+                        const libmobility::double4_type &b) {
   a.x -= b.x;
   a.y -= b.y;
   a.z -= b.z;
   a.w -= b.w;
 }
-VECATTR double4 operator-(const double4 &a, const double &b) {
-  return make_double4(a.x - b, a.y - b, a.z - b, a.w - b);
+VECATTR libmobility::double4_type operator-(const libmobility::double4_type &a,
+                                            const double &b) {
+  return make_libmobility_double4(a.x - b, a.y - b, a.z - b, a.w - b);
 }
-VECATTR double4 operator-(const double &b, const double4 &a) {
-  return make_double4(b - a.x, b - a.y, b - a.z, b - a.w);
+VECATTR libmobility::double4_type
+operator-(const double &b, const libmobility::double4_type &a) {
+  return make_libmobility_double4(b - a.x, b - a.y, b - a.z, b - a.w);
 }
-VECATTR void operator-=(double4 &a, const double &b) {
+VECATTR void operator-=(libmobility::double4_type &a, const double &b) {
   a.x -= b;
   a.y -= b;
   a.z -= b;
   a.w -= b;
 }
-VECATTR double4 operator*(const double4 &a, const double4 &b) {
-  return make_double4(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
+VECATTR libmobility::double4_type
+operator*(const libmobility::double4_type &a,
+          const libmobility::double4_type &b) {
+  return make_libmobility_double4(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
 }
-VECATTR void operator*=(double4 &a, const double4 &b) {
+VECATTR void operator*=(libmobility::double4_type &a,
+                        const libmobility::double4_type &b) {
   a.x *= b.x;
   a.y *= b.y;
   a.z *= b.z;
   a.w *= b.w;
 }
-VECATTR double4 operator*(const double4 &a, const double &b) {
-  return make_double4(a.x * b, a.y * b, a.z * b, a.w * b);
+VECATTR libmobility::double4_type operator*(const libmobility::double4_type &a,
+                                            const double &b) {
+  return make_libmobility_double4(a.x * b, a.y * b, a.z * b, a.w * b);
 }
-VECATTR double4 operator*(const double &b, const double4 &a) { return a * b; }
-VECATTR void operator*=(double4 &a, const double &b) {
+VECATTR libmobility::double4_type
+operator*(const double &b, const libmobility::double4_type &a) {
+  return a * b;
+}
+VECATTR void operator*=(libmobility::double4_type &a, const double &b) {
   a.x *= b;
   a.y *= b;
   a.z *= b;
   a.w *= b;
 }
-VECATTR double4 operator/(const double4 &a, const double4 &b) {
-  return make_double4(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w);
+VECATTR libmobility::double4_type
+operator/(const libmobility::double4_type &a,
+          const libmobility::double4_type &b) {
+  return make_libmobility_double4(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w);
 }
-VECATTR void operator/=(double4 &a, const double4 &b) {
+VECATTR void operator/=(libmobility::double4_type &a,
+                        const libmobility::double4_type &b) {
   a.x /= b.x;
   a.y /= b.y;
   a.z /= b.z;
   a.w /= b.w;
 }
-VECATTR double4 operator/(const double4 &a, const double &b) {
+VECATTR libmobility::double4_type operator/(const libmobility::double4_type &a,
+                                            const double &b) {
   return (1.0 / b) * a;
 }
-VECATTR double4 operator/(const double &b, const double4 &a) {
-  return make_double4(b / a.x, b / a.y, b / a.z, b / a.w);
+VECATTR libmobility::double4_type
+operator/(const double &b, const libmobility::double4_type &a) {
+  return make_libmobility_double4(b / a.x, b / a.y, b / a.z, b / a.w);
 }
-VECATTR void operator/=(double4 &a, const double &b) { a *= 1.0 / b; }
+VECATTR void operator/=(libmobility::double4_type &a, const double &b) {
+  a *= 1.0 / b;
+}
 
-VECATTR double dot(double4 a, double4 b) {
+VECATTR double dot(libmobility::double4_type a, libmobility::double4_type b) {
   return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 }
-VECATTR double length(double4 v) { return sqrt(dot(v, v)); }
-VECATTR double4 normalize(double4 v) {
+VECATTR double length(libmobility::double4_type v) { return sqrt(dot(v, v)); }
+VECATTR libmobility::double4_type normalize(libmobility::double4_type v) {
   double invLen = 1.0 / sqrt(dot(v, v));
   return v * invLen;
 }
-VECATTR double4 floorf(double4 v) {
-  return make_double4(floor(v.x), floor(v.y), floor(v.z), floor(v.w));
+VECATTR libmobility::double4_type floorf(libmobility::double4_type v) {
+  return make_libmobility_double4(floor(v.x), floor(v.y), floor(v.z),
+                                  floor(v.w));
 }
 
 /////////////////////DOUBLE3///////////////////////////////

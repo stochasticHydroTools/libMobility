@@ -50,7 +50,7 @@ endif()
 FetchContent_Declare(
   uammd
   GIT_REPOSITORY https://github.com/RaulPPelaez/uammd/
-  GIT_TAG        v3.0.0
+  GIT_TAG        v3.0.1
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(uammd)
