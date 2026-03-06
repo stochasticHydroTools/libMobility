@@ -2,7 +2,7 @@ import numpy as np
 import libMobility as lm
 
 
-def compute_with_dpstokes(pos, lx, ly, forces=None, torques=None):
+def compute_with_dpstokes(pos, lx, ly, forces=None, torques=None) -> np.ndarray:
     params = {"viscosity": 1 / (6 * np.pi), "hydrodynamicRadius": 1.73}
     dpstokes = lm.DPStokes("periodic", "periodic", "single_wall")
     torques_on = True if torques is not None else False
@@ -11,9 +11,9 @@ def compute_with_dpstokes(pos, lx, ly, forces=None, torques=None):
     dpstokes.setPositions(pos)
     mf_dp, mt_dp = dpstokes.Mdot(forces=forces, torques=torques)
     if torques_on:
-        return mt_dp
+        return np.array(mt_dp)
     else:
-        return mf_dp
+        return np.array(mf_dp)
 
 
 def test_non_square_box():
@@ -34,28 +34,21 @@ def test_non_square_box():
     # This must be identical than doubling the box size in x and repeating the particles
     pos = np.vstack((pos_or, pos_or + np.array([0.5 * L_long, 0.0, 0.0])))
     forces = np.vstack((forces_or, forces_or))
-    mf_dp_lx = compute_with_dpstokes(pos, forces=forces, lx=L_long, ly=L_short)[
-        : len(pos_or), :
-    ]
-    mt_dp_lx = compute_with_dpstokes(pos, torques=forces, lx=L_long, ly=L_short)[
-        : len(pos_or), :
-    ]
+    mf_dp_lx = compute_with_dpstokes(pos, forces=forces, lx=L_long, ly=L_short)
+    mt_dp_lx = compute_with_dpstokes(pos, torques=forces, lx=L_long, ly=L_short)
 
     # And the same for doubling the box size in y
     pos = np.vstack((pos_or, pos_or + np.array([0.0, 0.5 * L_long, 0.0])))
     forces = np.vstack((forces_or, forces_or))
-    mf_dp_ly = compute_with_dpstokes(pos, forces=forces, lx=L_short, ly=L_long)[
-        : len(pos_or), :
-    ]
-    mt_dp_ly = compute_with_dpstokes(pos, torques=forces, lx=L_short, ly=L_long)[
-        : len(pos_or), :
-    ]
+    mf_dp_ly = compute_with_dpstokes(pos, forces=forces, lx=L_short, ly=L_long)
+    mt_dp_ly = compute_with_dpstokes(pos, torques=forces, lx=L_short, ly=L_long)
 
-    assert np.allclose(mf_dp_lx, mf_dp_cube, rtol=1e-3, atol=1e-2)
-    assert np.allclose(mf_dp_ly, mf_dp_cube, rtol=1e-3, atol=1e-2)
+    slice = np.s_[0 : len(pos_or), :]
+    assert np.allclose(mf_dp_lx[slice], mf_dp_cube, rtol=1e-3, atol=1e-2)
+    assert np.allclose(mf_dp_ly[slice], mf_dp_cube, rtol=1e-3, atol=1e-2)
 
-    assert np.allclose(mt_dp_lx, mt_dp_cube, rtol=1e-3, atol=1e-2)
-    assert np.allclose(mt_dp_ly, mt_dp_cube, rtol=1e-3, atol=1e-2)
+    assert np.allclose(mt_dp_lx[slice], mt_dp_cube, rtol=1e-3, atol=1e-2)
+    assert np.allclose(mt_dp_ly[slice], mt_dp_cube, rtol=1e-3, atol=1e-2)
 
 
 def test_isotropy():
