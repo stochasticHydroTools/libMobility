@@ -1,8 +1,9 @@
 import numpy as np
 import libMobility as lm
+import pytest
 
 
-def compute_with_dpstokes(pos, lx, ly, forces=None, torques=None):
+def compute_with_dpstokes(pos, lx, ly, forces=None, torques=None) -> np.ndarray:
     params = {"viscosity": 1 / (6 * np.pi), "hydrodynamicRadius": 1.73}
     dpstokes = lm.DPStokes("periodic", "periodic", "single_wall")
     torques_on = True if torques is not None else False
@@ -11,9 +12,9 @@ def compute_with_dpstokes(pos, lx, ly, forces=None, torques=None):
     dpstokes.setPositions(pos)
     mf_dp, mt_dp = dpstokes.Mdot(forces=forces, torques=torques)
     if torques_on:
-        return mt_dp
+        return np.array(mt_dp)
     else:
-        return mf_dp
+        return np.array(mf_dp)
 
 
 def test_non_square_box():
@@ -34,28 +35,21 @@ def test_non_square_box():
     # This must be identical than doubling the box size in x and repeating the particles
     pos = np.vstack((pos_or, pos_or + np.array([0.5 * L_long, 0.0, 0.0])))
     forces = np.vstack((forces_or, forces_or))
-    mf_dp_lx = compute_with_dpstokes(pos, forces=forces, lx=L_long, ly=L_short)[
-        : len(pos_or), :
-    ]
-    mt_dp_lx = compute_with_dpstokes(pos, torques=forces, lx=L_long, ly=L_short)[
-        : len(pos_or), :
-    ]
+    mf_dp_lx = compute_with_dpstokes(pos, forces=forces, lx=L_long, ly=L_short)
+    mt_dp_lx = compute_with_dpstokes(pos, torques=forces, lx=L_long, ly=L_short)
 
     # And the same for doubling the box size in y
     pos = np.vstack((pos_or, pos_or + np.array([0.0, 0.5 * L_long, 0.0])))
     forces = np.vstack((forces_or, forces_or))
-    mf_dp_ly = compute_with_dpstokes(pos, forces=forces, lx=L_short, ly=L_long)[
-        : len(pos_or), :
-    ]
-    mt_dp_ly = compute_with_dpstokes(pos, torques=forces, lx=L_short, ly=L_long)[
-        : len(pos_or), :
-    ]
+    mf_dp_ly = compute_with_dpstokes(pos, forces=forces, lx=L_short, ly=L_long)
+    mt_dp_ly = compute_with_dpstokes(pos, torques=forces, lx=L_short, ly=L_long)
 
-    assert np.allclose(mf_dp_lx, mf_dp_cube, rtol=1e-3, atol=1e-2)
-    assert np.allclose(mf_dp_ly, mf_dp_cube, rtol=1e-3, atol=1e-2)
+    slice = np.s_[0 : len(pos_or), :]
+    assert np.allclose(mf_dp_lx[slice], mf_dp_cube, rtol=1e-3, atol=1e-2)
+    assert np.allclose(mf_dp_ly[slice], mf_dp_cube, rtol=1e-3, atol=1e-2)
 
-    assert np.allclose(mt_dp_lx, mt_dp_cube, rtol=1e-3, atol=1e-2)
-    assert np.allclose(mt_dp_ly, mt_dp_cube, rtol=1e-3, atol=1e-2)
+    assert np.allclose(mt_dp_lx[slice], mt_dp_cube, rtol=1e-3, atol=1e-2)
+    assert np.allclose(mt_dp_ly[slice], mt_dp_cube, rtol=1e-3, atol=1e-2)
 
 
 def test_isotropy():
@@ -126,3 +120,21 @@ def test_non_square_matching_rpy():
             results_rpy[i + 3] += mt_j
 
     assert np.allclose(results_dpstokes, results_rpy, rtol=1e-3, atol=1e-2)
+
+
+def test_dpstokes_open_errors():
+    solver = lm.DPStokes("periodic", "periodic", "open")
+    solver.setParameters(Lx=10.0, Ly=10.0, zmin=0.0, zmax=10.0)
+    solver.initialize(hydrodynamicRadius=1.0, viscosity=1.0, includeAngular=True)
+
+    pos = np.random.uniform(0.0, 10.0, (10, 3))
+    solver.setPositions(pos)
+
+    forces = np.random.uniform(-1.0, 1.0, (10, 3))
+    with pytest.raises(RuntimeError, match="DPStokes"):
+        solver.Mdot(forces=forces)
+    with pytest.raises(RuntimeError, match="DPStokes"):
+        solver.Mdot(torques=forces)
+
+    forces -= np.mean(forces, axis=0)
+    solver.Mdot(forces=forces, torques=forces)
