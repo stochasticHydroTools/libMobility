@@ -3,6 +3,7 @@
 */
 #include <memory>
 #include <string>
+#include <vector_types.h>
 namespace uammd_dpstokes {
 // This is in order not to use any UAMMD related includes here.
 // Instead of using uammd::real I have to re define real here.
@@ -41,6 +42,7 @@ struct PyParameters {
   // Can be either none, bottom, slit or periodic
   std::string mode;
   bool allowChangingBoxSize = false;
+  bool allowUnsafeForces = false;
 };
 
 class DPStokesUAMMD;

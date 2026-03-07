@@ -14,6 +14,15 @@ https://doi.org/10.1063/5.0141371
 #include <cmath>
 #include <vector>
 
+namespace {
+struct vec3_sum {
+  __device__ uammd_dpstokes::real3 operator()(const uammd_dpstokes::real3 &a,
+                                              const uammd_dpstokes::real3 &b) {
+    return {a.x + b.x, a.y + b.y, a.z + b.z};
+  }
+};
+} // namespace
+
 class DPStokes : public libmobility::Mobility {
   using periodicity_mode = libmobility::periodicity_mode;
   using Configuration = libmobility::Configuration;
@@ -54,6 +63,7 @@ public:
   }
 
   void initialize(Parameters ipar) override {
+    this->par.includeAngular = ipar.includeAngular;
     this->dppar.viscosity = ipar.viscosity;
     this->lanczosTolerance = ipar.tolerance;
     this->dppar.mode = this->wallmode;
@@ -182,6 +192,44 @@ public:
     device_adapter<const real> torques(itorques, device::cuda);
     device_adapter<real> linear(ilinear, device::cuda);
     device_adapter<real> angular(iangular, device::cuda);
+
+    if (this->wallmode == "nowall" && !this->dppar.allowUnsafeForces) {
+      real errTol = 1e-3;
+      bool errFlag = false;
+      if (iforces.size() > 0) {
+        const uammd_dpstokes::real3 *fptr =
+            reinterpret_cast<const uammd_dpstokes::real3 *>(forces.data());
+        uammd_dpstokes::real3 mean_f = thrust::reduce(
+            thrust::cuda::par, fptr, fptr + this->numberParticles,
+            uammd_dpstokes::real3{0, 0, 0}, vec3_sum());
+        mean_f /= this->numberParticles;
+        if (fabs(mean_f.x) > errTol || fabs(mean_f.y) > errTol ||
+            fabs(mean_f.z) > errTol) {
+          errFlag = true;
+        }
+      }
+
+      if (this->par.includeAngular && itorques.size() > 0) {
+        const uammd_dpstokes::real3 *tptr =
+            reinterpret_cast<const uammd_dpstokes::real3 *>(torques.data());
+        uammd_dpstokes::real3 mean_t = thrust::reduce(
+            thrust::cuda::par, tptr, tptr + this->numberParticles,
+            uammd_dpstokes::real3{0, 0, 0}, vec3_sum());
+        mean_t /= (3 * this->numberParticles);
+        if (fabs(mean_t.x) > errTol || fabs(mean_t.y) > errTol ||
+            fabs(mean_t.z) > errTol) {
+          errFlag = true;
+        }
+      }
+      if (errFlag) {
+        throw std::runtime_error(
+            "[DPStokes] If using an open boundary in z, the mean force and "
+            "torque in each dimension must be zero or the solver will produce "
+            "non-physical results. If you are sure your forces and torques "
+            "satisfy this condition, you can set allowUnsafeForces=True to "
+            "bypass this check.");
+      }
+    }
 
     dpstokes->Mdot(forces.data(), torques.data(), linear.data(), angular.data(),
                    this->getNumberParticles(), this->getIncludeAngular());
