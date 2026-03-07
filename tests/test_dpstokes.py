@@ -1,5 +1,6 @@
 import numpy as np
 import libMobility as lm
+import pytest
 
 
 def compute_with_dpstokes(pos, lx, ly, forces=None, torques=None) -> np.ndarray:
@@ -119,3 +120,21 @@ def test_non_square_matching_rpy():
             results_rpy[i + 3] += mt_j
 
     assert np.allclose(results_dpstokes, results_rpy, rtol=1e-3, atol=1e-2)
+
+
+def test_dpstokes_open_errors():
+    solver = lm.DPStokes("periodic", "periodic", "open")
+    solver.setParameters(Lx=10.0, Ly=10.0, zmin=0.0, zmax=10.0)
+    solver.initialize(hydrodynamicRadius=1.0, viscosity=1.0, includeAngular=True)
+
+    pos = np.random.uniform(0.0, 10.0, (10, 3))
+    solver.setPositions(pos)
+
+    forces = np.random.uniform(-1.0, 1.0, (10, 3))
+    with pytest.raises(RuntimeError, match="DPStokes"):
+        solver.Mdot(forces=forces)
+    with pytest.raises(RuntimeError, match="DPStokes"):
+        solver.Mdot(torques=forces)
+
+    forces -= np.mean(forces, axis=0)
+    solver.Mdot(forces=forces, torques=forces)
