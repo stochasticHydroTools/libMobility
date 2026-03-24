@@ -54,13 +54,6 @@ jobs:
         make html
       shell: micromamba-shell {0}
 
-    - name: Compile examples
-      run: |
-        mkdir examples/cpp/build && cd examples/cpp/build
-        cmake -DCMAKE_VERBOSE_MAKEFILE=yes -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX ..
-        make -j3
-      shell: micromamba-shell {0}
-      
     - name: Try to import libMobility
       run: |
         python -c "import libMobility"
@@ -73,7 +66,13 @@ jobs:
         #Only SelfMobility tests can run in the CPU
         pytest -sv -k SelfMobility tests/test*py
       shell: micromamba-shell {0}
-      
+
+    - name: Run examples
+      run: |
+        cd examples/
+        python example.py
+      shell: micromamba-shell {0}
+
     - name: Install via pip
       run: |
         pip install -vv .
