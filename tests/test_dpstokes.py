@@ -138,3 +138,11 @@ def test_dpstokes_open_errors():
 
     forces -= np.mean(forces, axis=0)
     solver.Mdot(forces=forces, torques=forces)
+
+    # check that we can bypass the error if we allow unsafe forces
+    forces = np.random.uniform(-1.0, 1.0, (10, 3))
+    solver = lm.DPStokes("periodic", "periodic", "open")
+    solver.setParameters(Lx=10.0, Ly=10.0, zmin=0.0, zmax=10.0, allowUnsafeForces=True)
+    solver.initialize(hydrodynamicRadius=1.0, viscosity=1.0, includeAngular=True)
+    solver.setPositions(pos)
+    solver.Mdot(forces=forces, torques=forces)
