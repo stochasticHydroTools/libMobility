@@ -12,7 +12,28 @@ https://doi.org/10.1063/5.0141371
 #include <MobilityInterface/MobilityInterface.h>
 #include <MobilityInterface/random_finite_differences.h>
 #include <cmath>
+#include <thrust/transform_reduce.h>
 #include <vector>
+
+namespace {
+struct vec3_to_vec4 {
+  __device__ uammd_dpstokes::real4 operator()(const uammd_dpstokes::real3 &a) {
+    return {a.x, a.y, a.z, abs(a.x) + abs(a.y) + abs(a.z)};
+  }
+};
+
+uammd_dpstokes::real3 calculate_relative_vec3(const uammd_dpstokes::real3 *vptr,
+                                              uint numberParticles) {
+  uammd_dpstokes::real4 sum_v = thrust::transform_reduce(
+      thrust::cuda::par, vptr, vptr + numberParticles, vec3_to_vec4(),
+      uammd_dpstokes::real4{0, 0, 0, 0},
+      cuda::std::plus<uammd_dpstokes::real4>());
+  uammd_dpstokes::real3 rel_v =
+      uammd_dpstokes::real3{sum_v.x, sum_v.y, sum_v.z} / sum_v.w;
+
+  return rel_v;
+}
+} // namespace
 
 class DPStokes : public libmobility::Mobility {
   using periodicity_mode = libmobility::periodicity_mode;
@@ -185,18 +206,15 @@ public:
     device_adapter<real> angular(iangular, device::cuda);
 
     if (this->wallmode == "nowall" && !this->dppar.allowUnsafeForces) {
-      constexpr real errTol = 1e-3;
+      constexpr real errTol = 1e-6;
       bool errFlag = false;
       if (iforces.size() > 0) {
         const uammd_dpstokes::real3 *fptr =
             reinterpret_cast<const uammd_dpstokes::real3 *>(forces.data());
-        uammd_dpstokes::real3 mean_f = thrust::reduce(
-            thrust::cuda::par, fptr, fptr + this->numberParticles,
-            uammd_dpstokes::real3{0, 0, 0},
-            thrust::plus<uammd_dpstokes::real3>());
-        mean_f /= this->numberParticles;
-        if (fabs(mean_f.x) > errTol || fabs(mean_f.y) > errTol ||
-            fabs(mean_f.z) > errTol) {
+        uammd_dpstokes::real3 rel_f =
+            calculate_relative_vec3(fptr, this->numberParticles);
+        if (fabs(rel_f.x) > errTol || fabs(rel_f.y) > errTol ||
+            fabs(rel_f.z) > errTol) {
           errFlag = true;
         }
       }
@@ -204,13 +222,10 @@ public:
       if (this->par.includeAngular && itorques.size() > 0) {
         const uammd_dpstokes::real3 *tptr =
             reinterpret_cast<const uammd_dpstokes::real3 *>(torques.data());
-        uammd_dpstokes::real3 mean_t = thrust::reduce(
-            thrust::cuda::par, tptr, tptr + this->numberParticles,
-            uammd_dpstokes::real3{0, 0, 0},
-            thrust::plus<uammd_dpstokes::real3>());
-        mean_t /= this->numberParticles;
-        if (fabs(mean_t.x) > errTol || fabs(mean_t.y) > errTol ||
-            fabs(mean_t.z) > errTol) {
+        uammd_dpstokes::real3 rel_t =
+            calculate_relative_vec3(tptr, this->numberParticles);
+        if (fabs(rel_t.x) > errTol || fabs(rel_t.y) > errTol ||
+            fabs(rel_t.z) > errTol) {
           errFlag = true;
         }
       }
@@ -269,12 +284,12 @@ public:
     this->setPositions(original_pos);
     thrust::transform(thrust::cuda::par, thermal_drift_m.begin(),
                       thermal_drift_m.end(), linear.begin(), linear.begin(),
-                      thrust::plus<real>());
+                      cuda::std::plus<real>());
     if (this->getIncludeAngular()) {
       device_adapter<real> angular(iangular, device::cuda);
       thrust::transform(thrust::cuda::par, thermal_drift_d.begin(),
                         thermal_drift_d.end(), angular.begin(), angular.begin(),
-                        thrust::plus<real>());
+                        cuda::std::plus<real>());
     }
   }
 

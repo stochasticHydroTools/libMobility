@@ -10,9 +10,11 @@ namespace uammd_dpstokes {
 #ifndef DOUBLE_PRECISION
 using real = float;
 using real3 = float3;
+using real4 = float4;
 #else
 using real = double;
 using real3 = double3;
+using real4 = double4;
 #endif
 
 // This function returns either 'single' or 'double' according to the UAMMD's
