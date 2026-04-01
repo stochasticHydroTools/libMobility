@@ -56,6 +56,6 @@ print("M^{1/2} * dW:", linear_fluctuations)
 
 # Some solvers (e.g. SelfMobility) have no thermal drift and return all zeros.
 # In general, the thermal drift is non-zero and other solvers (e.g. DPStokes) return a non-zero value.
-linear_drift, _ = solver.thermalDrift()
+linear_drift, _ = solver.divM()
 print("Thermal drift:", linear_drift)
 solver.clean()
