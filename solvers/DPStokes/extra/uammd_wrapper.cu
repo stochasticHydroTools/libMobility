@@ -1,5 +1,5 @@
 /* Raul P. Pelaez 2021. Doubly Periodic Stokes UAMMD wrapper
-   Allows to call the DPStokes or TP FCM modules from via a simple contained
+   Allows to call the DPStokes module from via a simple contained
    class to compute the product between the mobility tensor and a list forces
    and torques acting on a group of positions.
 
@@ -9,14 +9,10 @@
 */
 #include <uammd.cuh>
 // Doubly Periodic FCM implementation (currently without noise)
-#include <Integrator/BDHI/DoublyPeriodic/DPStokesSlab.cuh>
-// Triply Periodic FCM implementation
 #include "uammd_interface.h"
-#include <Integrator/BDHI/BDHI_FCM.cuh>
+#include <Integrator/BDHI/DoublyPeriodic/DPStokesSlab.cuh>
 // Some convenient aliases
 namespace uammd_dpstokes {
-using FCM_BM = uammd::BDHI::FCM_ns::Kernels::BarnettMagland;
-using FCM = uammd::BDHI::FCM_impl<FCM_BM, FCM_BM>;
 using DPStokesSlab = uammd::DPStokesSlab_ns::DPStokes;
 using uammd::System;
 using uammd::DPStokesSlab_ns::WallMode;
@@ -44,24 +40,6 @@ struct Real3ToReal4SubstractOriginZ {
     return pr4;
   }
 };
-
-auto createFCMParameters(PyParameters pypar) {
-  FCM::Parameters par;
-  par.temperature =
-      0; // FCM can compute fluctuations, but they are turned off here
-  par.viscosity = pypar.viscosity;
-  par.tolerance = pypar.tolerance;
-  par.box = uammd::Box({pypar.Lx, pypar.Ly, pypar.zmax - pypar.zmin});
-  par.cells = {pypar.nx, pypar.ny, pypar.nz};
-  par.kernel =
-      std::make_shared<FCM_BM>(pypar.w, pypar.alpha,
-                               pypar.beta.x, // TODO beta parameter may need to
-                                             // be adjusted for non-square?
-                               pypar.Lx / pypar.nx);
-  par.kernelTorque = std::make_shared<FCM_BM>(
-      pypar.w_d, pypar.alpha_d, pypar.beta_d.x, pypar.Lx / pypar.nx);
-  return par;
-}
 
 WallMode stringToWallMode(std::string str) {
   if (str.compare("nowall") == 0) {
@@ -100,24 +78,14 @@ private:
                                         const uammd::real4 *d_force,
                                         const uammd::real4 *d_torques,
                                         int numberParticles, cudaStream_t st) {
-    if (fcm) {
-      return fcm->computeHydrodynamicDisplacements(
-          (uammd::real4 *)(d_pos), (uammd::real4 *)(d_force),
-          (uammd::real4 *)(d_torques), numberParticles, 0.0, 0.0, st);
-    } else if (dpstokes) {
-      return dpstokes->Mdot(reinterpret_cast<const uammd::real4 *>(d_pos),
-                            reinterpret_cast<const uammd::real4 *>(d_force),
-                            reinterpret_cast<const uammd::real4 *>(d_torques),
-                            numberParticles, st);
-    } else {
-      throw std::runtime_error("DPStokesUAMMD: No DPStokes or FCM module "
-                               "initialized. This should not had happened");
-    }
+    return dpstokes->Mdot(reinterpret_cast<const uammd::real4 *>(d_pos),
+                          reinterpret_cast<const uammd::real4 *>(d_force),
+                          reinterpret_cast<const uammd::real4 *>(d_torques),
+                          numberParticles, st);
   }
 
 public:
   std::shared_ptr<DPStokesSlab> dpstokes;
-  std::shared_ptr<FCM> fcm;
   cudaStream_t st;
   thrust::device_vector<uammd::real3> tmp3;
   thrust::device_vector<uammd::real4> force4;
@@ -127,15 +95,9 @@ public:
   real zOrigin;
 
   DPStokesUAMMD(PyParameters pypar) {
-    if (pypar.mode.compare("periodic") == 0) {
-      auto par = createFCMParameters(pypar);
-      this->fcm = std::make_shared<FCM>(par);
-      zOrigin = 0;
-    } else {
-      auto par = createDPStokesParameters(pypar);
-      this->dpstokes = std::make_shared<DPStokesSlab>(par);
-      zOrigin = pypar.zmin + par.H * 0.5;
-    }
+    auto par = createDPStokesParameters(pypar);
+    this->dpstokes = std::make_shared<DPStokesSlab>(par);
+    zOrigin = pypar.zmin + par.H * 0.5;
     CudaSafeCall(cudaStreamCreate(&st));
   }
 

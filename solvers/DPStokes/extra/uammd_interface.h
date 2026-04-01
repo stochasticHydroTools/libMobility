@@ -23,8 +23,6 @@ std::string getPrecision();
 
 struct PyParameters {
   // The number of cells in each direction
-  // If -1, they will be autocomputed from the tolerance if possible (DP cannot
-  // do it, FCM can)
   int nx = -1;
   int ny = -1;
   int nz = -1;
@@ -32,7 +30,7 @@ struct PyParameters {
   real Lx;
   real Ly;
   real zmin, zmax;
-  // Tolerance will be ignored in DP mode, TP will use only tolerance and nxy/nz
+  // Tolerance will be ignored in DP mode
   real tolerance = 1e-5;
   real delta = 1e-3; // RFD step size
   real w, w_d;
