@@ -23,7 +23,9 @@ zmax : float
 allowChangingBoxSize : bool
     Whether the periodic extents Lx & Ly can be modified during parameter selection. Default: false.
 delta : float
-    The finite difference step size for random finite differences. Specified in units of hydrodynamicRadius. Default is 1e-3.
+    The finite difference step size for random finite differences. Specified in units of hydrodynamicRadius. Default: 1e-3.
+allowUnsafeForces : bool
+    When the Z periodicity is `open` the net force/torque on the domain must be zero. Numerically, this is checked to some tolerance. Enabling this flag will by bypass the check but can lead to unphysical results if used incorrectly. Default: false.
 )pbdoc";
 
 static const char *docstring = R"pbdoc(
@@ -41,7 +43,7 @@ MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(
     solver.def(
         "setParameters",
         [](DPStokes &self, real Lx, real Ly, real zmin, real zmax,
-           bool allowChangingBoxSize, real delta) {
+           bool allowChangingBoxSize, real delta, bool allowUnsafeForces) {
           DPStokesParameters params;
           params.Lx = Lx;
           params.Ly = Ly;
@@ -49,8 +51,10 @@ MOBILITY_PYTHONIFY_WITH_EXTRA_CODE(
           params.zmax = zmax;
           params.allowChangingBoxSize = allowChangingBoxSize;
           params.delta = delta;
+          params.allowUnsafeForces = allowUnsafeForces;
           self.setParametersDPStokes(params);
         },
         "Lx"_a, "Ly"_a, "zmin"_a, "zmax"_a, "allowChangingBoxSize"_a = false,
-        "delta"_a = 1e-3, setparameters_docstring);
+        "delta"_a = 1e-3, "allowUnsafeForces"_a = false,
+        setparameters_docstring);
     , docstring);

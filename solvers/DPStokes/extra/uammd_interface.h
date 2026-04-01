@@ -3,15 +3,18 @@
 */
 #include <memory>
 #include <string>
+#include <vector_types.h>
 namespace uammd_dpstokes {
 // This is in order not to use any UAMMD related includes here.
 // Instead of using uammd::real I have to re define real here.
 #ifndef DOUBLE_PRECISION
 using real = float;
 using real3 = float3;
+using real4 = float4;
 #else
 using real = double;
 using real3 = double3;
+using real4 = double4;
 #endif
 
 // This function returns either 'single' or 'double' according to the UAMMD's
@@ -39,6 +42,7 @@ struct PyParameters {
   // Can be either none, bottom, slit or periodic
   std::string mode;
   bool allowChangingBoxSize = false;
+  bool allowUnsafeForces = false;
 };
 
 class DPStokesUAMMD;

@@ -108,6 +108,9 @@ def get_sane_params(solverName, geom=None):
         params = sane_parameters["NBody_wall"].copy()
     else:
         params = sane_parameters[solverName].copy()
+
+    if solverName == "DPStokes" and geom == "open":
+        params["allowUnsafeForces"] = True
     return params
 
 
