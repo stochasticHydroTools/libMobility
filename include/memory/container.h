@@ -23,6 +23,20 @@ concept numeric = std::is_arithmetic_v<T>;
  */
 template <numeric T> struct device_span : public std::span<T> {
   device dev;
+  // Return raw pointers from begin()/end() instead of std::span's iterators.
+  //
+  // In libstdc++ 15 the tag type of std::span's iterator
+  // (std::span<T>::__iter_tag) is a private member. When a span iterator is
+  // handed to a thrust/CUB device algorithm (e.g. thrust::transform in
+  // MobilityInterface::sqrtMdotW), nvcc generates host stub code that names
+  // that private type, which GCC 15 rejects ("__iter_tag is private within
+  // this context"). This surfaces with CUDA >= 13 (whose bundled thrust/CUB
+  // routes span iterators through this path) built against GCC 15.
+  //
+  // Handing out raw pointers keeps device_span a valid contiguous range while
+  // ensuring the private tag is never instantiated.
+  constexpr T *begin() const noexcept { return this->data(); }
+  constexpr T *end() const noexcept { return this->data() + this->size(); }
   device_span(std::span<T> data, device dev) : std::span<T>(data), dev(dev) {}
   device_span() : std::span<T>(), dev(device::unknown) {}
   template <class Allocator>
