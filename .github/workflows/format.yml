@@ -1,16 +1,20 @@
 name: Clang-Format Lint Check
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
 
 jobs:
   clang-format-check:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Install clang-format
         run: sudo apt-get update && sudo apt-get install -y clang-format-19
