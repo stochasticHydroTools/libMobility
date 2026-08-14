@@ -6,10 +6,7 @@
 #include "extra/interface.h"
 #include <MobilityInterface/MobilityInterface.h>
 #include <MobilityInterface/random_finite_differences.h>
-#include <cmath>
 #include <optional>
-#include <type_traits>
-#include <vector>
 
 class NBody : public libmobility::Mobility {
   using periodicity_mode = libmobility::periodicity_mode;
@@ -117,13 +114,51 @@ public:
   }
 
   void setPositions(device_span<const real> ipositions) override {
-    positions.assign(ipositions.begin(), ipositions.end());
-    const auto numberParticles = this->getNumberParticles();
-    int i_Nbatch = (this->Nbatch < 0) ? 1 : this->Nbatch;
-    int i_NperBatch = (this->NperBatch < 0) ? numberParticles : this->NperBatch;
-    if (i_NperBatch * i_Nbatch != numberParticles)
+    const int numberParticles = ipositions.size() / 3;
+
+    using device_vector = thrust::device_vector<
+        real, libmobility::allocator::thrust_cached_allocator<real>>;
+
+    device_vector posZ(ipositions.begin(), ipositions.end());
+
+    if (this->kernel == nbody_rpy::kernel_type::bottom_wall) {
+
+      // shifts positions so the wall is at z=0 to match kernels
+      using namespace thrust::placeholders;
+      auto index_3 = thrust::make_transform_iterator(
+          thrust::make_counting_iterator(0), _1 * 3);
+      auto pos_z_iter =
+          thrust::make_permutation_iterator(posZ.begin() + 2, index_3);
+      if (wallHeight != 0) {
+        thrust::transform(thrust::cuda::par, pos_z_iter,
+                          pos_z_iter + numberParticles, pos_z_iter,
+                          _1 - wallHeight);
+      }
+
+      // check that all particles are above the wall
+      auto min_z = thrust::reduce(
+          thrust::cuda::par, pos_z_iter, pos_z_iter + numberParticles,
+          std::numeric_limits<real>::max(), thrust::minimum<real>());
+
+      if (min_z < 0) {
+        throw std::runtime_error(
+            "[Mobility] The center of a particle has fallen below the wall. "
+            "Check your configuration and forces to ensure particle centers "
+            "stay above the wall.");
+      }
+    }
+
+    // keep the potentially shifted positions
+    positions.assign(posZ.begin(), posZ.end());
+
+    const int i_Nbatch = (this->Nbatch < 0) ? 1 : this->Nbatch;
+    const int i_NperBatch =
+        (this->NperBatch < 0) ? numberParticles : this->NperBatch;
+
+    if (i_NperBatch * i_Nbatch != numberParticles) {
       throw std::runtime_error("[Mobility] Invalid batch parameters for NBody. "
                                "If in doubt, use the defaults.");
+    }
   }
 
   uint getNumberParticles() override { return this->positions.size() / 3; }
@@ -139,21 +174,7 @@ public:
           "setPositions?");
     using device_vector = thrust::device_vector<
         real, libmobility::allocator::thrust_cached_allocator<real>>;
-    device_vector posZ(positions);
-    if (wallHeight != 0) { // shifts positions so the wall is at z=0 since the
-                           // kernels are programmed as such.
-      using namespace thrust::placeholders;
-      auto index_3 = thrust::make_transform_iterator(
-          thrust::make_counting_iterator(0), _1 * 3);
-      auto iposition =
-          thrust::make_permutation_iterator(positions.begin() + 2, index_3);
-      auto opositionZ =
-          thrust::make_permutation_iterator(posZ.begin() + 2, index_3);
-      thrust::transform(thrust::cuda::par, iposition,
-                        iposition + numberParticles, opositionZ,
-                        _1 - wallHeight);
-    }
-    device_span<const real> pos(posZ);
+    device_span<const real> pos(positions);
     nbody_rpy::callBatchedNBody(pos, forces, torques, linear, angular, i_Nbatch,
                                 i_NperBatch, transMobility, rotMobility,
                                 transRotMobility, hydrodynamicRadius,

@@ -189,6 +189,33 @@ public:
   void setPositions(device_span<const real> ipositions) override {
     this->numberParticles = ipositions.size() / 3;
     device_adapter<const real> positions(ipositions, device::cuda);
+
+    // check particles stay within walls
+    if (this->wallmode == "bottom" or this->wallmode == "slit") {
+      using namespace thrust::placeholders;
+      auto index_3 = thrust::make_transform_iterator(
+          thrust::make_counting_iterator(0), _1 * 3);
+      auto pos_z_iter =
+          thrust::make_permutation_iterator(positions.begin() + 2, index_3);
+      real min_z = thrust::reduce(
+          thrust::cuda::par, pos_z_iter, pos_z_iter + numberParticles,
+          std::numeric_limits<real>::max(), thrust::minimum<real>());
+
+      real max_z = this->dppar.zmax;
+      if (this->wallmode == "slit") {
+        max_z = thrust::reduce(
+            thrust::cuda::par, pos_z_iter, pos_z_iter + numberParticles,
+            -std::numeric_limits<real>::max(), thrust::maximum<real>());
+      }
+
+      if (min_z < this->dppar.zmin || max_z > this->dppar.zmax) {
+        throw std::runtime_error(
+            "[Mobility] The center of a particle has passed through a wall. "
+            "Check your configuration and forces to ensure particle centers "
+            "stay above the wall.");
+      }
+    }
+
     dpstokes->setPositions(positions.data(), this->numberParticles);
   }
 
