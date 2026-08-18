@@ -1,6 +1,6 @@
 import pytest
 
-# from libMobility import *
+from libMobility import NBody, DPStokes
 import numpy as np
 from utils import (
     get_sane_params,
@@ -416,3 +416,31 @@ def test_prefactor(Solver, periodicity, includeAngular):
     assert np.allclose(divm_pf, prefactor * divm, atol=1e-4)
     if includeAngular:
         assert np.allclose(divmt_pf, prefactor * divmt, atol=1e-4)
+
+
+def test_wall_position_errors():
+    a = 1.0
+
+    solver = NBody("open", "open", "single_wall")
+    solver.setParameters(wallHeight=1.0)
+    solver.initialize(viscosity=1.0, hydrodynamicRadius=a)
+
+    pos = np.array([1.0, 2.0, 0.5])
+    with pytest.raises(RuntimeError, match="fallen below the wall"):
+        solver.setPositions(pos)
+
+    solver_one_wall = DPStokes("periodic", "periodic", "single_wall")
+    solver_one_wall.setParameters(Lx=10.0, Ly=10.0, zmin=-5.0, zmax=5.0)
+    solver_one_wall.initialize(viscosity=1.0, hydrodynamicRadius=a)
+    pos = np.array([1.0, 2.0, -5.5])
+    with pytest.raises(RuntimeError, match="passed through a wall"):
+        solver_one_wall.setPositions(pos)
+    pos = np.array([1.0, 2.0, 5.5])
+    solver_one_wall.setPositions(pos)
+
+    solver_two_wall = DPStokes("periodic", "periodic", "two_walls")
+    solver_two_wall.setParameters(Lx=10.0, Ly=10.0, zmin=-5.0, zmax=5.0)
+    solver_two_wall.initialize(viscosity=1.0, hydrodynamicRadius=a)
+    for pos in np.array([[1.0, 2.0, 5.5], [1.0, 2.0, -5.5]]):
+        with pytest.raises(RuntimeError, match="passed through a wall"):
+            solver_two_wall.setPositions(pos)
