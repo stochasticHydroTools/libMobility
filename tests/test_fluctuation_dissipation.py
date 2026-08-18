@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from scipy.linalg import pinv, sqrtm
 from scipy.stats import kstest, norm
-from numpy.linalg import eig
+from numpy.linalg import eigh
 import logging
 
 from libMobility import PSE
@@ -29,7 +29,7 @@ def fluctuation_dissipation_KS(M, fluctuation_method):
     """
     if M.shape[0] != M.shape[1] or not np.allclose(M, M.T, rtol=0, atol=5e-5):
         raise ValueError("Matrix M must be square and symmetric.")
-    Sigma, Q = eig(M)
+    Sigma, Q = eigh(M)
     ind = np.argsort(Sigma)
     Sigma = np.sort(Sigma)
     Q = Q[:, ind]
